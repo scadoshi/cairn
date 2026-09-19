@@ -3,8 +3,9 @@
 
     scripts/seed.py PATH_TO_odo.db
 
-Adds three counters if they are not there (pull-ups at 15 a day, push-ups at
-10000 a year, pages read with no goal) and writes one row per day from
+Adds five counters if they are not there (pull-ups at 15 a day, push-ups at
+10000 a year, pages read with no goal, squats at 40 a day, sit-ups at 12000
+a year) and writes one row per day from
 January 1 two years back through today, plus the tap events behind each day
 (one to three sessions at realistic hours) so the hourly chart has shape.
 The pattern is deterministic: a weekly rhythm with rest days, a slow upward
@@ -28,6 +29,8 @@ COUNTERS = [
     ("pull-ups", None, 15, 10, 5),
     ("push-ups", 10000, None, 24, 10),
     ("pages read", None, None, 16, 12),
+    ("squats", None, 40, 30, 12),
+    ("sit-ups", 12000, None, 28, 10),
 ]
 
 # Hours a session tends to start, weighted: an early block and an evening one.
