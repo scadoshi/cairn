@@ -1,0 +1,14 @@
+[application]
+name = "Odo"
+
+[bundle]
+identifier = "com.scadoshi.odo"
+publisher = "scadoshi"
+
+[web.app]
+title = "Odo"
+
+[ios.plist]
+CFBundlePackageType = "APPL"
+MinimumOSVersion = "16.0"
+UISupportedInterfaceOrientations = ["UIInterfaceOrientationPortrait"]

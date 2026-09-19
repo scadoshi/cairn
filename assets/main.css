@@ -1,0 +1,230 @@
+/* Odo's own rules. Loaded after zwipe-components' themes.css and
+   components.css, so anything here overrides them at equal specificity.
+   Colors come only from the theme variables; never hardcode a palette. */
+
+/* ==================
+        base
+ ==================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    font-family: "JetBrains Mono", monospace;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+}
+
+.theme-wrapper {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding-top: env(safe-area-inset-top);
+}
+
+.content {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: 1.5rem 1rem calc(2rem + env(safe-area-inset-bottom));
+}
+
+@keyframes content-enter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.content-enter {
+    animation: content-enter 0.3s ease-out both;
+}
+
+/* ==================
+        nav
+ ==================== */
+
+.nav-logo {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.45rem;
+    /* JetBrains Mono's block elements span 1.32em (-0.30 to 1.02), so rows
+       tile seamlessly only at this line-height. Anything smaller overlaps the
+       rows and fills the gaps that form the letters, smearing the wordmark. */
+    line-height: 1.32;
+    white-space: pre;
+    display: block;
+    letter-spacing: 0;
+    color: var(--text-primary);
+    transition: color 0.2s ease, letter-spacing 0.2s ease;
+}
+
+@media (hover: hover) {
+    .nav-brand:hover .nav-logo {
+        letter-spacing: 1px;
+        color: var(--accent-primary);
+    }
+}
+
+/* ==================
+      counters
+ ==================== */
+
+.counter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+    gap: 1rem;
+}
+
+.counter-screen {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.odometer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0 1.5rem;
+}
+
+.odometer-value {
+    font-size: clamp(3rem, 12vw, 5rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.05em;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent-primary);
+}
+
+.odometer-label {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* ==================
+      stat tiles
+ ==================== */
+
+.stat-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.stat-grid + .stat-grid {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-muted);
+}
+
+.stat-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stat-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+
+.stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.stat-hint {
+    font-size: 0.75rem;
+    color: var(--text-subtle);
+}
+
+/* ==================
+        forms
+ ==================== */
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 0.75rem;
+}
+
+.field-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.field-input {
+    font: inherit;
+    padding: 0.5rem 0.6rem;
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+}
+
+.field-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.form-error {
+    margin-bottom: 1rem;
+    color: var(--color-error);
+}
+
+.form-notice {
+    margin-bottom: 1rem;
+    color: var(--text-subtle);
+    overflow-wrap: anywhere;
+}
+
+/* ==================
+        tables
+ ==================== */
+
+.year-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.year-table th,
+.year-table td {
+    text-align: left;
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--border-muted);
+}
+
+.year-table th {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+
+.year-table tr:last-child td {
+    border-bottom: none;
+}

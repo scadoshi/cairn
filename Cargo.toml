@@ -1,0 +1,57 @@
+[package]
+name = "odo"
+version = "0.1.0"
+authors = ["Scotty Fermo <scottyfermo@hotmail.com>"]
+edition = "2024"
+publish = false
+
+[lib]
+name = "odo"
+path = "src/lib/lib.rs"
+
+[[bin]]
+name = "odo"
+path = "src/bin/odo.rs"
+
+[dependencies]
+dioxus = { version = "0.7.10", features = ["router"] }
+# Shared UI with zwipe.net, zite, and the portfolio (Panel, NavBar, Button,
+# ThemePicker, the theme palettes). Cargo.lock pins the exact commit;
+# `cargo update -p zwipe-components` pulls the latest deliberately.
+zwipe-components = { git = "https://github.com/scadoshi/zwipe" }
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+# Local store. `bundled` compiles SQLite in so the desktop, iOS, and (later)
+# watch builds carry the same engine and need nothing from the OS.
+rusqlite = { version = "0.37", features = ["bundled", "chrono"] }
+# Per-platform data and download directories for the database and CSV exports.
+dirs = "6"
+
+[features]
+default = ["desktop"]
+desktop = ["dioxus/desktop"]
+mobile = ["dioxus/mobile"]
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+# flags prose like "SQLite" and "Dioxus" as unbackticked identifiers
+doc_markdown = "allow"
+# never ship
+todo = "deny"
+dbg_macro = "deny"
+unimplemented = "deny"
+# no panics in non-test code (clippy.toml allows them inside tests)
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+unreachable = "deny"
+indexing_slicing = "deny"
+string_slice = "deny"
+panic_in_result_fn = "deny"
+exit = "deny"
