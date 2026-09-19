@@ -12,3 +12,4 @@ title = "Odo"
 CFBundlePackageType = "APPL"
 MinimumOSVersion = "16.0"
 UISupportedInterfaceOrientations = ["UIInterfaceOrientationPortrait"]
+"UISupportedInterfaceOrientations~ipad" = ["UIInterfaceOrientationPortrait"]

@@ -4,12 +4,12 @@ pub mod components;
 pub mod router;
 pub mod screens;
 
-use crate::domain::counter::Store;
+use crate::domain::counter::{CounterId, Store};
 use chrono::{Local, NaiveDate};
 use dioxus::prelude::*;
 use router::Route;
 use std::sync::Arc;
-use zwipe_components::{COMPONENTS_CSS, THEMES_CSS, ThemeConfig};
+use zwipe_components::{ActionBar, Button, ButtonVariant, COMPONENTS_CSS, THEMES_CSS, ThemeConfig};
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
@@ -47,7 +47,13 @@ pub fn App() -> Element {
     });
 
     rsx! {
-        document::Meta { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" }
+        // user-scalable=no kills the double-tap zoom. This is an app, not a
+        // page: pinch and double-tap zoom just leave the layout stranded
+        // off-center with no way back.
+        document::Meta {
+            name: "viewport",
+            content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+        }
         document::Meta { name: "darkreader-lock" }
         // Fonts ship in the bundle via asset!(), so the @font-face has to be
         // built here where the hashed URLs are known (same trick as zwiper).
@@ -64,16 +70,55 @@ pub fn App() -> Element {
     }
 }
 
-/// Wraps every route in the theme class, the nav bar, and the content column.
+/// The app shell, laid out like zwiper's: a header naming the current screen,
+/// the scrolling content, and a pinned action bar at the bottom. No hamburger.
 #[component]
 pub fn Shell() -> Element {
     let theme = use_context::<Signal<ThemeConfig>>();
     let css_class = theme.read().css_class();
+    let route = use_route::<Route>();
+    let nav = use_navigator();
+    let store = use_store();
+
+    // The counter screen is named after its counter, so the title needs a
+    // lookup. Home is static.
+    let title = match &route {
+        Route::Home {} => "ODO".to_string(),
+        Route::CounterScreen { id } => store
+            .get_counter(CounterId(*id))
+            .ok()
+            .flatten()
+            .map_or_else(|| "COUNTER".to_string(), |c| c.name.to_string()),
+        Route::Profile {} => "PROFILE".to_string(),
+    };
+    let at_home = matches!(route, Route::Home {});
+
     rsx! {
-        div { class: "theme-wrapper {css_class}",
-            components::navbar::Navbar {}
-            main { class: "content",
+        div { class: "screen theme-wrapper {css_class}",
+            header { class: "page-header",
+                h2 { "{title}" }
+            }
+            main { class: "screen-content",
                 Outlet::<Route> {}
+            }
+            ActionBar {
+                if at_home {
+                    Button {
+                        variant: ButtonVariant::Util,
+                        onclick: move |_| {
+                            nav.push(Route::Profile {});
+                        },
+                        "Profile"
+                    }
+                } else {
+                    Button {
+                        variant: ButtonVariant::Util,
+                        onclick: move |_| {
+                            nav.push(Route::Home {});
+                        },
+                        "Back"
+                    }
+                }
             }
         }
     }

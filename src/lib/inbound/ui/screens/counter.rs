@@ -3,14 +3,17 @@
 use crate::{
     domain::counter::{Counter, CounterId, DayCount, csv, stats, stats::Summary},
     inbound::ui::{
-        components::stat_tile::{StatTile, rate},
+        components::{
+            confirm_dialog::ConfirmDialog,
+            stat_tile::{StatTile, rate},
+        },
         router::Route,
         today, use_store,
     },
     outbound::paths,
 };
 use dioxus::prelude::*;
-use zwipe_components::{Button, ButtonVariant, Panel};
+use zwipe_components::{Button, ButtonVariant};
 
 /// One counter's detail screen.
 #[component]
@@ -46,7 +49,9 @@ pub fn CounterScreen(id: i64) -> Element {
 
     let Some(c) = counter() else {
         return rsx! {
-            Panel { title: "Not found", p { "No counter with id {id}." } }
+            div { class: "profile-sections",
+                p { class: "pref-note", "No counter with id {id}." }
+            }
         };
     };
     let summary = stats::summarize(&entries(), c.goal, today());
@@ -64,8 +69,9 @@ pub fn CounterScreen(id: i64) -> Element {
         }
     };
 
+    let mut confirm_delete = use_signal(|| false);
     let delete_store = store.clone();
-    let delete = move |_| match delete_store.delete_counter(id) {
+    let delete = move |()| match delete_store.delete_counter(id) {
         Ok(()) => {
             nav.push(Route::Home {});
         }
@@ -73,23 +79,20 @@ pub fn CounterScreen(id: i64) -> Element {
     };
 
     rsx! {
-        section { class: "content-enter counter-screen",
+        div { class: "profile-sections content-enter",
             if let Some(n) = notice() {
-                p { class: "form-notice", "{n}" }
+                p { class: "pref-note", "{n}" }
             }
-            Panel {
-                eyebrow: "Counter",
-                title: c.name.to_string(),
-                title_h1: true,
-                actions: rsx! {
-                    Button { variant: ButtonVariant::Small, onclick: move |_| adjust.call(-1), "-1" }
-                    Button { variant: ButtonVariant::Small, onclick: move |_| adjust.call(1), "+1" }
-                    Button { variant: ButtonVariant::Small, onclick: move |_| adjust.call(5), "+5" }
-                    Button { variant: ButtonVariant::Small, onclick: move |_| adjust.call(10), "+10" }
-                },
+            div { class: "profile-list",
                 div { class: "odometer",
                     span { class: "odometer-value", "{summary.lifetime}" }
                     span { class: "odometer-label", "lifetime since {c.created_on}" }
+                }
+                div { class: "card-actions",
+                    Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(-1), "-1" }
+                    Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(1), "+1" }
+                    Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(5), "+5" }
+                    Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(10), "+10" }
                 }
                 div { class: "stat-grid stat-grid-3",
                     StatTile { label: "Today", value: summary.today.to_string() }
@@ -97,12 +100,13 @@ pub fn CounterScreen(id: i64) -> Element {
                     StatTile { label: "This month", value: summary.this_month.to_string() }
                 }
             }
-            YearPanel { summary: summary.clone() }
-            Panel {
-                eyebrow: "History",
-                title: "By year",
+            YearCard { summary: summary.clone() }
+            div { class: "profile-list",
+                div { class: "card-header",
+                    span { class: "card-title", "By year" }
+                }
                 table { class: "year-table",
-                    thead { tr { th { "Year" } th { "Total" } th { "Per day" } th { "Active days" } } }
+                    thead { tr { th { "Year" } th { "Total" } th { "Per day" } th { "Active" } } }
                     tbody {
                         for y in summary.years.iter() {
                             tr {
@@ -115,37 +119,58 @@ pub fn CounterScreen(id: i64) -> Element {
                     }
                 }
             }
-            Panel {
-                eyebrow: "Data",
-                title: "Export and delete",
-                actions: rsx! {
-                    Button { variant: ButtonVariant::Small, onclick: export, "Export CSV" }
-                    Button { variant: ButtonVariant::Small, danger: true, onclick: delete, "Delete counter" }
-                },
-                p { class: "card-summary",
-                    "CSV has two columns, day and count, one row per logged day. "
-                    "Delete removes the counter and every entry under it."
+            div { class: "profile-list",
+                div { class: "card-header",
+                    span { class: "card-title", "Data" }
+                }
+                div { class: "profile-row",
+                    span { class: "profile-row-label", "Export" }
+                    div { class: "profile-row-value",
+                        Button { variant: ButtonVariant::Util, onclick: export, "CSV" }
+                    }
+                }
+                div { class: "profile-row",
+                    span { class: "profile-row-label", "Delete" }
+                    div { class: "profile-row-value",
+                        Button {
+                            variant: ButtonVariant::Util,
+                            danger: true,
+                            onclick: move |_| confirm_delete.set(true),
+                            "Delete counter"
+                        }
+                    }
                 }
             }
+        }
+        ConfirmDialog {
+            open: confirm_delete,
+            title: format!("Delete {}?", c.name),
+            body: format!(
+                "This removes the counter and all {} of its logged days. There is no undo.",
+                entries().len()
+            ),
+            confirm_label: "Delete",
+            on_confirm: delete,
         }
     }
 }
 
 /// This year's totals and, if a goal is set, standing against it.
 #[component]
-fn YearPanel(summary: Summary) -> Element {
+fn YearCard(summary: Summary) -> Element {
     let y = &summary.this_year;
     rsx! {
-        Panel {
-            eyebrow: "This year",
-            title: format!("{}, day {} of {}", y.year, y.days_elapsed, y.days_in_year),
+        div { class: "profile-list",
+            div { class: "card-header",
+                span { class: "card-title", "{y.year}, day {y.days_elapsed} of {y.days_in_year}" }
+            }
             div { class: "stat-grid stat-grid-3",
                 StatTile { label: "Total", value: y.total.to_string() }
                 StatTile { label: "Per day", value: rate(y.per_day) }
                 StatTile {
                     label: "Lifetime per day",
                     value: rate(summary.lifetime_per_day),
-                    hint: summary.best_day.map(|b| format!("best day {} ({})", b.count, b.day)),
+                    hint: summary.best_day.map(|b| format!("best {} on {}", b.count, b.day)),
                 }
             }
             if let Some(p) = &y.pace {

@@ -28,6 +28,9 @@ thiserror = "2"
 rusqlite = { version = "0.37", features = ["bundled", "chrono"] }
 # Per-platform data and download directories for the database and CSV exports.
 dirs = "6"
+# Only for the bottom sheet's post-mount timer (see components/bottom_sheet.rs);
+# dioxus-desktop already brings the runtime in.
+tokio = { version = "1", features = ["time"] }
 
 [features]
 default = ["desktop"]

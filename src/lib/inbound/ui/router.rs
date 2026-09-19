@@ -1,8 +1,8 @@
-//! Routes. Two screens: the counter list and one counter.
+//! Routes: the counter list, one counter, and the profile.
 
 use super::{
     Shell,
-    screens::{counter::CounterScreen, home::Home},
+    screens::{counter::CounterScreen, home::Home, profile::Profile},
 };
 use dioxus::prelude::*;
 
@@ -20,4 +20,7 @@ pub enum Route {
             /// `CounterId` as a plain integer, since routes are strings.
             id: i64,
         },
+        /// Preferences: theme and dark mode.
+        #[route("/profile")]
+        Profile {},
 }
