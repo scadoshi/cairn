@@ -1,27 +1,38 @@
 # Odo
 
-A lifetime counter, as in odometer. Name a thing you do (pull-ups, push-ups,
-pages), log how many each day, and Odo keeps the running total plus the numbers
-that make a total mean something: this year, average per day, day of the year,
-and where you stand against a yearly goal.
+A counter, like an odometer. You name something you do, log how many you did
+today, and the number goes up and stays up.
 
-Local only. SQLite on the device, no account, no server. Exports to CSV with
-two columns, `day` and `count`.
+I built it to track lifetime pull-ups and push-ups. A lifetime total on its own
+is a trivia fact, so Odo also breaks it down by year: this year's total, the
+average per day, what day of the year it is, and if you set a yearly goal,
+whether you're ahead or behind and what today needs to be to catch up.
 
-## Stack
+Everything lives on the device in SQLite. No account, no server, nothing leaves
+the phone. Export is a CSV of two columns, `day` and `count`, because that's
+all the raw data actually is.
 
-- Rust, [Dioxus](https://dioxuslabs.com/) 0.7, desktop first, iOS next
-- UI from [zwipe-components](https://github.com/scadoshi/zwipe), so it looks
-  like zwipe, zite, and scottyfermo.com, with the same theme picker
-- `rusqlite` (bundled)
+Desktop and iOS today. An Apple Watch version is the reason the counting logic
+is kept free of any UI or database code.
 
-## Build
+## Running it
 
 ```
 cargo install dioxus-cli --locked
 dx serve                      # desktop
-dx serve --platform ios       # simulator
+dx serve --platform ios       # simulator, boot one first with simctl
 cargo test
 ```
 
-Rules and layout live in `context/`; start at `context/README.md`.
+## A note on how it's built
+
+This is a personal app, and it leans hard on AI code generation. More than I'd
+use on something other people depend on.
+
+What that doesn't change: it follows the same architecture and the same bar as
+my other repos. The domain stays pure, storage stays behind a port, SQL lives
+in one file, clippy runs pedantic with panics denied, and CI has to pass. AI
+writing most of the lines is a speed decision, not permission to let the
+structure rot.
+
+Rules and layout are in `context/`, starting at `context/README.md`.
