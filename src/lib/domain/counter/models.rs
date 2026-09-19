@@ -19,6 +19,9 @@ pub enum ValidationError {
     /// A goal of zero means "no goal"; use `None` for that instead.
     #[error("goal must be at least 1")]
     ZeroGoal,
+    /// Steps come from a fixed menu so the buttons stay readable.
+    #[error("step must be one of 1, 5, 10, 25, 50, 100")]
+    BadStep,
 }
 
 /// Row id of a counter in the store.
@@ -114,6 +117,23 @@ impl Goal {
             Self::PerDay(n) => n.saturating_mul(days_in_year),
         }
     }
+
+    /// The daily rate the goal implies in a year of `days_in_year` days.
+    pub fn daily(self, days_in_year: u32) -> f64 {
+        match self {
+            Self::PerYear(n) => f64::from(n) / f64::from(days_in_year.max(1)),
+            Self::PerDay(n) => f64::from(n),
+        }
+    }
+
+    /// Both figures, the one entered first: "15/day, 5475/year" or
+    /// "10000/year, 27.4/day".
+    pub fn label(self, days_in_year: u32) -> String {
+        match self {
+            Self::PerYear(n) => format!("{n}/year, {:.1}/day", self.daily(days_in_year)),
+            Self::PerDay(n) => format!("{n}/day, {}/year", self.yearly(days_in_year)),
+        }
+    }
 }
 
 impl std::fmt::Display for Goal {
@@ -122,6 +142,35 @@ impl std::fmt::Display for Goal {
             Self::PerYear(n) => write!(f, "{n}/year"),
             Self::PerDay(n) => write!(f, "{n}/day"),
         }
+    }
+}
+
+/// How much one tap adds, from a fixed menu.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Step(u32);
+
+impl Step {
+    /// The menu.
+    pub const ALLOWED: [u32; 6] = [1, 5, 10, 25, 50, 100];
+
+    /// Rejects anything not on the menu.
+    pub fn new(n: u32) -> Result<Self, ValidationError> {
+        if Self::ALLOWED.contains(&n) {
+            Ok(Self(n))
+        } else {
+            Err(ValidationError::BadStep)
+        }
+    }
+
+    /// The amount.
+    pub fn get(self) -> u32 {
+        self.0
+    }
+}
+
+impl Default for Step {
+    fn default() -> Self {
+        Self(1)
     }
 }
 
@@ -134,6 +183,8 @@ pub struct Counter {
     pub name: CounterName,
     /// Optional target.
     pub goal: Option<Goal>,
+    /// How much one tap adds.
+    pub step: Step,
     /// Day the counter was created; the odometer starts here.
     pub created_on: NaiveDate,
 }
@@ -186,6 +237,13 @@ mod tests {
     }
 
     #[test]
+    fn step_comes_from_the_menu() {
+        assert_eq!(Step::new(25).unwrap().get(), 25);
+        assert_eq!(Step::new(3), Err(ValidationError::BadStep));
+        assert_eq!(Step::default().get(), 1);
+    }
+
+    #[test]
     fn goal_rejects_zero() {
         assert_eq!(Goal::per_year(0), Err(ValidationError::ZeroGoal));
         assert_eq!(Goal::per_day(0), Err(ValidationError::ZeroGoal));
@@ -198,5 +256,10 @@ mod tests {
         assert_eq!(Goal::per_day(10).unwrap().yearly(366), 3660);
         assert_eq!(Goal::per_day(15).unwrap().to_string(), "15/day");
         assert_eq!(Goal::per_year(5000).unwrap().to_string(), "5000/year");
+        assert_eq!(Goal::per_day(15).unwrap().label(365), "15/day, 5475/year");
+        assert_eq!(
+            Goal::per_year(3650).unwrap().label(365),
+            "3650/year, 10.0/day"
+        );
     }
 }

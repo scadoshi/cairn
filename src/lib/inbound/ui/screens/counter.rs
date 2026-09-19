@@ -3,7 +3,8 @@
 
 use crate::{
     domain::counter::{
-        Counter, CounterId, CounterName, DayCount, Event, series, stats, stats::Summary,
+        Counter, CounterId, CounterName, DayCount, Event, Goal, Step, series, series::HourlyBasis,
+        stats, stats::Summary,
     },
     inbound::ui::{
         bump_store_version,
@@ -46,6 +47,7 @@ pub fn CounterScreen(id: i64) -> Element {
     let mut events = use_signal(Vec::<Event>::new);
     let mut notice = use_signal(|| None::<String>);
     let trend = use_signal(|| Trend::Daily);
+    let all_days = use_signal(|| false);
 
     let load_store = store.clone();
     let reload = use_callback(move |()| {
@@ -88,6 +90,7 @@ pub fn CounterScreen(id: i64) -> Element {
         };
     };
     let summary = stats::summarize(&entries(), c.goal, today());
+    let step = i64::from(c.step.get());
 
     let mut confirm_delete = use_signal(|| false);
     let mut rename_open = use_signal(|| false);
@@ -122,13 +125,11 @@ pub fn CounterScreen(id: i64) -> Element {
                         StatTile { label: "This month", value: summary.this_month.to_string() }
                     }
                     ActionBar {
-                        Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(-1), "-1" }
-                        Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(1), "+1" }
-                        Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(5), "+5" }
-                        Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(10), "+10" }
+                        Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(-step), "-{step}" }
+                        Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(step), "+{step}" }
                     }
                 }
-                TrendsCard { entries: entries(), events: events(), trend }
+                TrendsCard { entries: entries(), events: events(), trend, all_days }
                 YearCard { summary: summary.clone() }
                 div { class: "profile-list",
                     div { class: "card-header",
@@ -158,7 +159,7 @@ pub fn CounterScreen(id: i64) -> Element {
                 },
                 "Back"
             }
-            Button { variant: ButtonVariant::Util, onclick: move |_| rename_open.set(true), "Rename" }
+            Button { variant: ButtonVariant::Util, onclick: move |_| rename_open.set(true), "Edit" }
             Button {
                 variant: ButtonVariant::Util,
                 danger: true,
@@ -166,7 +167,14 @@ pub fn CounterScreen(id: i64) -> Element {
                 "Delete"
             }
         }
-        RenameSheet { open: rename_open, id, current: c.name.to_string(), on_renamed: move |()| reload.call(()) }
+        EditSheet {
+            open: rename_open,
+            id,
+            current_name: c.name.to_string(),
+            current_goal: c.goal,
+            current_step: c.step.get(),
+            on_saved: move |()| reload.call(()),
+        }
         ConfirmDialog {
             open: confirm_delete,
             title: format!("Delete {}?", c.name),
@@ -182,8 +190,16 @@ pub fn CounterScreen(id: i64) -> Element {
 
 /// The trend chart with chips to pick the series.
 #[component]
-fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) -> Element {
+fn TrendsCard(
+    entries: Vec<DayCount>,
+    events: Vec<Event>,
+    trend: Signal<Trend>,
+    /// Hourly view only: divide by every day since the first tap rather than
+    /// by days with taps.
+    all_days: Signal<bool>,
+) -> Element {
     let mut trend = trend;
+    let mut all_days = all_days;
     let now = today();
     let year = now.year();
 
@@ -244,7 +260,14 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
             )
         }
         Trend::Hourly => {
-            let hours = series::hourly_average(&events);
+            let basis = if all_days() {
+                let first = events.first().map_or(now, |e| e.at.date());
+                let days = u32::try_from((now - first).num_days() + 1).unwrap_or(1);
+                HourlyBasis::AllDays { days }
+            } else {
+                HourlyBasis::ActiveDays
+            };
+            let hours = series::hourly_average(&events, basis);
             let points = hours
                 .iter()
                 .enumerate()
@@ -253,12 +276,12 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                     value: Some(*v),
                 })
                 .collect();
-            (
-                points,
-                Vec::new(),
-                String::new(),
-                "average reps per hour of the day",
-            )
+            let note = if all_days() {
+                "average reps per hour, over every day since the first tap"
+            } else {
+                "average reps per hour, over days with taps"
+            };
+            (points, Vec::new(), String::new(), note)
         }
     };
 
@@ -274,6 +297,12 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 }
             }
             div { class: "chart-body",
+                if trend() == Trend::Hourly {
+                    div { class: "chip-row chip-row-tight chip-row-basis",
+                        Chip { selected: !all_days(), onclick: move |_| all_days.set(false), "Active days" }
+                        Chip { selected: all_days(), onclick: move |_| all_days.set(true), "All days" }
+                    }
+                }
                 LineChart { points, overlay, unit }
                 p { class: "chart-note", "{note}" }
             }
@@ -281,57 +310,121 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
     }
 }
 
-/// Rename in a sheet, like zwiper's change-username sheet.
+/// Name, goal, and step in a sheet, like zwiper's change-username sheet.
 #[component]
-fn RenameSheet(
+fn EditSheet(
     open: Signal<bool>,
     id: CounterId,
-    current: String,
-    on_renamed: EventHandler<()>,
+    current_name: String,
+    current_goal: Option<Goal>,
+    current_step: u32,
+    on_saved: EventHandler<()>,
 ) -> Element {
     let mut open = open;
     let store = use_store();
     let toast = use_toast();
     let mut name = use_signal(String::new);
+    let mut amount = use_signal(String::new);
+    let mut per_day = use_signal(|| true);
+    let mut step = use_signal(|| 1u32);
     let mut error = use_signal(|| None::<String>);
 
-    let seed = current.clone();
+    let seed_name = current_name.clone();
     use_effect(move || {
         if open() {
-            name.set(seed.clone());
+            name.set(seed_name.clone());
+            match current_goal {
+                Some(Goal::PerDay(n)) => {
+                    amount.set(n.to_string());
+                    per_day.set(true);
+                }
+                Some(Goal::PerYear(n)) => {
+                    amount.set(n.to_string());
+                    per_day.set(false);
+                }
+                None => amount.set(String::new()),
+            }
+            step.set(current_step);
             error.set(None);
         }
     });
 
-    let save = move |_| match CounterName::new(&name()) {
-        Err(e) => error.set(Some(e.to_string())),
-        Ok(new_name) => match store.rename_counter(id, &new_name) {
+    let save = move |_| {
+        let new_name = match CounterName::new(&name()) {
+            Ok(n) => n,
+            Err(e) => return error.set(Some(e.to_string())),
+        };
+        let raw = amount();
+        let goal = if raw.trim().is_empty() {
+            None
+        } else {
+            let parsed = raw.trim().parse::<u32>().ok().map(|n| {
+                if per_day() {
+                    Goal::per_day(n)
+                } else {
+                    Goal::per_year(n)
+                }
+            });
+            match parsed {
+                Some(Ok(g)) => Some(g),
+                _ => {
+                    return error.set(Some(
+                        "goal must be a whole number of at least 1".to_string(),
+                    ));
+                }
+            }
+        };
+        let new_step = match Step::new(step()) {
+            Ok(s) => s,
+            Err(e) => return error.set(Some(e.to_string())),
+        };
+        match store.update_counter(id, &new_name, goal, new_step) {
             Ok(()) => {
                 toast.success(
-                    format!("Renamed to {new_name}"),
+                    format!("Saved {new_name}"),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
                 bump_store_version();
-                on_renamed.call(());
+                on_saved.call(());
                 open.set(false);
             }
             Err(e) => error.set(Some(e.to_string())),
-        },
+        }
     };
 
     rsx! {
         BottomSheet {
             open,
-            title: "Rename",
+            title: "Edit",
             footer: rsx! {
                 Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
                 Button { variant: ButtonVariant::Util, onclick: save, "Save" }
             },
+            p { class: "field-label", "Name" }
             input {
                 class: "input",
                 value: "{name}",
                 maxlength: "{CounterName::MAX_LEN}",
                 oninput: move |e| name.set(e.value()),
+            }
+            p { class: "field-label", "Goal (blank for none)" }
+            input {
+                class: "input",
+                r#type: "number",
+                min: "1",
+                inputmode: "numeric",
+                value: "{amount}",
+                oninput: move |e| amount.set(e.value()),
+            }
+            div { class: "chip-row",
+                Chip { selected: per_day(), onclick: move |_| per_day.set(true), "Per day" }
+                Chip { selected: !per_day(), onclick: move |_| per_day.set(false), "Per year" }
+            }
+            p { class: "field-label", "Each tap adds" }
+            div { class: "chip-row",
+                for n in Step::ALLOWED {
+                    Chip { selected: step() == n, onclick: move |_| step.set(n), "{n}" }
+                }
             }
             if let Some(e) = error() {
                 p { class: "form-error", "{e}" }
@@ -347,7 +440,7 @@ fn YearCard(summary: Summary) -> Element {
     rsx! {
         div { class: "profile-list",
             div { class: "card-header",
-                span { class: "card-title", "{y.year}, day {y.days_elapsed} of {y.days_in_year}" }
+                span { class: "card-title", "{y.year}, day {y.days_elapsed}" }
             }
             div { class: "stat-grid stat-grid-3",
                 StatTile { label: "Total", value: y.total.to_string() }

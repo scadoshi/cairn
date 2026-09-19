@@ -1,51 +1,61 @@
-//! The counter list. Each card shows the headline numbers and carries its own
-//! bar with +1 and Open; the screen bar leads to the create form and profile.
+//! The landing screen: the wordmark fading in, a line on today, and the bar
+//! to the counters and the profile. Same shape as zwiper's home.
 
 use crate::{
-    domain::counter::{Counter, stats},
-    inbound::ui::{
-        components::stat_tile::{StatTile, rate},
-        now,
-        router::Route,
-        today, use_store,
-    },
+    domain::counter::stats,
+    inbound::ui::{components::stat_tile::StatTile, router::Route, today, use_store},
 };
+use chrono::Datelike;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 
-/// The counter list.
+const LOGO: &str = include_str!("../../../../../assets/odo.txt");
+
+/// The landing screen.
 #[component]
 pub fn Home() -> Element {
     let store = use_store();
     let nav = use_navigator();
-    let mut counters = use_signal(Vec::<Counter>::new);
-    let mut error = use_signal(|| None::<String>);
 
-    let load_store = store.clone();
-    let reload = use_callback(move |()| match load_store.list_counters() {
-        Ok(list) => counters.set(list),
-        Err(e) => error.set(Some(e.to_string())),
-    });
-    use_effect(move || reload.call(()));
+    // The day at a glance across every counter: reps logged today, how many
+    // counters were touched, and the longest live streak.
+    let (counters, today_total, active, streak) =
+        store.list_counters().map_or((0, 0, 0, 0), |list| {
+            let mut total = 0u32;
+            let mut active = 0usize;
+            let mut streak = 0u32;
+            for c in &list {
+                let entries = store.entries(c.id).unwrap_or_default();
+                let s = stats::summarize(&entries, c.goal, today());
+                total = total.saturating_add(s.today);
+                if s.today > 0 {
+                    active += 1;
+                }
+                streak = streak.max(s.streak);
+            }
+            (list.len(), total, active, streak)
+        });
+
+    let now = today();
+    let date = now.format("%a %-d %b %Y").to_string();
+    let day = now.ordinal();
+    let week = now.iso_week().week();
 
     rsx! {
-        div { class: "screen-content",
-            div { class: "profile-sections content-enter",
-                if let Some(e) = error() {
-                    p { class: "form-error", "{e}" }
+        div { class: "screen-content centered",
+            pre { class: "logo", "aria-label": "Odo", "{LOGO}" }
+            div { class: "container-sm home-hero content-enter-delayed",
+                div { class: "card-header home-hero-head",
+                    span { class: "card-title", "{date}" }
+                    span { class: "card-subtitle", "day {day}, week {week}" }
                 }
-                if counters().is_empty() {
-                    p { class: "pref-note", "No counters yet. New counter starts one." }
-                }
-                for c in counters() {
-                    CounterCard {
-                        counter: c.clone(),
-                        on_bump: move |()| reload.call(()),
-                        on_open: move |id: i64| {
-                            nav.push(Route::CounterScreen { id });
-                        },
+                if counters == 0 {
+                    p { class: "pref-note", style: "padding: 1rem;", "No counters yet. Counters, then New, starts one." }
+                } else {
+                    div { class: "stat-grid stat-grid-3",
+                        StatTile { label: "Logged", value: today_total.to_string() }
+                        StatTile { label: "Counters", value: format!("{active} of {counters}"), hint: "touched today".to_string() }
+                        StatTile { label: "Best streak", value: format!("{streak} days") }
                     }
                 }
             }
@@ -54,9 +64,9 @@ pub fn Home() -> Element {
             Button {
                 variant: ButtonVariant::Util,
                 onclick: move |_| {
-                    nav.push(Route::NewCounter {});
+                    nav.push(Route::Counters {});
                 },
-                "New"
+                "Counters"
             }
             Button {
                 variant: ButtonVariant::Util,
@@ -64,62 +74,6 @@ pub fn Home() -> Element {
                     nav.push(Route::Profile {});
                 },
                 "Profile"
-            }
-        }
-    }
-}
-
-/// One counter on the home list: name and goal up top, the headline numbers,
-/// and a bar with +1 and Open.
-#[component]
-fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandler<i64>) -> Element {
-    let store = use_store();
-    let entries = store.entries(counter.id).unwrap_or_default();
-    let summary = stats::summarize(&entries, counter.goal, today());
-    let id = counter.id;
-    let bump_store = store.clone();
-    let toast = use_toast();
-    let name = counter.name.to_string();
-
-    rsx! {
-        div { class: "profile-list",
-            div { class: "card-header",
-                span { class: "card-title", "{counter.name}" }
-                if let Some(g) = counter.goal {
-                    span { class: "card-subtitle", "goal {g}" }
-                }
-            }
-            div { class: "stat-grid stat-grid-3",
-                StatTile { label: "Lifetime", value: summary.lifetime.to_string() }
-                StatTile { label: "Today", value: summary.today.to_string() }
-                StatTile {
-                    label: "This year",
-                    value: summary.this_year.total.to_string(),
-                    hint: format!("{}/day", rate(summary.this_year.per_day)),
-                }
-            }
-            ActionBar {
-                Button {
-                    variant: ButtonVariant::Util,
-                    onclick: move |_| {
-                        match bump_store.adjust(id, now(), 1) {
-                            Ok(total) => {
-                                toast.info(
-                                    format!("{name}: {total} today"),
-                                    ToastOptions::default().duration(Duration::from_millis(900)),
-                                );
-                                on_bump.call(());
-                            }
-                            Err(e) => toast.error(e.to_string(), ToastOptions::default()),
-                        }
-                    },
-                    "+1"
-                }
-                Button {
-                    variant: ButtonVariant::Util,
-                    onclick: move |_| on_open.call(id.0),
-                    "Open"
-                }
             }
         }
     }

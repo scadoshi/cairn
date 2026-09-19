@@ -25,12 +25,12 @@ import sqlite3
 import sys
 
 COUNTERS = [
-    # name, goal_per_year, goal_per_day, base reps, per-day noise
-    ("pull-ups", None, 15, 10, 5),
-    ("push-ups", 10000, None, 24, 10),
-    ("pages read", None, None, 16, 12),
-    ("squats", None, 40, 30, 12),
-    ("sit-ups", 12000, None, 28, 10),
+    # name, goal_per_year, goal_per_day, base reps, per-day noise, step
+    ("pull-ups", None, 15, 10, 5, 1),
+    ("push-ups", 10000, None, 24, 10, 5),
+    ("pages read", None, None, 16, 12, 10),
+    ("squats", None, 40, 30, 12, 10),
+    ("sit-ups", 12000, None, 28, 10, 5),
 ]
 
 # Hours a session tends to start, weighted: an early block and an evening one.
@@ -43,17 +43,18 @@ def main(path: str) -> None:
     start = dt.date(today.year - 2, 1, 1)
     rng = random.Random(today.year)  # same data every run for a given year
 
-    for name, per_year, per_day, base, noise in COUNTERS:
+    for name, per_year, per_day, base, noise, step in COUNTERS:
         row = db.execute("SELECT id FROM counters WHERE name = ?", (name,)).fetchone()
         if row is None:
             db.execute(
-                "INSERT INTO counters (name, goal_per_year, goal_per_day, created_on)"
-                " VALUES (?, ?, ?, ?)",
-                (name, per_year, per_day, start.isoformat()),
+                "INSERT INTO counters (name, goal_per_year, goal_per_day, created_on, step)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (name, per_year, per_day, start.isoformat(), step),
             )
             counter_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
         else:
             counter_id = row[0]
+            db.execute("UPDATE counters SET step = ? WHERE id = ?", (step, counter_id))
         db.execute("DELETE FROM events WHERE counter_id = ?", (counter_id,))
 
         day = start

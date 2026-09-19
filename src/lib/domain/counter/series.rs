@@ -77,23 +77,40 @@ pub fn monthly_average(entries: &[DayCount], year: i32) -> [Option<f64>; 12] {
     out
 }
 
-/// Average reps logged in each hour of the day, per active day: the sum of
-/// positive deltas in that hour divided by the number of distinct days with
-/// any event. Shows when in the day the reps happen.
-pub fn hourly_average(events: &[Event]) -> [f64; 24] {
+/// What an hourly average is divided by.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HourlyBasis {
+    /// Days with at least one tap. A rest day doesn't pull the curve down,
+    /// so it reads as "on a day I train, when do I train".
+    ActiveDays,
+    /// Every calendar day in the span, rest days included, so it reads as
+    /// "how many reps does a typical day hold at this hour".
+    AllDays {
+        /// Length of the span in days, at least 1.
+        days: u32,
+    },
+}
+
+/// Average reps logged in each hour of the day: the sum of positive deltas
+/// in that hour divided by the day count `basis` picks. Shows when in the
+/// day the reps happen.
+pub fn hourly_average(events: &[Event], basis: HourlyBasis) -> [f64; 24] {
     let mut sums = [0i64; 24];
-    let mut days: Vec<NaiveDate> = Vec::new();
+    let mut active: Vec<NaiveDate> = Vec::new();
     for e in events {
         let h = e.at.hour() as usize;
         if let Some(s) = sums.get_mut(h) {
             *s += e.delta.max(0);
         }
         let d = e.at.date();
-        if !days.contains(&d) {
-            days.push(d);
+        if !active.contains(&d) {
+            active.push(d);
         }
     }
-    let n = days.len().max(1);
+    let n = match basis {
+        HourlyBasis::ActiveDays => active.len().max(1),
+        HourlyBasis::AllDays { days } => days.max(1) as usize,
+    };
     let mut out = [0.0; 24];
     for (o, sum) in out.iter_mut().zip(sums) {
         #[allow(clippy::cast_precision_loss)]
@@ -168,6 +185,13 @@ mod tests {
     }
 
     #[test]
+    fn hourly_average_over_all_days_counts_rest_days() {
+        let evs = [ev(2026, 1, 1, 7, 10), ev(2026, 1, 2, 7, 20)];
+        let h = hourly_average(&evs, HourlyBasis::AllDays { days: 4 });
+        assert!((h[7] - 7.5).abs() < f64::EPSILON);
+    }
+
+    #[test]
     fn hourly_average_is_per_active_day_and_ignores_undo() {
         let evs = [
             ev(2026, 1, 1, 7, 10),
@@ -175,7 +199,7 @@ mod tests {
             ev(2026, 1, 2, 7, 20),
             ev(2026, 1, 2, 18, 4),
         ];
-        let h = hourly_average(&evs);
+        let h = hourly_average(&evs, HourlyBasis::ActiveDays);
         assert!((h[7] - 15.0).abs() < f64::EPSILON);
         assert!((h[18] - 2.0).abs() < f64::EPSILON);
         assert!(h[0].abs() < f64::EPSILON);

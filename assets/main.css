@@ -90,27 +90,6 @@ input {
     color: var(--accent-primary);
 }
 
-/* The mark in the header, zite's .nav-logo rule. */
-.header-logo {
-    font-family: "JetBrains Mono", monospace;
-    font-size: 0.35rem;
-    line-height: 0.9;
-    white-space: pre;
-    display: block;
-    letter-spacing: 0;
-    color: var(--text-primary);
-}
-
-.page-header-corner {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.7rem;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-}
-
 .screen-content {
     flex: 1;
     overflow-x: hidden;
@@ -133,9 +112,43 @@ input {
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 }
 
+.screen-content.centered {
+    justify-content: center;
+}
+
 .flex-col {
     display: flex;
     flex-direction: column;
+}
+
+/* The box under the logo on home, zwiper's .home-flavor construct. */
+.container-sm {
+    width: min(20rem, calc(100% - 2rem));
+}
+
+.home-hero {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
+}
+
+.card-header.home-hero-head {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.field-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+}
+
+.content-enter-delayed {
+    animation: content-enter 0.4s ease-out 0.45s both;
 }
 
 @keyframes content-enter {
@@ -671,6 +684,11 @@ input {
 .chip-row-tight {
     margin-bottom: 0;
     gap: 0.35rem;
+}
+
+.chip-row-basis {
+    justify-content: center;
+    margin-bottom: 0.5rem;
 }
 
 .line-chart {

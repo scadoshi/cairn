@@ -2,7 +2,10 @@
 
 use super::{
     Shell,
-    screens::{counter::CounterScreen, home::Home, new_counter::NewCounter, profile::Profile},
+    screens::{
+        counter::CounterScreen, counters::Counters, home::Home, new_counter::NewCounter,
+        profile::Profile,
+    },
 };
 use dioxus::prelude::*;
 
@@ -11,9 +14,12 @@ use dioxus::prelude::*;
 #[rustfmt::skip]
 pub enum Route {
     #[layout(Shell)]
-        /// The counter list.
+        /// The landing screen.
         #[route("/")]
         Home {},
+        /// The counter list.
+        #[route("/counters")]
+        Counters {},
         /// Create a counter.
         #[route("/new")]
         NewCounter {},

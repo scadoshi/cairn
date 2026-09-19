@@ -4,8 +4,8 @@ pub mod components;
 pub mod router;
 pub mod screens;
 
-use crate::domain::counter::{CounterId, Store, stats};
-use chrono::{Datelike, Local, NaiveDate, NaiveDateTime};
+use crate::domain::counter::{CounterId, Store};
+use chrono::{Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::ToastProvider;
 use router::Route;
@@ -16,8 +16,6 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TOAST_CSS: Asset = asset!("/assets/toast.css");
 const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
 const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
-/// The wordmark for the home header. The app icon is the single "o" from it.
-const WORDMARK: &str = include_str!("../../../../assets/odo.txt");
 
 /// The store as the UI holds it: one shared handle behind both ports.
 pub type SharedStore = Arc<dyn Store + Send + Sync>;
@@ -94,8 +92,7 @@ pub fn App() -> Element {
     }
 }
 
-/// The app shell, laid out like zwiper's: a header naming the current screen
-/// with the day of the year in its corner, then whatever the screen renders
+/// The app shell, laid out like zwiper's: a header naming the screen, then whatever the screen renders
 /// (its content and its own action bar) as siblings in the column.
 #[component]
 pub fn Shell() -> Element {
@@ -109,7 +106,8 @@ pub fn Shell() -> Element {
     // The counter screen is named after its counter, so the title needs a
     // lookup. The rest are static.
     let title = match &route {
-        Route::Home {} => String::new(),
+        Route::Home {} => "Home".to_string(),
+        Route::Counters {} => "Counters".to_string(),
         Route::NewCounter {} => "New counter".to_string(),
         Route::Profile {} => "Profile".to_string(),
         Route::CounterScreen { id } => store
@@ -118,21 +116,11 @@ pub fn Shell() -> Element {
             .flatten()
             .map_or_else(|| "Counter".to_string(), |c| c.name.to_string()),
     };
-    let now = today();
-    let day = now.ordinal();
-    let days = stats::days_in_year(now.year());
 
     rsx! {
         div { class: "screen theme-wrapper {css_class}",
             header { class: "page-header",
-                // Home carries the wordmark, the way zite's nav carries the Z;
-                // every other screen names itself.
-                if title.is_empty() {
-                    pre { class: "header-logo", "aria-label": "Odo", "{WORDMARK}" }
-                } else {
-                    h2 { "{title}" }
-                }
-                span { class: "page-header-corner", "day {day} of {days}" }
+                h2 { "{title}" }
             }
             Outlet::<Route> {}
         }

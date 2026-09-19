@@ -1,7 +1,7 @@
 //! What the app needs from storage, written from the app's side. The SQLite
 //! adapter in `outbound` implements these; a watch build would add another.
 
-use super::{Counter, CounterId, CounterName, DayCount, Event, Goal};
+use super::{Counter, CounterId, CounterName, DayCount, Event, Goal, Step};
 use chrono::{NaiveDate, NaiveDateTime};
 use thiserror::Error;
 use zwipe_components::ThemeConfig;
@@ -23,10 +23,17 @@ pub trait CounterStore {
         &self,
         name: &CounterName,
         goal: Option<Goal>,
+        step: Step,
         today: NaiveDate,
     ) -> Result<Counter, StoreError>;
-    /// Renames a counter.
-    fn rename_counter(&self, id: CounterId, name: &CounterName) -> Result<(), StoreError>;
+    /// Changes a counter's name, goal, and step.
+    fn update_counter(
+        &self,
+        id: CounterId,
+        name: &CounterName,
+        goal: Option<Goal>,
+        step: Step,
+    ) -> Result<(), StoreError>;
     /// Deletes the counter and every entry under it.
     fn delete_counter(&self, id: CounterId) -> Result<(), StoreError>;
     /// Every entry for a counter, oldest first. Days with no row are absent.

@@ -4,7 +4,8 @@
 //! here and nowhere else.
 
 use crate::domain::counter::{
-    Counter, CounterId, CounterName, CounterStore, DayCount, Event, Goal, SettingsStore, StoreError,
+    Counter, CounterId, CounterName, CounterStore, DayCount, Event, Goal, SettingsStore, Step,
+    StoreError,
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rusqlite::{Connection, OptionalExtension, params};
@@ -16,7 +17,7 @@ use zwipe_components::ThemeConfig;
 
 /// Schema version written to SQLite's `user_version` pragma. Bump it and add
 /// a step in `migrate` for each schema change.
-const SCHEMA_VERSION: i64 = 3;
+const SCHEMA_VERSION: i64 = 4;
 
 const SCHEMA_V1: &str = "
 CREATE TABLE IF NOT EXISTS counters (
@@ -51,6 +52,9 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS events_counter ON events(counter_id, at);
 ";
+
+/// v4: how much one tap adds, per counter.
+const SCHEMA_V4: &str = "ALTER TABLE counters ADD COLUMN step INTEGER NOT NULL DEFAULT 1;";
 
 const THEME_KEY: &str = "theme";
 
@@ -104,6 +108,9 @@ fn migrate(conn: &Connection) -> Result<(), StoreError> {
     if version < 3 {
         conn.execute_batch(SCHEMA_V3)?;
     }
+    if version < 4 {
+        conn.execute_batch(SCHEMA_V4)?;
+    }
     if version < SCHEMA_VERSION {
         conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     }
@@ -121,6 +128,7 @@ fn row_to_counter(row: &rusqlite::Row<'_>) -> Result<Counter, StoreError> {
     let per_year: Option<i64> = row.get(2)?;
     let per_day: Option<i64> = row.get(3)?;
     let created: String = row.get(4)?;
+    let step: i64 = row.get(5)?;
     let to_u32 =
         |g: i64| u32::try_from(g).map_err(|_| StoreError(format!("bad goal {g} in database")));
     let goal = match (per_year, per_day) {
@@ -132,11 +140,21 @@ fn row_to_counter(row: &rusqlite::Row<'_>) -> Result<Counter, StoreError> {
         id: CounterId(id),
         name: CounterName::new(&name).map_err(|e| StoreError(e.to_string()))?,
         goal,
+        step: Step::new(to_u32(step)?).map_err(|e| StoreError(e.to_string()))?,
         created_on: parse_day(&created)?,
     })
 }
 
-const COUNTER_COLS: &str = "id, name, goal_per_year, goal_per_day, created_on";
+/// The two nullable goal columns a goal maps to.
+fn goal_columns(goal: Option<Goal>) -> (Option<u32>, Option<u32>) {
+    match goal {
+        Some(Goal::PerYear(n)) => (Some(n), None),
+        Some(Goal::PerDay(n)) => (None, Some(n)),
+        None => (None, None),
+    }
+}
+
+const COUNTER_COLS: &str = "id, name, goal_per_year, goal_per_day, created_on, step";
 
 impl CounterStore for SqliteStore {
     fn list_counters(&self) -> Result<Vec<Counter>, StoreError> {
@@ -161,36 +179,43 @@ impl CounterStore for SqliteStore {
         &self,
         name: &CounterName,
         goal: Option<Goal>,
+        step: Step,
         today: NaiveDate,
     ) -> Result<Counter, StoreError> {
         let conn = self.conn()?;
-        let (per_year, per_day) = match goal {
-            Some(Goal::PerYear(n)) => (Some(n), None),
-            Some(Goal::PerDay(n)) => (None, Some(n)),
-            None => (None, None),
-        };
+        let (per_year, per_day) = goal_columns(goal);
         conn.execute(
-            "INSERT INTO counters (name, goal_per_year, goal_per_day, created_on)
-             VALUES (?1, ?2, ?3, ?4)",
+            "INSERT INTO counters (name, goal_per_year, goal_per_day, created_on, step)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 name.as_str(),
                 per_year,
                 per_day,
-                today.format("%Y-%m-%d").to_string()
+                today.format("%Y-%m-%d").to_string(),
+                step.get()
             ],
         )?;
         Ok(Counter {
             id: CounterId(conn.last_insert_rowid()),
             name: name.clone(),
             goal,
+            step,
             created_on: today,
         })
     }
 
-    fn rename_counter(&self, id: CounterId, name: &CounterName) -> Result<(), StoreError> {
+    fn update_counter(
+        &self,
+        id: CounterId,
+        name: &CounterName,
+        goal: Option<Goal>,
+        step: Step,
+    ) -> Result<(), StoreError> {
+        let (per_year, per_day) = goal_columns(goal);
         self.conn()?.execute(
-            "UPDATE counters SET name = ?1 WHERE id = ?2",
-            params![name.as_str(), id.0],
+            "UPDATE counters SET name = ?1, goal_per_year = ?2, goal_per_day = ?3, step = ?4
+             WHERE id = ?5",
+            params![name.as_str(), per_year, per_day, step.get(), id.0],
         )?;
         Ok(())
     }
@@ -318,7 +343,12 @@ mod tests {
         let s = store();
         let name = CounterName::new("pull-ups").unwrap();
         let c = s
-            .create_counter(&name, Some(Goal::per_year(5000).unwrap()), d(2026, 9, 19))
+            .create_counter(
+                &name,
+                Some(Goal::per_year(5000).unwrap()),
+                Step::default(),
+                d(2026, 9, 19),
+            )
             .unwrap();
         assert_eq!(s.list_counters().unwrap(), vec![c.clone()]);
         assert_eq!(s.get_counter(c.id).unwrap(), Some(c.clone()));
@@ -328,17 +358,29 @@ mod tests {
     }
 
     #[test]
-    fn rename_persists() {
+    fn update_persists_name_goal_and_step() {
         let s = store();
         let c = s
-            .create_counter(&CounterName::new("x").unwrap(), None, d(2026, 1, 1))
+            .create_counter(
+                &CounterName::new("x").unwrap(),
+                None,
+                Step::default(),
+                d(2026, 1, 1),
+            )
             .unwrap();
-        s.rename_counter(c.id, &CounterName::new("pull-ups").unwrap())
-            .unwrap();
-        assert_eq!(
-            s.get_counter(c.id).unwrap().unwrap().name.as_str(),
-            "pull-ups"
-        );
+        s.update_counter(
+            c.id,
+            &CounterName::new("pull-ups").unwrap(),
+            Some(Goal::per_day(20).unwrap()),
+            Step::new(25).unwrap(),
+        )
+        .unwrap();
+        let got = s.get_counter(c.id).unwrap().unwrap();
+        assert_eq!(got.name.as_str(), "pull-ups");
+        assert_eq!(got.goal, Some(Goal::PerDay(20)));
+        assert_eq!(got.step.get(), 25);
+        s.update_counter(c.id, &got.name, None, got.step).unwrap();
+        assert_eq!(s.get_counter(c.id).unwrap().unwrap().goal, None);
     }
 
     #[test]
@@ -348,6 +390,7 @@ mod tests {
             .create_counter(
                 &CounterName::new("push-ups").unwrap(),
                 Some(Goal::per_day(15).unwrap()),
+                Step::default(),
                 d(2026, 9, 19),
             )
             .unwrap();
@@ -361,7 +404,12 @@ mod tests {
     fn adjust_upserts_clamps_and_removes_zero_rows() {
         let s = store();
         let c = s
-            .create_counter(&CounterName::new("x").unwrap(), None, d(2026, 1, 1))
+            .create_counter(
+                &CounterName::new("x").unwrap(),
+                None,
+                Step::default(),
+                d(2026, 1, 1),
+            )
             .unwrap();
         let today = at(2026, 1, 1);
         assert_eq!(s.adjust(c.id, today, 3).unwrap(), 3);
@@ -390,7 +438,12 @@ mod tests {
     fn deleting_counter_cascades_entries() {
         let s = store();
         let c = s
-            .create_counter(&CounterName::new("x").unwrap(), None, d(2026, 1, 1))
+            .create_counter(
+                &CounterName::new("x").unwrap(),
+                None,
+                Step::default(),
+                d(2026, 1, 1),
+            )
             .unwrap();
         s.adjust(c.id, at(2026, 1, 1), 1).unwrap();
         s.delete_counter(c.id).unwrap();

@@ -2,7 +2,7 @@
 //! day or for the year. Save lives in the screen's bar, zwiper style.
 
 use crate::{
-    domain::counter::{CounterName, Goal, stats},
+    domain::counter::{CounterName, Goal, Step, stats},
     inbound::ui::{router::Route, today, use_store},
 };
 use chrono::Datelike;
@@ -19,6 +19,7 @@ pub fn NewCounter() -> Element {
     let mut name = use_signal(String::new);
     let mut amount = use_signal(String::new);
     let mut per_day = use_signal(|| true);
+    let mut step = use_signal(|| 1u32);
     let mut error = use_signal(|| None::<String>);
     let toast = use_toast();
 
@@ -66,7 +67,11 @@ pub fn NewCounter() -> Element {
                 }
             }
         };
-        match store.create_counter(&counter_name, goal, today()) {
+        let step = match Step::new(step()) {
+            Ok(s) => s,
+            Err(e) => return error.set(Some(e.to_string())),
+        };
+        match store.create_counter(&counter_name, goal, step, today()) {
             Ok(c) => {
                 toast.success(
                     format!("Saved {}", c.name),
@@ -111,6 +116,12 @@ pub fn NewCounter() -> Element {
                         }
                         if let Some(p) = preview {
                             p { class: "pref-note", "{p}" }
+                        }
+                        p { class: "field-label", "Each tap adds" }
+                        div { class: "chip-row",
+                            for n in Step::ALLOWED {
+                                Chip { selected: step() == n, onclick: move |_| step.set(n), "{n}" }
+                            }
                         }
                     }
                 }
