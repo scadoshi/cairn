@@ -1,6 +1,6 @@
 //! What a counter and a day's entry are.
 
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -136,6 +136,16 @@ pub struct Counter {
     pub goal: Option<Goal>,
     /// Day the counter was created; the odometer starts here.
     pub created_on: NaiveDate,
+}
+
+/// One tap: when it happened and by how much the count moved. Entries are
+/// the per-day rollup; events are what hour-of-day statistics read.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Event {
+    /// Local wall-clock time of the tap.
+    pub at: NaiveDateTime,
+    /// Signed change; -1 for an undo.
+    pub delta: i64,
 }
 
 /// One counter's total for one day. Also the CSV row.

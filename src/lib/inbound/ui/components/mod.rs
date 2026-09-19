@@ -2,4 +2,5 @@
 
 pub mod alert_dialog;
 pub mod bottom_sheet;
+pub mod line_chart;
 pub mod stat_tile;

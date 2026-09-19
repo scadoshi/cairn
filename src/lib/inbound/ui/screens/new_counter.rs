@@ -7,6 +7,8 @@ use crate::{
 };
 use chrono::Datelike;
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{ToastOptions, use_toast};
+use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant, Chip};
 
 /// The create screen.
@@ -18,6 +20,7 @@ pub fn NewCounter() -> Element {
     let mut amount = use_signal(String::new);
     let mut per_day = use_signal(|| true);
     let mut error = use_signal(|| None::<String>);
+    let toast = use_toast();
 
     // What the goal works out to, so "15 a day" shows its yearly figure and
     // "5000 a year" shows the daily rate it implies.
@@ -64,7 +67,11 @@ pub fn NewCounter() -> Element {
             }
         };
         match store.create_counter(&counter_name, goal, today()) {
-            Ok(_) => {
+            Ok(c) => {
+                toast.success(
+                    format!("Saved {}", c.name),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
                 nav.push(Route::Home {});
             }
             Err(e) => error.set(Some(e.to_string())),

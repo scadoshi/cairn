@@ -659,3 +659,72 @@ input {
     border-color: var(--color-error);
     color: var(--color-error);
 }
+
+/* ==================
+        charts
+ ==================== */
+
+.chart-body {
+    padding: 0.75rem 1rem 0.5rem;
+}
+
+.chip-row-tight {
+    margin-bottom: 0;
+    gap: 0.35rem;
+}
+
+.line-chart {
+    display: block;
+    width: 100%;
+    height: 9rem;
+    overflow: visible;
+}
+
+.chart-axis {
+    stroke: var(--border-primary);
+    stroke-width: 1;
+}
+
+.chart-axis-faint {
+    stroke: var(--border-muted);
+    stroke-dasharray: 2 3;
+}
+
+.chart-tick {
+    fill: var(--text-muted);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8px;
+}
+
+/* pathLength pins every polyline to 1000 units, so one keyframe draws any
+   line end to end. The svg remounts on data change, which replays it. */
+.chart-line {
+    fill: none;
+    stroke: var(--accent-primary);
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: chart-draw 0.9s ease-out forwards;
+}
+
+.chart-overlay {
+    stroke: var(--accent-secondary);
+    stroke-width: 2.2;
+    animation-duration: 1.3s;
+    animation-delay: 0.15s;
+}
+
+@keyframes chart-draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.chart-note {
+    margin-top: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: center;
+}

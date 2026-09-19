@@ -7,6 +7,8 @@ use crate::{
     outbound::paths,
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{ToastOptions, use_toast};
+use std::time::Duration;
 use zwipe_components::{ALLOWED_THEMES, ActionBar, Button, ButtonVariant, ThemeConfig};
 
 /// Themes with adjusted palettes for color-vision deficiency, grouped at the
@@ -44,6 +46,7 @@ pub fn Profile() -> Element {
     let store = use_store();
     let mut preferences_open = use_signal(|| false);
     let mut notice = use_signal(|| None::<String>);
+    let toast = use_toast();
 
     // One CSV per counter, day and count, into the platform Downloads folder.
     let export = move |_| {
@@ -62,8 +65,17 @@ pub fn Profile() -> Element {
                 Ok((written, dir))
             });
         match result {
-            Ok((n, dir)) => notice.set(Some(format!("Exported {n} files to {}", dir.display()))),
-            Err(e) => notice.set(Some(format!("Export failed: {e}"))),
+            Ok((n, dir)) => {
+                toast.success(
+                    format!("Exported {n} files"),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
+                notice.set(Some(format!("Written to {}", dir.display())));
+            }
+            Err(e) => {
+                toast.error("Export failed".to_string(), ToastOptions::default());
+                notice.set(Some(e));
+            }
         }
     };
 
@@ -175,6 +187,7 @@ fn ThemeRow(
 #[component]
 fn PreferencesSheet(mut open: Signal<bool>) -> Element {
     let mut live = use_context::<Signal<ThemeConfig>>();
+    let toast = use_toast();
     let mut original = use_signal(|| live.peek().clone());
     let mut selected = use_signal(|| live.peek().name.clone());
     let dark = use_signal(|| live.peek().is_dark);
@@ -215,7 +228,13 @@ fn PreferencesSheet(mut open: Signal<bool>) -> Element {
                 }
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| open.set(false),
+                    onclick: move |_| {
+                        open.set(false);
+                        toast.success(
+                            "Theme saved".to_string(),
+                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                        );
+                    },
                     "Save"
                 }
             },

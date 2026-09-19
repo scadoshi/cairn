@@ -5,6 +5,7 @@ pub mod models;
 pub mod ports;
 pub mod stats;
 
-pub use models::{Counter, CounterId, CounterName, DayCount, Goal, ValidationError};
+pub use models::{Counter, CounterId, CounterName, DayCount, Event, Goal, ValidationError};
 pub use ports::{CounterStore, SettingsStore, Store, StoreError};
 pub use stats::{Pace, Summary, YearSummary};
+pub mod series;

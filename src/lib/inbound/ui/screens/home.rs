@@ -5,11 +5,14 @@ use crate::{
     domain::counter::{Counter, stats},
     inbound::ui::{
         components::stat_tile::{StatTile, rate},
+        now,
         router::Route,
         today, use_store,
     },
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{ToastOptions, use_toast};
+use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 
 /// The counter list.
@@ -53,7 +56,7 @@ pub fn Home() -> Element {
                 onclick: move |_| {
                     nav.push(Route::NewCounter {});
                 },
-                "New counter"
+                "New"
             }
             Button {
                 variant: ButtonVariant::Util,
@@ -75,6 +78,8 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
     let summary = stats::summarize(&entries, counter.goal, today());
     let id = counter.id;
     let bump_store = store.clone();
+    let toast = use_toast();
+    let name = counter.name.to_string();
 
     rsx! {
         div { class: "profile-list",
@@ -97,8 +102,15 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
                 Button {
                     variant: ButtonVariant::Util,
                     onclick: move |_| {
-                        if bump_store.adjust(id, today(), 1).is_ok() {
-                            on_bump.call(());
+                        match bump_store.adjust(id, now(), 1) {
+                            Ok(total) => {
+                                toast.info(
+                                    format!("{name}: {total} today"),
+                                    ToastOptions::default().duration(Duration::from_millis(900)),
+                                );
+                                on_bump.call(());
+                            }
+                            Err(e) => toast.error(e.to_string(), ToastOptions::default()),
                         }
                     },
                     "+1"

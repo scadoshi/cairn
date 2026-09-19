@@ -1,8 +1,8 @@
 //! What the app needs from storage, written from the app's side. The SQLite
 //! adapter in `outbound` implements these; a watch build would add another.
 
-use super::{Counter, CounterId, CounterName, DayCount, Goal};
-use chrono::NaiveDate;
+use super::{Counter, CounterId, CounterName, DayCount, Event, Goal};
+use chrono::{NaiveDate, NaiveDateTime};
 use thiserror::Error;
 use zwipe_components::ThemeConfig;
 
@@ -25,13 +25,18 @@ pub trait CounterStore {
         goal: Option<Goal>,
         today: NaiveDate,
     ) -> Result<Counter, StoreError>;
+    /// Renames a counter.
+    fn rename_counter(&self, id: CounterId, name: &CounterName) -> Result<(), StoreError>;
     /// Deletes the counter and every entry under it.
     fn delete_counter(&self, id: CounterId) -> Result<(), StoreError>;
     /// Every entry for a counter, oldest first. Days with no row are absent.
     fn entries(&self, id: CounterId) -> Result<Vec<DayCount>, StoreError>;
-    /// Adds `delta` to the day's total, clamped at zero, and returns the new
-    /// total. Creates the row on first touch and removes it when it hits zero.
-    fn adjust(&self, id: CounterId, day: NaiveDate, delta: i64) -> Result<u32, StoreError>;
+    /// Every tap for a counter, oldest first.
+    fn events(&self, id: CounterId) -> Result<Vec<Event>, StoreError>;
+    /// Records a tap at `at` and adds `delta` to that day's total, clamped at
+    /// zero. Returns the new total. Creates the day row on first touch and
+    /// removes it when it hits zero.
+    fn adjust(&self, id: CounterId, at: NaiveDateTime, delta: i64) -> Result<u32, StoreError>;
 }
 
 /// App-wide preferences.

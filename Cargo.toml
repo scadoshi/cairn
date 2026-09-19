@@ -28,6 +28,8 @@ thiserror = "2"
 rusqlite = { version = "0.37", features = ["bundled", "chrono"] }
 # Per-platform data and download directories for the database and CSV exports.
 dirs = "6"
+# Toasts, the same pinned build zwiper uses.
+dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "02801f27e4b3e30606e5c77e435c9d955c708eb3", version = "0.0.1", default-features = false }
 # Only for the bottom sheet's post-mount timer (see components/bottom_sheet.rs);
 # dioxus-desktop already brings the runtime in.
 tokio = { version = "1", features = ["time"] }

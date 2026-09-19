@@ -5,13 +5,15 @@ pub mod router;
 pub mod screens;
 
 use crate::domain::counter::{CounterId, Store, stats};
-use chrono::{Datelike, Local, NaiveDate};
+use chrono::{Datelike, Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
+use dioxus_primitives::toast::ToastProvider;
 use router::Route;
 use std::sync::Arc;
 use zwipe_components::{COMPONENTS_CSS, THEMES_CSS, ThemeConfig};
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
+const TOAST_CSS: Asset = asset!("/assets/toast.css");
 const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
 const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
 /// The wordmark for the home header. The app icon is the single "o" from it.
@@ -31,6 +33,22 @@ pub fn today() -> NaiveDate {
     Local::now().date_naive()
 }
 
+/// The current local wall-clock time, for recording a tap.
+pub fn now() -> NaiveDateTime {
+    Local::now().naive_local()
+}
+
+/// Bumped after any write so screens that read the store outside their own
+/// state (the shell's title, the home list) re-render. Provided by [`App`].
+#[derive(Clone, Copy)]
+pub struct StoreVersion(pub Signal<u32>);
+
+/// Marks the store as changed.
+pub fn bump_store_version() {
+    let mut v = use_context::<StoreVersion>().0;
+    v += 1;
+}
+
 /// Root component. The binary opens the store and provides it through launch
 /// context, so this crate never decides where the database lives.
 #[component]
@@ -39,6 +57,7 @@ pub fn App() -> Element {
     let saved = store.theme().ok().flatten();
     let theme = use_signal(move || saved.unwrap_or_default());
     use_context_provider(|| theme);
+    use_context_provider(|| StoreVersion(Signal::new(0)));
 
     // Persist every theme change. Runs once at mount too, which is harmless:
     // it writes back whatever was just loaded.
@@ -68,7 +87,10 @@ pub fn App() -> Element {
         document::Style { {THEMES_CSS} }
         document::Style { {COMPONENTS_CSS} }
         document::Stylesheet { href: MAIN_CSS }
-        Router::<Route> {}
+        document::Stylesheet { href: TOAST_CSS }
+        ToastProvider { max_toasts: 3_usize, class: "toast-container",
+            Router::<Route> {}
+        }
     }
 }
 
@@ -81,6 +103,8 @@ pub fn Shell() -> Element {
     let css_class = theme.read().css_class();
     let route = use_route::<Route>();
     let store = use_store();
+    // Read so a rename re-renders the title.
+    let _ = use_context::<StoreVersion>().0.read();
 
     // The counter screen is named after its counter, so the title needs a
     // lookup. The rest are static.

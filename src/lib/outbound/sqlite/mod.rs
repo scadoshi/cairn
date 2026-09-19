@@ -4,9 +4,9 @@
 //! here and nowhere else.
 
 use crate::domain::counter::{
-    Counter, CounterId, CounterName, CounterStore, DayCount, Goal, SettingsStore, StoreError,
+    Counter, CounterId, CounterName, CounterStore, DayCount, Event, Goal, SettingsStore, StoreError,
 };
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveDateTime};
 use rusqlite::{Connection, OptionalExtension, params};
 use std::{
     path::Path,
@@ -16,7 +16,7 @@ use zwipe_components::ThemeConfig;
 
 /// Schema version written to SQLite's `user_version` pragma. Bump it and add
 /// a step in `migrate` for each schema change.
-const SCHEMA_VERSION: i64 = 2;
+const SCHEMA_VERSION: i64 = 3;
 
 const SCHEMA_V1: &str = "
 CREATE TABLE IF NOT EXISTS counters (
@@ -40,6 +40,17 @@ CREATE TABLE IF NOT EXISTS settings (
 /// v2: goals can be per day. Exactly one of goal_per_year / goal_per_day is
 /// set, or neither.
 const SCHEMA_V2: &str = "ALTER TABLE counters ADD COLUMN goal_per_day INTEGER;";
+
+/// v3: every tap is kept with its local time, so hour-of-day stats exist.
+/// Entries stay the source of truth for daily totals.
+const SCHEMA_V3: &str = "
+CREATE TABLE IF NOT EXISTS events (
+    counter_id INTEGER NOT NULL REFERENCES counters(id) ON DELETE CASCADE,
+    at         TEXT    NOT NULL,
+    delta      INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS events_counter ON events(counter_id, at);
+";
 
 const THEME_KEY: &str = "theme";
 
@@ -89,6 +100,9 @@ fn migrate(conn: &Connection) -> Result<(), StoreError> {
     }
     if version < 2 {
         conn.execute_batch(SCHEMA_V2)?;
+    }
+    if version < 3 {
+        conn.execute_batch(SCHEMA_V3)?;
     }
     if version < SCHEMA_VERSION {
         conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
@@ -173,6 +187,14 @@ impl CounterStore for SqliteStore {
         })
     }
 
+    fn rename_counter(&self, id: CounterId, name: &CounterName) -> Result<(), StoreError> {
+        self.conn()?.execute(
+            "UPDATE counters SET name = ?1 WHERE id = ?2",
+            params![name.as_str(), id.0],
+        )?;
+        Ok(())
+    }
+
     fn delete_counter(&self, id: CounterId) -> Result<(), StoreError> {
         self.conn()?
             .execute("DELETE FROM counters WHERE id = ?1", params![id.0])?;
@@ -199,9 +221,31 @@ impl CounterStore for SqliteStore {
         .collect()
     }
 
-    fn adjust(&self, id: CounterId, day: NaiveDate, delta: i64) -> Result<u32, StoreError> {
+    fn events(&self, id: CounterId) -> Result<Vec<Event>, StoreError> {
         let conn = self.conn()?;
-        let day = day.format("%Y-%m-%d").to_string();
+        let mut stmt =
+            conn.prepare("SELECT at, delta FROM events WHERE counter_id = ?1 ORDER BY at")?;
+        let rows = stmt.query_map(params![id.0], |r| {
+            let at: String = r.get(0)?;
+            let delta: i64 = r.get(1)?;
+            Ok((at, delta))
+        })?;
+        rows.map(|r| {
+            let (at, delta) = r?;
+            let at = NaiveDateTime::parse_from_str(&at, "%Y-%m-%dT%H:%M:%S")
+                .map_err(|e| StoreError(format!("bad time {at:?} in database: {e}")))?;
+            Ok(Event { at, delta })
+        })
+        .collect()
+    }
+
+    fn adjust(&self, id: CounterId, at: NaiveDateTime, delta: i64) -> Result<u32, StoreError> {
+        let conn = self.conn()?;
+        conn.execute(
+            "INSERT INTO events (counter_id, at, delta) VALUES (?1, ?2, ?3)",
+            params![id.0, at.format("%Y-%m-%dT%H:%M:%S").to_string(), delta],
+        )?;
+        let day = at.date().format("%Y-%m-%d").to_string();
         let current: i64 = conn
             .query_row(
                 "SELECT count FROM entries WHERE counter_id = ?1 AND day = ?2",
@@ -261,6 +305,10 @@ mod tests {
         NaiveDate::from_ymd_opt(y, m, day).unwrap()
     }
 
+    fn at(y: i32, m: u32, day: u32) -> NaiveDateTime {
+        d(y, m, day).and_hms_opt(7, 30, 0).unwrap()
+    }
+
     fn store() -> SqliteStore {
         SqliteStore::in_memory().unwrap()
     }
@@ -277,6 +325,20 @@ mod tests {
         s.delete_counter(c.id).unwrap();
         assert!(s.list_counters().unwrap().is_empty());
         assert_eq!(s.get_counter(c.id).unwrap(), None);
+    }
+
+    #[test]
+    fn rename_persists() {
+        let s = store();
+        let c = s
+            .create_counter(&CounterName::new("x").unwrap(), None, d(2026, 1, 1))
+            .unwrap();
+        s.rename_counter(c.id, &CounterName::new("pull-ups").unwrap())
+            .unwrap();
+        assert_eq!(
+            s.get_counter(c.id).unwrap().unwrap().name.as_str(),
+            "pull-ups"
+        );
     }
 
     #[test]
@@ -301,13 +363,14 @@ mod tests {
         let c = s
             .create_counter(&CounterName::new("x").unwrap(), None, d(2026, 1, 1))
             .unwrap();
-        let today = d(2026, 1, 1);
+        let today = at(2026, 1, 1);
         assert_eq!(s.adjust(c.id, today, 3).unwrap(), 3);
         assert_eq!(s.adjust(c.id, today, 2).unwrap(), 5);
         assert_eq!(s.adjust(c.id, today, -10).unwrap(), 0);
+        assert_eq!(s.events(c.id).unwrap().len(), 3);
         assert!(s.entries(c.id).unwrap().is_empty());
-        s.adjust(c.id, d(2026, 1, 2), 7).unwrap();
-        s.adjust(c.id, d(2026, 1, 1), 1).unwrap();
+        s.adjust(c.id, at(2026, 1, 2), 7).unwrap();
+        s.adjust(c.id, at(2026, 1, 1), 1).unwrap();
         assert_eq!(
             s.entries(c.id).unwrap(),
             vec![
@@ -329,9 +392,10 @@ mod tests {
         let c = s
             .create_counter(&CounterName::new("x").unwrap(), None, d(2026, 1, 1))
             .unwrap();
-        s.adjust(c.id, d(2026, 1, 1), 1).unwrap();
+        s.adjust(c.id, at(2026, 1, 1), 1).unwrap();
         s.delete_counter(c.id).unwrap();
         assert!(s.entries(c.id).unwrap().is_empty());
+        assert!(s.events(c.id).unwrap().is_empty());
     }
 
     #[test]
