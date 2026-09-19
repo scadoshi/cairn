@@ -1,19 +1,18 @@
 //! One counter: the odometer, today's controls, stats, years, export, delete.
 
 use crate::{
-    domain::counter::{Counter, CounterId, DayCount, csv, stats, stats::Summary},
+    domain::counter::{Counter, CounterId, DayCount, stats, stats::Summary},
     inbound::ui::{
         components::{
-            confirm_dialog::ConfirmDialog,
+            alert_dialog::ConfirmDialog,
             stat_tile::{StatTile, rate},
         },
         router::Route,
         today, use_store,
     },
-    outbound::paths,
 };
 use dioxus::prelude::*;
-use zwipe_components::{Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant};
 
 /// One counter's detail screen.
 #[component]
@@ -56,19 +55,6 @@ pub fn CounterScreen(id: i64) -> Element {
     };
     let summary = stats::summarize(&entries(), c.goal, today());
 
-    let export_name = c.name.slug();
-    let export = move |_| {
-        let text = csv::render(&entries());
-        let result = paths::exports().and_then(|dir| {
-            let path = dir.join(format!("odo-{export_name}.csv"));
-            std::fs::write(&path, text).map(|()| path)
-        });
-        match result {
-            Ok(path) => notice.set(Some(format!("Exported to {}", path.display()))),
-            Err(e) => notice.set(Some(format!("Export failed: {e}"))),
-        }
-    };
-
     let mut confirm_delete = use_signal(|| false);
     let delete_store = store.clone();
     let delete = move |()| match delete_store.delete_counter(id) {
@@ -79,67 +65,62 @@ pub fn CounterScreen(id: i64) -> Element {
     };
 
     rsx! {
-        div { class: "profile-sections content-enter",
-            if let Some(n) = notice() {
-                p { class: "pref-note", "{n}" }
-            }
-            div { class: "profile-list",
-                div { class: "odometer",
-                    span { class: "odometer-value", "{summary.lifetime}" }
-                    span { class: "odometer-label", "lifetime since {c.created_on}" }
+        div { class: "screen-content",
+            div { class: "profile-sections content-enter",
+                if let Some(n) = notice() {
+                    p { class: "pref-note", "{n}" }
                 }
-                div { class: "card-actions",
-                    Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(-1), "-1" }
-                    Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(1), "+1" }
-                    Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(5), "+5" }
-                    Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(10), "+10" }
+                div { class: "profile-list",
+                    div { class: "odometer",
+                        span { class: "odometer-value", "{summary.lifetime}" }
+                        span { class: "odometer-label", "lifetime since {c.created_on}" }
+                    }
+                    div { class: "stat-grid stat-grid-3",
+                        StatTile { label: "Today", value: summary.today.to_string() }
+                        StatTile { label: "Streak", value: format!("{} days", summary.streak) }
+                        StatTile { label: "This month", value: summary.this_month.to_string() }
+                    }
+                    ActionBar {
+                        Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(-1), "-1" }
+                        Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(1), "+1" }
+                        Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(5), "+5" }
+                        Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(10), "+10" }
+                    }
                 }
-                div { class: "stat-grid stat-grid-3",
-                    StatTile { label: "Today", value: summary.today.to_string() }
-                    StatTile { label: "Streak", value: format!("{} days", summary.streak) }
-                    StatTile { label: "This month", value: summary.this_month.to_string() }
-                }
-            }
-            YearCard { summary: summary.clone() }
-            div { class: "profile-list",
-                div { class: "card-header",
-                    span { class: "card-title", "By year" }
-                }
-                table { class: "year-table",
-                    thead { tr { th { "Year" } th { "Total" } th { "Per day" } th { "Active" } } }
-                    tbody {
-                        for y in summary.years.iter() {
-                            tr {
-                                td { "{y.year}" }
-                                td { "{y.total}" }
-                                td { "{rate(y.per_day)}" }
-                                td { "{y.active_days} / {y.days_elapsed}" }
+                YearCard { summary: summary.clone() }
+                div { class: "profile-list",
+                    div { class: "card-header",
+                        span { class: "card-title", "By year" }
+                    }
+                    table { class: "year-table",
+                        thead { tr { th { "Year" } th { "Total" } th { "Per day" } th { "Active" } } }
+                        tbody {
+                            for y in summary.years.iter() {
+                                tr {
+                                    td { "{y.year}" }
+                                    td { "{y.total}" }
+                                    td { "{rate(y.per_day)}" }
+                                    td { "{y.active_days} / {y.days_elapsed}" }
+                                }
                             }
                         }
                     }
                 }
             }
-            div { class: "profile-list",
-                div { class: "card-header",
-                    span { class: "card-title", "Data" }
-                }
-                div { class: "profile-row",
-                    span { class: "profile-row-label", "Export" }
-                    div { class: "profile-row-value",
-                        Button { variant: ButtonVariant::Util, onclick: export, "CSV" }
-                    }
-                }
-                div { class: "profile-row",
-                    span { class: "profile-row-label", "Delete" }
-                    div { class: "profile-row-value",
-                        Button {
-                            variant: ButtonVariant::Util,
-                            danger: true,
-                            onclick: move |_| confirm_delete.set(true),
-                            "Delete counter"
-                        }
-                    }
-                }
+        }
+        ActionBar {
+            Button {
+                variant: ButtonVariant::Util,
+                onclick: move |_| {
+                    nav.push(Route::Home {});
+                },
+                "Back"
+            }
+            Button {
+                variant: ButtonVariant::Util,
+                danger: true,
+                onclick: move |_| confirm_delete.set(true),
+                "Delete"
             }
         }
         ConfirmDialog {
@@ -168,7 +149,7 @@ fn YearCard(summary: Summary) -> Element {
                 StatTile { label: "Total", value: y.total.to_string() }
                 StatTile { label: "Per day", value: rate(y.per_day) }
                 StatTile {
-                    label: "Lifetime per day",
+                    label: "Lifetime/day",
                     value: rate(summary.lifetime_per_day),
                     hint: summary.best_day.map(|b| format!("best {} on {}", b.count, b.day)),
                 }

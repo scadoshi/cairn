@@ -79,9 +79,16 @@ impl std::fmt::Display for CounterName {
     }
 }
 
-/// A yearly target, at least 1.
+/// A target, at least 1, expressed the way the person thinks about it:
+/// "5000 this year" or "15 a day". Pace math converts either to a yearly
+/// figure for the year in question, so a per-day goal is exact on leap years.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Goal(u32);
+pub enum Goal {
+    /// Total for the calendar year.
+    PerYear(u32),
+    /// Reps every day; the yearly total is this times the days in the year.
+    PerDay(u32),
+}
 
 impl Goal {
     /// Rejects zero.
@@ -89,12 +96,32 @@ impl Goal {
         if n == 0 {
             return Err(ValidationError::ZeroGoal);
         }
-        Ok(Self(n))
+        Ok(Self::PerYear(n))
     }
 
-    /// The target for a full year.
-    pub fn yearly(self) -> u32 {
-        self.0
+    /// Rejects zero.
+    pub fn per_day(n: u32) -> Result<Self, ValidationError> {
+        if n == 0 {
+            return Err(ValidationError::ZeroGoal);
+        }
+        Ok(Self::PerDay(n))
+    }
+
+    /// The target for a full year of `days_in_year` days.
+    pub fn yearly(self, days_in_year: u32) -> u32 {
+        match self {
+            Self::PerYear(n) => n,
+            Self::PerDay(n) => n.saturating_mul(days_in_year),
+        }
+    }
+}
+
+impl std::fmt::Display for Goal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::PerYear(n) => write!(f, "{n}/year"),
+            Self::PerDay(n) => write!(f, "{n}/day"),
+        }
     }
 }
 
@@ -105,7 +132,7 @@ pub struct Counter {
     pub id: CounterId,
     /// Display name.
     pub name: CounterName,
-    /// Optional yearly target.
+    /// Optional target.
     pub goal: Option<Goal>,
     /// Day the counter was created; the odometer starts here.
     pub created_on: NaiveDate,
@@ -151,6 +178,15 @@ mod tests {
     #[test]
     fn goal_rejects_zero() {
         assert_eq!(Goal::per_year(0), Err(ValidationError::ZeroGoal));
-        assert_eq!(Goal::per_year(5000).unwrap().yearly(), 5000);
+        assert_eq!(Goal::per_day(0), Err(ValidationError::ZeroGoal));
+    }
+
+    #[test]
+    fn goal_yearly_scales_per_day_by_the_year_length() {
+        assert_eq!(Goal::per_year(5000).unwrap().yearly(365), 5000);
+        assert_eq!(Goal::per_day(10).unwrap().yearly(365), 3650);
+        assert_eq!(Goal::per_day(10).unwrap().yearly(366), 3660);
+        assert_eq!(Goal::per_day(15).unwrap().to_string(), "15/day");
+        assert_eq!(Goal::per_year(5000).unwrap().to_string(), "5000/year");
     }
 }

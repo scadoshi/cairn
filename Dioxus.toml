@@ -4,6 +4,8 @@ name = "Odo"
 [bundle]
 identifier = "com.scadoshi.odo"
 publisher = "scadoshi"
+# The "o" from the wordmark, rendered by scripts/icon.py from assets/o.txt.
+icon = ["assets/favicon/icon-1024.png"]
 
 [web.app]
 title = "Odo"

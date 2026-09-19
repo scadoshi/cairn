@@ -1,8 +1,8 @@
-//! Routes: the counter list, one counter, and the profile.
+//! Routes: the counter list, one counter, the create form, and the profile.
 
 use super::{
     Shell,
-    screens::{counter::CounterScreen, home::Home, profile::Profile},
+    screens::{counter::CounterScreen, home::Home, new_counter::NewCounter, profile::Profile},
 };
 use dioxus::prelude::*;
 
@@ -14,6 +14,9 @@ pub enum Route {
         /// The counter list.
         #[route("/")]
         Home {},
+        /// Create a counter.
+        #[route("/new")]
+        NewCounter {},
         /// One counter, by store id.
         #[route("/counters/:id")]
         CounterScreen {

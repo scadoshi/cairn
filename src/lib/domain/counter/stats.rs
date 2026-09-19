@@ -65,7 +65,8 @@ pub struct Summary {
     pub streak: u32,
 }
 
-fn days_in_year(year: i32) -> u32 {
+/// 365 or 366.
+pub fn days_in_year(year: i32) -> u32 {
     if NaiveDate::from_ymd_opt(year, 1, 1).is_some_and(|d| d.leap_year()) {
         366
     } else {
@@ -86,15 +87,16 @@ fn ratio(total: u32, days: u32) -> f64 {
 pub fn pace(goal: Goal, total_this_year: u32, today: NaiveDate) -> Pace {
     let year_len = days_in_year(today.year());
     let day = today.ordinal();
-    // goal * day / year_len, in u64 so a big goal can't overflow u32.
-    let target_today = (u64::from(goal.yearly()) * u64::from(day) / u64::from(year_len))
+    let yearly = goal.yearly(year_len);
+    // yearly * day / year_len, in u64 so a big goal can't overflow u32.
+    let target_today = (u64::from(yearly) * u64::from(day) / u64::from(year_len))
         .try_into()
         .unwrap_or(u32::MAX);
-    let remaining = goal.yearly().saturating_sub(total_this_year);
+    let remaining = yearly.saturating_sub(total_this_year);
     let days_left = year_len.saturating_sub(day).saturating_add(1);
     let needed_per_day = (remaining > 0).then(|| ratio(remaining, days_left));
     Pace {
-        goal: goal.yearly(),
+        goal: yearly,
         target_today,
         delta: i64::from(total_this_year) - i64::from(target_today),
         needed_per_day,
@@ -272,6 +274,17 @@ mod tests {
 
         let behind = pace(goal, 900, d(2026, 4, 10));
         assert_eq!(behind.delta, -100);
+    }
+
+    #[test]
+    fn per_day_goal_targets_exactly_day_times_rate() {
+        let goal = Goal::per_day(10).unwrap();
+        let p = pace(goal, 950, d(2026, 4, 10));
+        assert_eq!(p.goal, 3650);
+        assert_eq!(p.target_today, 1000);
+        assert_eq!(p.delta, -50);
+        // A per-day goal behind pace still needs more than the base rate.
+        assert!(p.needed_per_day.unwrap() > 10.0);
     }
 
     #[test]

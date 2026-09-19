@@ -16,7 +16,7 @@ use zwipe_components::ThemeConfig;
 
 /// Schema version written to SQLite's `user_version` pragma. Bump it and add
 /// a step in `migrate` for each schema change.
-const SCHEMA_VERSION: i64 = 1;
+const SCHEMA_VERSION: i64 = 2;
 
 const SCHEMA_V1: &str = "
 CREATE TABLE IF NOT EXISTS counters (
@@ -36,6 +36,10 @@ CREATE TABLE IF NOT EXISTS settings (
     value TEXT NOT NULL
 );
 ";
+
+/// v2: goals can be per day. Exactly one of goal_per_year / goal_per_day is
+/// set, or neither.
+const SCHEMA_V2: &str = "ALTER TABLE counters ADD COLUMN goal_per_day INTEGER;";
 
 const THEME_KEY: &str = "theme";
 
@@ -83,6 +87,9 @@ fn migrate(conn: &Connection) -> Result<(), StoreError> {
     if version < 1 {
         conn.execute_batch(SCHEMA_V1)?;
     }
+    if version < 2 {
+        conn.execute_batch(SCHEMA_V2)?;
+    }
     if version < SCHEMA_VERSION {
         conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     }
@@ -97,15 +104,15 @@ fn parse_day(text: &str) -> Result<NaiveDate, StoreError> {
 fn row_to_counter(row: &rusqlite::Row<'_>) -> Result<Counter, StoreError> {
     let id: i64 = row.get(0)?;
     let name: String = row.get(1)?;
-    let goal: Option<i64> = row.get(2)?;
-    let created: String = row.get(3)?;
-    let goal = match goal {
-        Some(g) => {
-            let g =
-                u32::try_from(g).map_err(|_| StoreError(format!("bad goal {g} in database")))?;
-            Some(Goal::per_year(g).map_err(|e| StoreError(e.to_string()))?)
-        }
-        None => None,
+    let per_year: Option<i64> = row.get(2)?;
+    let per_day: Option<i64> = row.get(3)?;
+    let created: String = row.get(4)?;
+    let to_u32 =
+        |g: i64| u32::try_from(g).map_err(|_| StoreError(format!("bad goal {g} in database")));
+    let goal = match (per_year, per_day) {
+        (Some(g), _) => Some(Goal::per_year(to_u32(g)?).map_err(|e| StoreError(e.to_string()))?),
+        (None, Some(g)) => Some(Goal::per_day(to_u32(g)?).map_err(|e| StoreError(e.to_string()))?),
+        (None, None) => None,
     };
     Ok(Counter {
         id: CounterId(id),
@@ -115,7 +122,7 @@ fn row_to_counter(row: &rusqlite::Row<'_>) -> Result<Counter, StoreError> {
     })
 }
 
-const COUNTER_COLS: &str = "id, name, goal_per_year, created_on";
+const COUNTER_COLS: &str = "id, name, goal_per_year, goal_per_day, created_on";
 
 impl CounterStore for SqliteStore {
     fn list_counters(&self) -> Result<Vec<Counter>, StoreError> {
@@ -143,11 +150,18 @@ impl CounterStore for SqliteStore {
         today: NaiveDate,
     ) -> Result<Counter, StoreError> {
         let conn = self.conn()?;
+        let (per_year, per_day) = match goal {
+            Some(Goal::PerYear(n)) => (Some(n), None),
+            Some(Goal::PerDay(n)) => (None, Some(n)),
+            None => (None, None),
+        };
         conn.execute(
-            "INSERT INTO counters (name, goal_per_year, created_on) VALUES (?1, ?2, ?3)",
+            "INSERT INTO counters (name, goal_per_year, goal_per_day, created_on)
+             VALUES (?1, ?2, ?3, ?4)",
             params![
                 name.as_str(),
-                goal.map(Goal::yearly),
+                per_year,
+                per_day,
                 today.format("%Y-%m-%d").to_string()
             ],
         )?;
@@ -263,6 +277,22 @@ mod tests {
         s.delete_counter(c.id).unwrap();
         assert!(s.list_counters().unwrap().is_empty());
         assert_eq!(s.get_counter(c.id).unwrap(), None);
+    }
+
+    #[test]
+    fn per_day_goal_round_trips() {
+        let s = store();
+        let c = s
+            .create_counter(
+                &CounterName::new("push-ups").unwrap(),
+                Some(Goal::per_day(15).unwrap()),
+                d(2026, 9, 19),
+            )
+            .unwrap();
+        assert_eq!(
+            s.get_counter(c.id).unwrap().unwrap().goal,
+            Some(Goal::PerDay(15))
+        );
     }
 
     #[test]

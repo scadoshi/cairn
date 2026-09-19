@@ -1,9 +1,13 @@
 //! Profile: theme and dark mode, laid out like zwiper's profile screen with
 //! its preferences sheet.
 
-use crate::inbound::ui::components::bottom_sheet::BottomSheet;
+use crate::{
+    domain::counter::csv,
+    inbound::ui::{components::bottom_sheet::BottomSheet, router::Route, use_store},
+    outbound::paths,
+};
 use dioxus::prelude::*;
-use zwipe_components::{ALLOWED_THEMES, Button, ButtonVariant, ThemeConfig};
+use zwipe_components::{ALLOWED_THEMES, ActionBar, Button, ButtonVariant, ThemeConfig};
 
 /// Themes with adjusted palettes for color-vision deficiency, grouped at the
 /// bottom of the picker. Same list zwiper and the site picker use.
@@ -36,7 +40,32 @@ fn display_theme_name(slug: &str) -> String {
 #[component]
 pub fn Profile() -> Element {
     let mut theme = use_context::<Signal<ThemeConfig>>();
+    let nav = use_navigator();
+    let store = use_store();
     let mut preferences_open = use_signal(|| false);
+    let mut notice = use_signal(|| None::<String>);
+
+    // One CSV per counter, day and count, into the platform Downloads folder.
+    let export = move |_| {
+        let result = store
+            .list_counters()
+            .map_err(|e| e.to_string())
+            .and_then(|counters| {
+                let dir = paths::exports().map_err(|e| e.to_string())?;
+                let mut written = 0usize;
+                for c in counters {
+                    let entries = store.entries(c.id).map_err(|e| e.to_string())?;
+                    let path = dir.join(format!("odo-{}.csv", c.name.slug()));
+                    std::fs::write(&path, csv::render(&entries)).map_err(|e| e.to_string())?;
+                    written += 1;
+                }
+                Ok((written, dir))
+            });
+        match result {
+            Ok((n, dir)) => notice.set(Some(format!("Exported {n} files to {}", dir.display()))),
+            Err(e) => notice.set(Some(format!("Export failed: {e}"))),
+        }
+    };
 
     // Dark mode flips live; the App-level effect persists it.
     let toggle_dark = move |_| {
@@ -48,6 +77,7 @@ pub fn Profile() -> Element {
     };
 
     rsx! {
+        div { class: "screen-content",
         div { class: "profile-sections content-enter",
             div { class: "profile-list",
                 div { class: "card-header",
@@ -74,6 +104,30 @@ pub fn Profile() -> Element {
                         }
                     }
                 }
+            }
+            div { class: "profile-list",
+                div { class: "card-header",
+                    span { class: "card-title", "Data" }
+                }
+                div { class: "profile-row",
+                    span { class: "profile-row-label", "Export" }
+                    div { class: "profile-row-value",
+                        Button { variant: ButtonVariant::Util, onclick: export, "CSV" }
+                    }
+                }
+                if let Some(n) = notice() {
+                    p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
+                }
+            }
+        }
+        }
+        ActionBar {
+            Button {
+                variant: ButtonVariant::Util,
+                onclick: move |_| {
+                    nav.push(Route::Home {});
+                },
+                "Back"
             }
         }
         PreferencesSheet { open: preferences_open }

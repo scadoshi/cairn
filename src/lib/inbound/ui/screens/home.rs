@@ -1,7 +1,8 @@
-//! The counter list, a +1 on each, and the create form.
+//! The counter list. Each card shows the headline numbers and carries its own
+//! bar with +1 and Open; the screen bar leads to the create form and profile.
 
 use crate::{
-    domain::counter::{Counter, CounterName, Goal, stats},
+    domain::counter::{Counter, stats},
     inbound::ui::{
         components::stat_tile::{StatTile, rate},
         router::Route,
@@ -9,11 +10,9 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
-use zwipe_components::{Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant};
 
-const LOGO: &str = include_str!("../../../../../assets/odo.txt");
-
-/// The counter list with a +1 on each card and the create form.
+/// The counter list.
 #[component]
 pub fn Home() -> Element {
     let store = use_store();
@@ -28,84 +27,47 @@ pub fn Home() -> Element {
     });
     use_effect(move || reload.call(()));
 
-    let mut name_input = use_signal(String::new);
-    let mut goal_input = use_signal(String::new);
-
-    let create_store = store.clone();
-    let create = move |_| {
-        let name = match CounterName::new(&name_input()) {
-            Ok(n) => n,
-            Err(e) => return error.set(Some(e.to_string())),
-        };
-        let goal_text = goal_input();
-        let goal = if goal_text.trim().is_empty() {
-            None
-        } else {
-            match goal_text.trim().parse::<u32>().ok().map(Goal::per_year) {
-                Some(Ok(g)) => Some(g),
-                _ => {
-                    return error.set(Some(
-                        "goal must be a whole number of at least 1".to_string(),
-                    ));
-                }
-            }
-        };
-        match create_store.create_counter(&name, goal, today()) {
-            Ok(_) => {
-                name_input.set(String::new());
-                goal_input.set(String::new());
-                error.set(None);
-                reload.call(());
-            }
-            Err(e) => error.set(Some(e.to_string())),
-        }
-    };
-
     rsx! {
-        div { class: "profile-sections content-enter",
-            pre { class: "logo", "aria-label": "Odo", "{LOGO}" }
-            if let Some(e) = error() {
-                p { class: "form-error", "{e}" }
-            }
-            for c in counters() {
-                CounterCard {
-                    counter: c.clone(),
-                    on_bump: move |()| reload.call(()),
-                    on_open: move |id: i64| {
-                        nav.push(Route::CounterScreen { id });
-                    },
+        div { class: "screen-content",
+            div { class: "profile-sections content-enter",
+                if let Some(e) = error() {
+                    p { class: "form-error", "{e}" }
                 }
-            }
-            div { class: "profile-list",
-                div { class: "card-header",
-                    span { class: "card-title", "New counter" }
+                if counters().is_empty() {
+                    p { class: "pref-note", "No counters yet. New counter starts one." }
                 }
-                div { class: "form-body",
-                    input {
-                        class: "input",
-                        placeholder: "Name, e.g. pull-ups",
-                        value: "{name_input}",
-                        maxlength: "{CounterName::MAX_LEN}",
-                        oninput: move |e| name_input.set(e.value()),
+                for c in counters() {
+                    CounterCard {
+                        counter: c.clone(),
+                        on_bump: move |()| reload.call(()),
+                        on_open: move |id: i64| {
+                            nav.push(Route::CounterScreen { id });
+                        },
                     }
-                    input {
-                        class: "input",
-                        r#type: "number",
-                        min: "1",
-                        inputmode: "numeric",
-                        placeholder: "Yearly goal (optional)",
-                        value: "{goal_input}",
-                        oninput: move |e| goal_input.set(e.value()),
-                    }
-                    Button { variant: ButtonVariant::Util, onclick: create, "Create" }
                 }
+            }
+        }
+        ActionBar {
+            Button {
+                variant: ButtonVariant::Util,
+                onclick: move |_| {
+                    nav.push(Route::NewCounter {});
+                },
+                "New counter"
+            }
+            Button {
+                variant: ButtonVariant::Util,
+                onclick: move |_| {
+                    nav.push(Route::Profile {});
+                },
+                "Profile"
             }
         }
     }
 }
 
-/// One counter on the home list: name, lifetime, today, and a +1. Tapping the
-/// card opens it.
+/// One counter on the home list: name and goal up top, the headline numbers,
+/// and a bar with +1 and Open.
 #[component]
 fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandler<i64>) -> Element {
     let store = use_store();
@@ -118,21 +80,8 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
         div { class: "profile-list",
             div { class: "card-header",
                 span { class: "card-title", "{counter.name}" }
-                div { class: "card-header-actions",
-                    Button {
-                        variant: ButtonVariant::Util,
-                        onclick: move |_| {
-                            if bump_store.adjust(id, today(), 1).is_ok() {
-                                on_bump.call(());
-                            }
-                        },
-                        "+1"
-                    }
-                    Button {
-                        variant: ButtonVariant::Util,
-                        onclick: move |_| on_open.call(id.0),
-                        "Open"
-                    }
+                if let Some(g) = counter.goal {
+                    span { class: "card-subtitle", "goal {g}" }
                 }
             }
             div { class: "stat-grid stat-grid-3",
@@ -142,6 +91,22 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
                     label: "This year",
                     value: summary.this_year.total.to_string(),
                     hint: format!("{}/day", rate(summary.this_year.per_day)),
+                }
+            }
+            ActionBar {
+                Button {
+                    variant: ButtonVariant::Util,
+                    onclick: move |_| {
+                        if bump_store.adjust(id, today(), 1).is_ok() {
+                            on_bump.call(());
+                        }
+                    },
+                    "+1"
+                }
+                Button {
+                    variant: ButtonVariant::Util,
+                    onclick: move |_| on_open.call(id.0),
+                    "Open"
                 }
             }
         }
