@@ -401,9 +401,9 @@ fn NumbersCard(entries: Vec<DayCount>, summary: Summary, goal: Option<Goal>) -> 
     });
     let delta = |a: u32, b: u32| -> String {
         match a.cmp(&b) {
-            std::cmp::Ordering::Greater => format!("up {} on the week before", thousands(a - b)),
-            std::cmp::Ordering::Less => format!("down {} on the week before", thousands(b - a)),
-            std::cmp::Ordering::Equal => "level with the week before".to_string(),
+            std::cmp::Ordering::Greater => format!("up {} on last week", thousands(a - b)),
+            std::cmp::Ordering::Less => format!("down {} on last week", thousands(b - a)),
+            std::cmp::Ordering::Equal => "level with last week".to_string(),
         }
     };
 
@@ -413,15 +413,15 @@ fn NumbersCard(entries: Vec<DayCount>, summary: Summary, goal: Option<Goal>) -> 
                 span { class: "card-title", "Numbers" }
             }
             NumberRow { label: "This week", value: thousands(week_total), hint: format!("{}/day so far, {}", rate(f64::from(week_total) / f64::from(week_days)), delta(week_total, last_week_total)) }
-            NumberRow { label: "Last 7 days", value: thousands(last7), hint: delta(last7, prev7).replace("the week before", "the 7 before") }
-            NumberRow { label: "Streak", value: format!("{} days", summary.streak), hint: format!("longest ever {} days", summary.longest_streak) }
-            NumberRow { label: "Consistency", value: format!("{:.0}%", summary.consistency * 100.0), hint: format!("{} of {} days this year", summary.this_year.active_days, summary.this_year.days_elapsed) }
+            NumberRow { label: "Last 7 days", value: thousands(last7), hint: delta(last7, prev7).replace("last week", "the 7 before") }
+            NumberRow { label: "Streak", value: format!("{} days", summary.streak), hint: format!("longest {} days", summary.longest_streak) }
+            NumberRow { label: "Consistency", value: format!("{:.0}%", summary.consistency * 100.0), hint: format!("{} of {} days", summary.this_year.active_days, summary.this_year.days_elapsed) }
             NumberRow { label: "Projected year end", value: thousands(summary.projected_year_end), hint: projection_note.unwrap_or_else(|| "at this year's pace".to_string()) }
             if let Some(d) = summary.days_since_last {
-                NumberRow { label: "Last logged", value: if d == 0 { "today".to_string() } else { format!("{d} days ago") }, hint: String::new() }
+                NumberRow { label: "Last logged", value: match d { 0 => "today".to_string(), 1 => "yesterday".to_string(), n => format!("{n} days ago") }, hint: String::new() }
             }
             if let Some((monday, total)) = best_week {
-                NumberRow { label: "Best week", value: thousands(total), hint: format!("week of {}", monday.format("%-d %b")) }
+                NumberRow { label: "Best week", value: thousands(total), hint: format!("w/c {}", monday.format("%-d %b")) }
             }
             if let Some((i, avg)) = best_month {
                 NumberRow { label: "Best month", value: format!("{}/day", rate(avg)), hint: months.get(i).copied().unwrap_or("").to_string() }
@@ -583,7 +583,7 @@ fn YearCard(summary: Summary) -> Element {
             NumberRow {
                 label: "Lifetime per day",
                 value: rate(summary.lifetime_per_day),
-                hint: summary.best_day.map(|b| format!("best {} on {}", thousands(b.count), b.day)).unwrap_or_default(),
+                hint: summary.best_day.map(|b| format!("best {}, {}", thousands(b.count), b.day.format("%-d %b"))).unwrap_or_default(),
             }
             if let Some(p) = &y.pace {
                 NumberRow { label: "Goal", value: thousands(p.goal), hint: format!("{} remaining", thousands(p.remaining)) }
