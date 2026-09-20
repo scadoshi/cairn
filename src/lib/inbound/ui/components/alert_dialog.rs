@@ -1,11 +1,10 @@
-//! Centered confirmation dialog for destructive actions, zwiper's look.
-//!
-//! zwiper builds this on dioxus-primitives; here it is a plain overlay and box
-//! carrying the same classes, so the styling is shared verbatim without the
-//! extra dependency. Tapping the backdrop or Cancel closes it; only the danger
-//! button confirms.
+//! Confirmation for destructive actions, zwiper's look, drawn by the
+//! app-root dialog host so the dim covers the whole screen.
 
-use super::navigation::overlay_stack::use_overlay_back;
+use super::{
+    dialog_host::{DialogSpec, use_hosted_dialog},
+    navigation::overlay_stack::use_overlay_back,
+};
 use dioxus::prelude::*;
 
 /// A yes/no dialog. `open` is host-owned so the caller keeps the state that
@@ -21,37 +20,14 @@ pub fn ConfirmDialog(
     confirm_label: String,
     on_confirm: EventHandler<()>,
 ) -> Element {
-    let mut open = open;
     use_overlay_back(open);
-    if !open() {
-        return rsx! {};
-    }
-    rsx! {
-        div {
-            class: "alert-dialog-overlay",
-            "data-state": "open",
-            onclick: move |_| open.set(false),
-        }
-        div { class: "alert-dialog", role: "alertdialog", aria_modal: "true",
-            h2 { class: "alert-dialog-title", "{title}" }
-            hr { class: "dialog-rule" }
-            p { class: "alert-dialog-description", "{body}" }
-            hr { class: "dialog-rule" }
-            div { class: "alert-dialog-actions",
-                button {
-                    class: "alert-dialog-cancel",
-                    onclick: move |_| open.set(false),
-                    "Cancel"
-                }
-                button {
-                    class: "alert-dialog-action-danger",
-                    onclick: move |_| {
-                        open.set(false);
-                        on_confirm.call(());
-                    },
-                    "{confirm_label}"
-                }
-            }
-        }
-    }
+    let confirm = use_callback(move |()| on_confirm.call(()));
+    use_hosted_dialog(open, move |close| DialogSpec {
+        title: title.clone(),
+        body: rsx! { p { class: "alert-dialog-description", "{body}" } },
+        confirm: Some((confirm_label.clone(), confirm)),
+        close,
+        owner: 0,
+    });
+    rsx! {}
 }

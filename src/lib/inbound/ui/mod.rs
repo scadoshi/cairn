@@ -98,6 +98,8 @@ pub fn App() -> Element {
     });
     let overlays = components::navigation::overlay_stack::use_overlay_back_stack();
     use_context_provider(|| overlays);
+    let dialogs = components::dialog_host::DialogHost(use_signal(|| None));
+    use_context_provider(|| dialogs);
 
     // Persist every theme change. Runs once at mount too, which is harmless:
     // it writes back whatever was just loaded.
@@ -134,6 +136,9 @@ pub fn App() -> Element {
         div { class: "theme-root {theme.read().css_class()}",
             ToastProvider { max_toasts: 3_usize, class: "toast-container",
                 Router::<Route> {}
+                // Dialogs draw here, beside the router, so no screen's scroll
+                // container can trap their fixed overlay.
+                components::dialog_host::DialogHostView {}
             }
         }
     }

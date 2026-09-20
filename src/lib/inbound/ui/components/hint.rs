@@ -3,7 +3,10 @@
 //! bullets, and a single Got it. Body text names on-screen buttons with
 //! [`HintKey`] so the reader recognizes what to press.
 
-use super::navigation::overlay_stack::use_overlay_back;
+use super::{
+    dialog_host::{DialogSpec, use_hosted_dialog},
+    navigation::overlay_stack::use_overlay_back,
+};
 use dioxus::prelude::*;
 
 /// The small "?" that sits beside a label and opens a hint.
@@ -23,35 +26,19 @@ pub fn InfoButton(onclick: EventHandler<MouseEvent>) -> Element {
     }
 }
 
-/// The dialog: title, body, Got it. Same overlay and box as the delete
-/// dialog so the two read as one family; the OS back gesture closes it.
+/// The dialog: title, body, Got it. Drawn by the app-root host so the dim
+/// covers the whole screen; the OS back gesture closes it.
 #[component]
 pub fn HintDialog(open: Signal<bool>, title: String, children: Element) -> Element {
-    let mut open = open;
     use_overlay_back(open);
-    if !open() {
-        return rsx! {};
-    }
-    rsx! {
-        div {
-            class: "alert-dialog-overlay",
-            "data-state": "open",
-            onclick: move |_| open.set(false),
-        }
-        div { class: "alert-dialog", role: "dialog", aria_modal: "true",
-            h2 { class: "alert-dialog-title", "{title}" }
-            hr { class: "dialog-rule" }
-            div { class: "alert-dialog-description hint-body", {children} }
-            hr { class: "dialog-rule" }
-            div { class: "alert-dialog-actions",
-                button {
-                    class: "alert-dialog-cancel",
-                    onclick: move |_| open.set(false),
-                    "Got it"
-                }
-            }
-        }
-    }
+    use_hosted_dialog(open, move |close| DialogSpec {
+        title: title.clone(),
+        body: rsx! { div { class: "alert-dialog-description hint-body", {children.clone()} } },
+        confirm: None,
+        close,
+        owner: 0,
+    });
+    rsx! {}
 }
 
 /// One body line.
