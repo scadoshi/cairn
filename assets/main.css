@@ -141,6 +141,12 @@ input {
     gap: 0.2rem;
 }
 
+/* Hero rows: plain case, no tracking, unlike the profile's label style. */
+.hero-label {
+    letter-spacing: 0;
+    opacity: 0.7;
+}
+
 .field-label {
     font-size: 0.75rem;
     color: var(--text-muted);

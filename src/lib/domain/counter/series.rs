@@ -2,7 +2,7 @@
 //! with `today` or a year passed in; the UI picks which to draw.
 
 use super::{DayCount, Event};
-use chrono::{Datelike, Duration, NaiveDate, Timelike};
+use chrono::{Datelike, Duration, NaiveDate, Timelike, Weekday};
 
 /// One count per day for every day from `from` to `to` inclusive, zero where
 /// nothing was logged, so the line has a point for every day.
@@ -39,11 +39,76 @@ pub fn rolling_average(series: &[(NaiveDate, u32)], window: usize) -> Vec<(Naive
         .collect()
 }
 
+/// The Monday of the week containing `day`.
+pub fn week_start(day: NaiveDate) -> NaiveDate {
+    day - Duration::days(i64::from(day.weekday().num_days_from_monday()))
+}
+
+/// Counts for Monday through Sunday of the week containing `today`; days
+/// after today are `None` so the line stops at the present.
+pub fn this_week(entries: &[DayCount], today: NaiveDate) -> [Option<u32>; 7] {
+    let monday = week_start(today);
+    let mut out = [None; 7];
+    for (i, slot) in (0i64..).zip(out.iter_mut()) {
+        let day = monday + Duration::days(i);
+        if day <= today {
+            *slot = Some(entries.iter().find(|e| e.day == day).map_or(0, |e| e.count));
+        }
+    }
+    out
+}
+
+/// Total for the seven days ending `end` inclusive.
+pub fn window_total(entries: &[DayCount], end: NaiveDate, days: i64) -> u32 {
+    let start = end - Duration::days(days - 1);
+    entries
+        .iter()
+        .filter(|e| e.day >= start && e.day <= end)
+        .fold(0u32, |acc, e| acc.saturating_add(e.count))
+}
+
+/// Average count per active day for each weekday, Monday first, over all
+/// entries. `None` for a weekday never logged.
+pub fn weekday_average(entries: &[DayCount]) -> [Option<f64>; 7] {
+    let mut sums = [0u32; 7];
+    let mut days = [0u32; 7];
+    for e in entries.iter().filter(|e| e.count > 0) {
+        let i = e.day.weekday().num_days_from_monday() as usize;
+        if let (Some(s), Some(d)) = (sums.get_mut(i), days.get_mut(i)) {
+            *s = s.saturating_add(e.count);
+            *d += 1;
+        }
+    }
+    let mut out = [None; 7];
+    for ((o, sum), n) in out.iter_mut().zip(sums).zip(days) {
+        if n > 0 {
+            *o = Some(f64::from(sum) / f64::from(n));
+        }
+    }
+    out
+}
+
+/// Short weekday names, Monday first, for chart labels.
+pub const WEEKDAYS: [&str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/// The weekday of `day`, as an index into [`WEEKDAYS`].
+pub fn weekday_index(day: NaiveDate) -> usize {
+    match day.weekday() {
+        Weekday::Mon => 0,
+        Weekday::Tue => 1,
+        Weekday::Wed => 2,
+        Weekday::Thu => 3,
+        Weekday::Fri => 4,
+        Weekday::Sat => 5,
+        Weekday::Sun => 6,
+    }
+}
+
 /// Total per ISO week, keyed by the Monday, for the weeks touching `year`.
 pub fn weekly_totals(entries: &[DayCount], year: i32) -> Vec<(NaiveDate, u32)> {
     let mut out: Vec<(NaiveDate, u32)> = Vec::new();
     for e in entries.iter().filter(|e| e.day.year() == year) {
-        let monday = e.day - Duration::days(i64::from(e.day.weekday().num_days_from_monday()));
+        let monday = week_start(e.day);
         match out.iter_mut().find(|(m, _)| *m == monday) {
             Some((_, total)) => *total = total.saturating_add(e.count),
             None => out.push((monday, e.count)),
@@ -139,6 +204,33 @@ mod tests {
             at: d(y, m, day).and_time(NaiveTime::from_hms_opt(h, 0, 0).unwrap()),
             delta,
         }
+    }
+
+    #[test]
+    fn this_week_stops_at_today() {
+        // 2026-09-16 is a Wednesday.
+        let w = this_week(&[e(2026, 9, 14, 5), e(2026, 9, 16, 7)], d(2026, 9, 16));
+        assert_eq!(w, [Some(5), Some(0), Some(7), None, None, None, None]);
+    }
+
+    #[test]
+    fn window_total_is_inclusive() {
+        let t = window_total(
+            &[e(2026, 9, 10, 1), e(2026, 9, 11, 2), e(2026, 9, 17, 4)],
+            d(2026, 9, 17),
+            7,
+        );
+        assert_eq!(t, 6);
+    }
+
+    #[test]
+    fn weekday_average_groups_by_weekday() {
+        // 14th and 21st are Mondays.
+        let w = weekday_average(&[e(2026, 9, 14, 10), e(2026, 9, 21, 20), e(2026, 9, 15, 3)]);
+        assert!((w[0].unwrap() - 15.0).abs() < f64::EPSILON);
+        assert!((w[1].unwrap() - 3.0).abs() < f64::EPSILON);
+        assert!(w[2].is_none());
+        assert_eq!(weekday_index(d(2026, 9, 20)), 6);
     }
 
     #[test]

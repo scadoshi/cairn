@@ -28,9 +28,11 @@ use zwipe_components::{ActionBar, Button, ButtonVariant, Chip};
 /// Which series the trends card draws.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Trend {
+    ThisWeek,
     Daily,
     Weekly,
     Monthly,
+    Weekday,
     Hourly,
 }
 
@@ -46,7 +48,7 @@ pub fn CounterScreen(id: i64) -> Element {
     let mut entries = use_signal(Vec::<DayCount>::new);
     let mut events = use_signal(Vec::<Event>::new);
     let mut notice = use_signal(|| None::<String>);
-    let trend = use_signal(|| Trend::Daily);
+    let trend = use_signal(|| Trend::ThisWeek);
     let all_days = use_signal(|| false);
 
     let load_store = store.clone();
@@ -130,6 +132,7 @@ pub fn CounterScreen(id: i64) -> Element {
                     }
                 }
                 TrendsCard { entries: entries(), events: events(), trend, all_days }
+                NumbersCard { entries: entries(), summary: summary.clone(), goal: c.goal }
                 YearCard { summary: summary.clone() }
                 div { class: "profile-list",
                     div { class: "card-header",
@@ -204,6 +207,40 @@ fn TrendsCard(
     let year = now.year();
 
     let (points, overlay, unit, note) = match trend() {
+        Trend::ThisWeek => {
+            let week = series::this_week(&entries, now);
+            let points = week
+                .iter()
+                .zip(series::WEEKDAYS)
+                .map(|(v, n)| Point {
+                    label: n.to_string(),
+                    value: v.map(f64::from),
+                })
+                .collect();
+            (
+                points,
+                Vec::new(),
+                String::new(),
+                "this week, Monday to today",
+            )
+        }
+        Trend::Weekday => {
+            let avg = series::weekday_average(&entries);
+            let points = avg
+                .iter()
+                .zip(series::WEEKDAYS)
+                .map(|(v, n)| Point {
+                    label: n.to_string(),
+                    value: *v,
+                })
+                .collect();
+            (
+                points,
+                Vec::new(),
+                String::new(),
+                "average per active day, by weekday, all time",
+            )
+        }
         Trend::Daily => {
             let from = now - ChronoDuration::days(59);
             let daily = series::daily(&entries, from, now);
@@ -290,9 +327,11 @@ fn TrendsCard(
             div { class: "card-header",
                 span { class: "card-title", "Trends" }
                 div { class: "chip-row chip-row-tight",
-                    Chip { selected: trend() == Trend::Daily, onclick: move |_| trend.set(Trend::Daily), "Day" }
-                    Chip { selected: trend() == Trend::Weekly, onclick: move |_| trend.set(Trend::Weekly), "Week" }
-                    Chip { selected: trend() == Trend::Monthly, onclick: move |_| trend.set(Trend::Monthly), "Month" }
+                    Chip { selected: trend() == Trend::ThisWeek, onclick: move |_| trend.set(Trend::ThisWeek), "This week" }
+                    Chip { selected: trend() == Trend::Daily, onclick: move |_| trend.set(Trend::Daily), "60 days" }
+                    Chip { selected: trend() == Trend::Weekly, onclick: move |_| trend.set(Trend::Weekly), "Weeks" }
+                    Chip { selected: trend() == Trend::Monthly, onclick: move |_| trend.set(Trend::Monthly), "Months" }
+                    Chip { selected: trend() == Trend::Weekday, onclick: move |_| trend.set(Trend::Weekday), "Weekday" }
                     Chip { selected: trend() == Trend::Hourly, onclick: move |_| trend.set(Trend::Hourly), "Hour" }
                 }
             }
@@ -305,6 +344,86 @@ fn TrendsCard(
                 }
                 LineChart { points, overlay, unit }
                 p { class: "chart-note", "{note}" }
+            }
+        }
+    }
+}
+
+/// The numbers behind the charts, as ruled rows.
+#[component]
+fn NumbersCard(entries: Vec<DayCount>, summary: Summary, goal: Option<Goal>) -> Element {
+    let now = today();
+    let week = series::this_week(&entries, now);
+    let week_total: u32 = week.iter().flatten().sum();
+    let week_days = u32::try_from(week.iter().flatten().count())
+        .unwrap_or(1)
+        .max(1);
+    let last_week_end = series::week_start(now) - ChronoDuration::days(1);
+    let last_week_total = series::window_total(&entries, last_week_end, 7);
+    let last7 = series::window_total(&entries, now, 7);
+    let prev7 = series::window_total(&entries, now - ChronoDuration::days(7), 7);
+    let best_week = series::weekly_totals(&entries, now.year())
+        .into_iter()
+        .max_by_key(|(_, t)| *t);
+    let best_month = series::monthly_average(&entries, now.year())
+        .iter()
+        .enumerate()
+        .filter_map(|(i, v)| v.map(|v| (i, v)))
+        .max_by(|a, b| a.1.total_cmp(&b.1));
+    let months = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+    let year_len = stats::days_in_year(now.year());
+    let projection_note = goal.map(|g| {
+        let target = g.yearly(year_len);
+        if summary.projected_year_end >= target {
+            format!("clears the {target} goal")
+        } else {
+            format!("short of the {target} goal")
+        }
+    });
+    let delta = |a: u32, b: u32| -> String {
+        match a.cmp(&b) {
+            std::cmp::Ordering::Greater => format!("up {} on the week before", a - b),
+            std::cmp::Ordering::Less => format!("down {} on the week before", b - a),
+            std::cmp::Ordering::Equal => "level with the week before".to_string(),
+        }
+    };
+
+    rsx! {
+        div { class: "profile-list",
+            div { class: "card-header",
+                span { class: "card-title", "Numbers" }
+            }
+            NumberRow { label: "This week", value: week_total.to_string(), hint: format!("{}/day so far, {}", rate(f64::from(week_total) / f64::from(week_days)), delta(week_total, last_week_total)) }
+            NumberRow { label: "Last 7 days", value: last7.to_string(), hint: delta(last7, prev7).replace("the week before", "the 7 before") }
+            NumberRow { label: "Streak", value: format!("{} days", summary.streak), hint: format!("longest ever {} days", summary.longest_streak) }
+            NumberRow { label: "Consistency", value: format!("{:.0}%", summary.consistency * 100.0), hint: format!("{} of {} days this year", summary.this_year.active_days, summary.this_year.days_elapsed) }
+            NumberRow { label: "Projected year end", value: summary.projected_year_end.to_string(), hint: projection_note.unwrap_or_else(|| "at this year's pace".to_string()) }
+            if let Some(d) = summary.days_since_last {
+                NumberRow { label: "Last logged", value: if d == 0 { "today".to_string() } else { format!("{d} days ago") }, hint: String::new() }
+            }
+            if let Some((monday, total)) = best_week {
+                NumberRow { label: "Best week", value: total.to_string(), hint: format!("week of {}", monday.format("%-d %b")) }
+            }
+            if let Some((i, avg)) = best_month {
+                NumberRow { label: "Best month", value: format!("{}/day", rate(avg)), hint: months.get(i).copied().unwrap_or("").to_string() }
+            }
+        }
+    }
+}
+
+/// One ruled row: label left, value right, a muted hint under the value.
+#[component]
+fn NumberRow(label: String, value: String, hint: String) -> Element {
+    rsx! {
+        div { class: "profile-row",
+            span { class: "profile-row-label hero-label", "{label}" }
+            div { class: "profile-row-value number-value",
+                span { "{value}" }
+                if !hint.is_empty() {
+                    span { class: "number-hint", "{hint}" }
+                }
             }
         }
     }

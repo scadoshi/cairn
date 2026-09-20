@@ -63,6 +63,15 @@ pub struct Summary {
     /// Consecutive days ending today (or yesterday, if today is still empty)
     /// with a non-zero count.
     pub streak: u32,
+    /// The longest run of consecutive logged days ever.
+    pub longest_streak: u32,
+    /// Days since the last logged day; zero if today is logged, `None` if
+    /// nothing was ever logged.
+    pub days_since_last: Option<u32>,
+    /// Active days this year over days elapsed, as a fraction 0 to 1.
+    pub consistency: f64,
+    /// Year-end total if the rest of the year keeps this year's per-day rate.
+    pub projected_year_end: u32,
 }
 
 /// 365 or 366.
@@ -140,6 +149,28 @@ fn summarize_year(
     }
 }
 
+fn longest_streak(entries: &[DayCount]) -> u32 {
+    let mut days: Vec<NaiveDate> = entries
+        .iter()
+        .filter(|e| e.count > 0)
+        .map(|e| e.day)
+        .collect();
+    days.sort_unstable();
+    days.dedup();
+    let mut best = 0u32;
+    let mut run = 0u32;
+    let mut prev: Option<NaiveDate> = None;
+    for d in days {
+        run = match prev {
+            Some(p) if p.succ_opt() == Some(d) => run + 1,
+            _ => 1,
+        };
+        best = best.max(run);
+        prev = Some(d);
+    }
+    best
+}
+
 fn streak(entries: &[DayCount], today: NaiveDate) -> u32 {
     let has = |d: NaiveDate| entries.iter().any(|e| e.day == d && e.count > 0);
     let mut cursor = if has(today) {
@@ -195,6 +226,11 @@ pub fn summarize(entries: &[DayCount], goal: Option<Goal>, today: NaiveDate) -> 
         .filter(|e| e.count > 0)
         .max_by_key(|e| (e.count, std::cmp::Reverse(e.day)))
         .copied();
+    let last_logged = entries.iter().filter(|e| e.count > 0).map(|e| e.day).max();
+    let days_since_last = last_logged.and_then(|d| u32::try_from((today - d).num_days()).ok());
+    let consistency = ratio(this_year.active_days, this_year.days_elapsed);
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let projected_year_end = (this_year.per_day * f64::from(this_year.days_in_year)).round() as u32;
 
     Summary {
         today: today_count,
@@ -205,6 +241,10 @@ pub fn summarize(entries: &[DayCount], goal: Option<Goal>, today: NaiveDate) -> 
         years,
         best_day,
         streak: streak(entries, today),
+        longest_streak: longest_streak(entries),
+        days_since_last,
+        consistency,
+        projected_year_end,
     }
 }
 
@@ -322,6 +362,34 @@ mod tests {
         // Zero rows don't count.
         let with_zero = [e(2026, 9, 18, 0), e(2026, 9, 19, 5)];
         assert_eq!(streak(&with_zero, d(2026, 9, 19)), 1);
+    }
+
+    #[test]
+    fn longest_streak_and_days_since_last() {
+        let entries = [
+            e(2026, 9, 1, 1),
+            e(2026, 9, 2, 1),
+            e(2026, 9, 3, 1),
+            e(2026, 9, 10, 1),
+        ];
+        let s = summarize(&entries, None, d(2026, 9, 13));
+        assert_eq!(s.longest_streak, 3);
+        assert_eq!(s.streak, 0);
+        assert_eq!(s.days_since_last, Some(3));
+        assert!(
+            summarize(&[], None, d(2026, 9, 13))
+                .days_since_last
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn consistency_and_projection() {
+        // 10 days in, logged 5 of them, 100 total: 10/day -> 3650 by year end.
+        let entries: Vec<DayCount> = (1..=5).map(|day| e(2026, 1, day, 20)).collect();
+        let s = summarize(&entries, None, d(2026, 1, 10));
+        assert!((s.consistency - 0.5).abs() < f64::EPSILON);
+        assert_eq!(s.projected_year_end, 3650);
     }
 
     #[test]

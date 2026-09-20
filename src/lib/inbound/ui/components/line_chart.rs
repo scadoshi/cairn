@@ -8,7 +8,10 @@
 //! the counter visibly move the trend.
 
 use dioxus::prelude::*;
-use std::hash::{Hash, Hasher};
+use std::{
+    fmt::Write,
+    hash::{Hash, Hasher},
+};
 
 /// One point: the label shown for it and its value.
 #[derive(Debug, Clone, PartialEq)]
@@ -56,22 +59,23 @@ pub fn LineChart(
     };
     let y_of = |v: f64| H - PAD_B - (v / max) * (H - PAD_T - PAD_B);
 
-    // Gaps (None) break the line into segments.
+    // Gaps (None) break the line into segments; each segment becomes a
+    // smooth path through its points.
     let segments = |values: Vec<Option<f64>>| -> Vec<String> {
         let mut out = Vec::new();
-        let mut cur: Vec<String> = Vec::new();
+        let mut cur: Vec<(f64, f64)> = Vec::new();
         for (i, v) in values.iter().enumerate() {
             if let Some(v) = v {
-                cur.push(format!("{:.1},{:.1}", x_of(i), y_of(*v)));
+                cur.push((x_of(i), y_of(*v)));
             } else {
                 if cur.len() > 1 {
-                    out.push(cur.join(" "));
+                    out.push(smooth_path(&cur));
                 }
                 cur.clear();
             }
         }
         if cur.len() > 1 {
-            out.push(cur.join(" "));
+            out.push(smooth_path(&cur));
         }
         out
     };
@@ -114,11 +118,55 @@ pub fn LineChart(
             text { class: "chart-tick", x: "{(PAD_L + W - PAD_R) / 2.0}", y: "{H - 6.0}", text_anchor: "middle", "{mid_label}" }
             text { class: "chart-tick", x: "{W - PAD_R}", y: "{H - 6.0}", text_anchor: "end", "{last_label}" }
             for seg in line_segments.iter() {
-                polyline { class: "chart-line", points: "{seg}", path_length: "1000" }
+                path { class: "chart-line", d: "{seg}", path_length: "1000" }
             }
             for seg in overlay_segments.iter() {
-                polyline { class: "chart-line chart-overlay", points: "{seg}", path_length: "1000" }
+                path { class: "chart-line chart-overlay", d: "{seg}", path_length: "1000" }
             }
         }
+    }
+}
+
+/// A cubic path through the points, Catmull-Rom converted to Bezier control
+/// points, so the line bends through every value instead of cornering at it.
+fn smooth_path(pts: &[(f64, f64)]) -> String {
+    let Some((first, rest)) = pts.split_first() else {
+        return String::new();
+    };
+    let mut d = format!("M{:.1},{:.1}", first.0, first.1);
+    let n = pts.len();
+    for (i, p1) in rest.iter().enumerate() {
+        // p0 is the point before the segment, p1 its end; the neighbours on
+        // either side shape the tangents, clamped at the ends.
+        let p0 = pts.get(i).copied().unwrap_or(*first);
+        let prev = pts.get(i.saturating_sub(1)).copied().unwrap_or(p0);
+        let next = pts.get((i + 2).min(n - 1)).copied().unwrap_or(*p1);
+        let c1 = (p0.0 + (p1.0 - prev.0) / 6.0, p0.1 + (p1.1 - prev.1) / 6.0);
+        let c2 = (p1.0 - (next.0 - p0.0) / 6.0, p1.1 - (next.1 - p0.1) / 6.0);
+        // Writing to a String cannot fail.
+        let _ = write!(
+            d,
+            " C{:.1},{:.1} {:.1},{:.1} {:.1},{:.1}",
+            c1.0, c1.1, c2.0, c2.1, p1.0, p1.1
+        );
+    }
+    d
+}
+
+#[cfg(test)]
+mod tests {
+    use super::smooth_path;
+
+    #[test]
+    fn smooth_path_starts_with_move_and_curves_through_each_point() {
+        let d = smooth_path(&[(0.0, 10.0), (10.0, 0.0), (20.0, 10.0)]);
+        assert!(d.starts_with("M0.0,10.0 C"));
+        assert_eq!(d.matches(" C").count(), 2);
+        assert!(d.ends_with("20.0,10.0"));
+    }
+
+    #[test]
+    fn smooth_path_of_one_point_is_just_a_move() {
+        assert_eq!(smooth_path(&[(3.0, 4.0)]), "M3.0,4.0");
     }
 }
