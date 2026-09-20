@@ -53,6 +53,7 @@ STRESS = [
 
 def main(path: str, stress: bool = False) -> None:
     db = sqlite3.connect(path)
+    db.execute("PRAGMA foreign_keys = ON")
     today = dt.date.today()
     start = dt.date(today.year - 2, 1, 1)
     rng = random.Random(today.year)  # same data every run for a given year
