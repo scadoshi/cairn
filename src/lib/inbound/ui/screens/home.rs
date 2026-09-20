@@ -2,7 +2,7 @@
 //! to the counters and the profile. Same shape as zwiper's home.
 
 use crate::{
-    domain::counter::{format::thousands, stats},
+    domain::counter::{format::compact, stats},
     inbound::ui::{
         components::tile::{Tile, TileGrid},
         router::Route,
@@ -60,7 +60,7 @@ pub fn Home() -> Element {
                     p { class: "pref-note", style: "padding: 1rem;", "No counters yet. Counters, then New, starts one." }
                 } else {
                     TileGrid {
-                        Tile { label: "logged today", value: thousands(today_total) }
+                        Tile { label: "logged today", value: compact(today_total) }
                         Tile { label: "counters touched", value: format!("{active} of {counters}") }
                         Tile { label: "best streak", value: format!("{streak} days") }
                     }

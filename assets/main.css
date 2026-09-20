@@ -472,6 +472,17 @@ input {
     color: var(--accent-primary);
 }
 
+/* Six-plus digits: step the type down so the full figure still fits. */
+.odometer-value-l {
+    font-size: clamp(2.2rem, 10vw, 3.4rem);
+    letter-spacing: 0.03em;
+}
+
+.odometer-value-xl {
+    font-size: clamp(1.7rem, 7.5vw, 2.6rem);
+    letter-spacing: 0.02em;
+}
+
 .odometer-label {
     margin-top: 0.5rem;
     font-size: 0.75rem;

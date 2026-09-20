@@ -12,6 +12,10 @@ The pattern is deterministic: a weekly rhythm with rest days, a slow upward
 trend across the years, and the odd big day. Existing rows for those days
 are replaced.
 
+Add --stress for the UI torture set: a hundred counters, thirty of them
+with data, a few of those in the millions (steps, ml of water, calories)
+so tiles, pills, and the odometer meet numbers that need shortening.
+
 Only stdlib, so it runs anywhere python3 does. Point it at the simulator's
 copy with:
 
@@ -37,13 +41,34 @@ COUNTERS = [
 SESSION_HOURS = [6, 6, 7, 7, 7, 8, 12, 17, 18, 18, 19, 19, 20, 21]
 
 
-def main(path: str) -> None:
+STRESS = [
+    # name, goal_per_year, goal_per_day, goal_per_week, base, noise, step
+    ("steps", None, 10000, None, 9000, 3000, 100),
+    ("ml water", None, 2500, None, 2200, 600, 50),
+    ("calories", 800000, None, None, 2100, 400, 25),
+    ("seconds planked", None, None, 900, 120, 60, 10),
+    ("words written", 200000, None, None, 500, 300, 100),
+]
+
+
+def main(path: str, stress: bool = False) -> None:
     db = sqlite3.connect(path)
     today = dt.date.today()
     start = dt.date(today.year - 2, 1, 1)
     rng = random.Random(today.year)  # same data every run for a given year
 
-    for name, per_year, per_day, per_week, base, noise, step in COUNTERS:
+    counters = list(COUNTERS)
+    if stress:
+        counters += STRESS
+        # Twenty more with modest data, then enough empty ones to reach a
+        # hundred, so the list scrolls a long way and the home box counts high.
+        for i in range(1, 21):
+            counters.append((f"habit {i:02d}", None, None, None, 5 + i, 3, 1))
+        empties = 100 - len(counters)
+    else:
+        empties = 0
+
+    for name, per_year, per_day, per_week, base, noise, step in counters:
         row = db.execute("SELECT id FROM counters WHERE name = ?", (name,)).fetchone()
         if row is None:
             db.execute(
@@ -98,8 +123,16 @@ def main(path: str) -> None:
                     )
             day += dt.timedelta(days=1)
 
+    for i in range(empties):
+        name = f"counter {i + 1:03d}"
+        if db.execute("SELECT 1 FROM counters WHERE name = ?", (name,)).fetchone() is None:
+            db.execute(
+                "INSERT INTO counters (name, created_on, step) VALUES (?, ?, 1)",
+                (name, today.isoformat()),
+            )
+
     db.commit()
-    for name, *_ in COUNTERS:
+    for name, *_ in counters:
         total, days = db.execute(
             "SELECT COALESCE(SUM(count), 0), COUNT(*) FROM entries"
             " WHERE counter_id = (SELECT id FROM counters WHERE name = ?)",
@@ -113,6 +146,7 @@ def main(path: str) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    args = [a for a in sys.argv[1:] if a != "--stress"]
+    if len(args) != 1:
         sys.exit(__doc__)
-    main(sys.argv[1])
+    main(args[0], stress="--stress" in sys.argv)

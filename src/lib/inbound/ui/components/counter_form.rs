@@ -178,7 +178,7 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                     }
                 }
             }
-            label { class: "label", "Each tap adds" }
+            label { class: "label", "Tap increments" }
             div { class: "chip-row chip-row-center",
                 for n in Step::ALLOWED {
                     Chip { selected: step() == n, onclick: move |_| step.set(n), "{n}" }

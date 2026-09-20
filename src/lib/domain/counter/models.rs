@@ -148,7 +148,7 @@ impl Goal {
     /// Both figures as separate strings, the one entered first: `15/day` then
     /// `5,475/year`, or `10,000/year` then `27.4/day`.
     pub fn parts(self, days_in_year: u32) -> [String; 2] {
-        use super::format::{rate, thousands};
+        use super::format::{compact as thousands, rate};
         match self {
             Self::PerYear(n) => [
                 format!("{}/year", thousands(n)),

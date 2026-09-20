@@ -2,7 +2,12 @@
 //! bar with +1 and Open; the screen bar goes back home or to the create form.
 
 use crate::{
-    domain::counter::{Counter, format::thousands, stats, stats::days_in_year},
+    domain::counter::{
+        Counter,
+        format::{compact, thousands},
+        stats,
+        stats::days_in_year,
+    },
     inbound::ui::{
         bump_store_version,
         components::{
@@ -117,11 +122,11 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
                 }
             }
             TileGrid {
-                Tile { label: "lifetime", value: thousands(summary.lifetime) }
-                Tile { label: "today", value: thousands(summary.today) }
+                Tile { label: "lifetime", value: compact(summary.lifetime) }
+                Tile { label: "today", value: compact(summary.today) }
                 Tile {
                     label: "this year",
-                    value: thousands(summary.this_year.total),
+                    value: compact(summary.this_year.total),
                     hint: format!("{}/day", rate(summary.this_year.per_day)),
                 }
             }

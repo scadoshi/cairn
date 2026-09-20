@@ -4,7 +4,7 @@
 use crate::{
     domain::counter::{
         Counter, CounterId, DayCount, Event, Goal,
-        format::{thousands, thousands_i64},
+        format::{compact, compact_i64, thousands},
         series,
         series::HourlyBasis,
         stats,
@@ -142,13 +142,16 @@ pub fn CounterScreen(id: i64) -> Element {
                 }
                 div { class: "profile-list",
                     div { class: "odometer",
-                        span { class: "odometer-value", "{thousands(summary.lifetime)}" }
+                        span {
+                            class: if summary.lifetime >= 10_000_000 { "odometer-value odometer-value-xl" } else if summary.lifetime >= 100_000 { "odometer-value odometer-value-l" } else { "odometer-value" },
+                            "{thousands(summary.lifetime)}"
+                        }
                         span { class: "odometer-label", "lifetime since {c.created_on}" }
                     }
                     TileGrid {
-                        Tile { label: "today", value: thousands(summary.today) }
-                        Tile { label: "this week", value: thousands(week_total), hint: week_delta.clone() }
-                        Tile { label: "this month", value: thousands(summary.this_month) }
+                        Tile { label: "today", value: compact(summary.today) }
+                        Tile { label: "this week", value: compact(week_total), hint: week_delta.clone() }
+                        Tile { label: "this month", value: compact(summary.this_month) }
                     }
                     ActionBar {
                         Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(-step), "-{step}" }
@@ -407,9 +410,9 @@ fn YearCard(summary: Summary) -> Element {
                 span { class: "card-title", "{y.year}, day {y.days_elapsed}" }
             }
             TileGrid {
-                Tile { label: "total", value: thousands(y.total) }
+                Tile { label: "total", value: compact(y.total) }
                 Tile { label: "per day", value: rate(y.per_day) }
-                Tile { label: "projected", value: thousands(summary.projected_year_end), hint: "by year end at this pace".to_string() }
+                Tile { label: "projected", value: compact(summary.projected_year_end), hint: "by year end at this pace".to_string() }
             }
         }
     }
@@ -423,9 +426,9 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
     };
     let year_len = summary.this_year.days_in_year;
     let (pace_value, pace_hint) = if p.delta >= 0 {
-        (format!("+{}", thousands_i64(p.delta)), "ahead of pace")
+        (format!("+{}", compact_i64(p.delta)), "ahead of pace")
     } else {
-        (thousands_i64(p.delta), "behind pace")
+        (compact_i64(p.delta), "behind pace")
     };
     rsx! {
         div { class: "profile-list",
@@ -438,7 +441,7 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
                 }
             }
             TileGrid {
-                Tile { label: "remaining", value: thousands_i64(p.remaining) }
+                Tile { label: "remaining", value: compact_i64(p.remaining) }
                 Tile { label: "needed per day", value: rate(p.needed_per_day), hint: "to land on it".to_string() }
                 Tile { label: "pace", value: pace_value, hint: pace_hint.to_string() }
             }
