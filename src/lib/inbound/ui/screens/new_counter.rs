@@ -2,7 +2,7 @@
 //! day or for the year. Save lives in the screen's bar, zwiper style.
 
 use crate::{
-    domain::counter::{CounterName, Goal, Step, format::thousands, stats},
+    domain::counter::{CounterName, Goal, Step, stats},
     inbound::ui::{router::Route, today, use_store},
 };
 use chrono::Datelike;
@@ -11,6 +11,36 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant, Chip};
 
+/// Which period a typed goal amount is for. Lives here because both the
+/// create form and the edit sheet pick it with the same chips.
+#[allow(missing_docs)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GoalUnit {
+    Day,
+    Week,
+    Year,
+}
+
+impl GoalUnit {
+    /// The goal for `n` in this unit.
+    pub fn goal(self, n: u32) -> Result<Goal, crate::domain::counter::ValidationError> {
+        match self {
+            Self::Day => Goal::per_day(n),
+            Self::Week => Goal::per_week(n),
+            Self::Year => Goal::per_year(n),
+        }
+    }
+
+    /// The unit a stored goal was entered in.
+    pub fn of(goal: Goal) -> Self {
+        match goal {
+            Goal::PerDay(_) => Self::Day,
+            Goal::PerWeek(_) => Self::Week,
+            Goal::PerYear(_) => Self::Year,
+        }
+    }
+}
+
 /// The create screen.
 #[component]
 pub fn NewCounter() -> Element {
@@ -18,7 +48,7 @@ pub fn NewCounter() -> Element {
     let nav = use_navigator();
     let mut name = use_signal(String::new);
     let mut amount = use_signal(String::new);
-    let mut per_day = use_signal(|| true);
+    let mut unit = use_signal(|| GoalUnit::Day);
     let mut step = use_signal(|| 1u32);
     let mut error = use_signal(|| None::<String>);
     let toast = use_toast();
@@ -31,19 +61,7 @@ pub fn NewCounter() -> Element {
         .parse::<u32>()
         .ok()
         .filter(|n| *n > 0)
-        .map(|n| {
-            if per_day() {
-                format!(
-                    "{n} a day is {} this year",
-                    thousands(n.saturating_mul(days))
-                )
-            } else {
-                format!(
-                    "{n} this year is {:.1} a day",
-                    f64::from(n) / f64::from(days)
-                )
-            }
-        });
+        .map(|n| unit().goal(n).map(|g| g.label(days)).unwrap_or_default());
 
     let save = move |_| {
         let counter_name = match CounterName::new(&name()) {
@@ -54,13 +72,7 @@ pub fn NewCounter() -> Element {
         let goal = if raw.trim().is_empty() {
             None
         } else {
-            let parsed = raw.trim().parse::<u32>().ok().map(|n| {
-                if per_day() {
-                    Goal::per_day(n)
-                } else {
-                    Goal::per_year(n)
-                }
-            });
+            let parsed = raw.trim().parse::<u32>().ok().map(|n| unit().goal(n));
             match parsed {
                 Some(Ok(g)) => Some(g),
                 _ => {
@@ -97,7 +109,7 @@ pub fn NewCounter() -> Element {
                     input {
                         class: "input",
                         id: "counter_name",
-                        placeholder: "pull-ups",
+                        placeholder: "Not set",
                         value: "{name}",
                         maxlength: "{CounterName::MAX_LEN}",
                         autocapitalize: "none",
@@ -117,8 +129,9 @@ pub fn NewCounter() -> Element {
                         oninput: move |e| amount.set(e.value()),
                     }
                     div { class: "chip-row chip-row-center",
-                        Chip { selected: per_day(), onclick: move |_| per_day.set(true), "Per day" }
-                        Chip { selected: !per_day(), onclick: move |_| per_day.set(false), "Per year" }
+                        Chip { selected: unit() == GoalUnit::Day, onclick: move |_| unit.set(GoalUnit::Day), "Per day" }
+                        Chip { selected: unit() == GoalUnit::Week, onclick: move |_| unit.set(GoalUnit::Week), "Per week" }
+                        Chip { selected: unit() == GoalUnit::Year, onclick: move |_| unit.set(GoalUnit::Year), "Per year" }
                     }
                     if let Some(p) = preview {
                         p { class: "pref-note", "{p}" }

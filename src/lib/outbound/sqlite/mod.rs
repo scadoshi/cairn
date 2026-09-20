@@ -17,7 +17,7 @@ use zwipe_components::ThemeConfig;
 
 /// Schema version written to SQLite's `user_version` pragma. Bump it and add
 /// a step in `migrate` for each schema change.
-const SCHEMA_VERSION: i64 = 4;
+const SCHEMA_VERSION: i64 = 5;
 
 const SCHEMA_V1: &str = "
 CREATE TABLE IF NOT EXISTS counters (
@@ -55,6 +55,9 @@ CREATE INDEX IF NOT EXISTS events_counter ON events(counter_id, at);
 
 /// v4: how much one tap adds, per counter.
 const SCHEMA_V4: &str = "ALTER TABLE counters ADD COLUMN step INTEGER NOT NULL DEFAULT 1;";
+
+/// v5: goals can be per week. At most one of the three goal columns is set.
+const SCHEMA_V5: &str = "ALTER TABLE counters ADD COLUMN goal_per_week INTEGER;";
 
 const THEME_KEY: &str = "theme";
 
@@ -111,6 +114,9 @@ fn migrate(conn: &Connection) -> Result<(), StoreError> {
     if version < 4 {
         conn.execute_batch(SCHEMA_V4)?;
     }
+    if version < 5 {
+        conn.execute_batch(SCHEMA_V5)?;
+    }
     if version < SCHEMA_VERSION {
         conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     }
@@ -129,12 +135,15 @@ fn row_to_counter(row: &rusqlite::Row<'_>) -> Result<Counter, StoreError> {
     let per_day: Option<i64> = row.get(3)?;
     let created: String = row.get(4)?;
     let step: i64 = row.get(5)?;
+    let per_week: Option<i64> = row.get(6)?;
     let to_u32 =
         |g: i64| u32::try_from(g).map_err(|_| StoreError(format!("bad goal {g} in database")));
-    let goal = match (per_year, per_day) {
-        (Some(g), _) => Some(Goal::per_year(to_u32(g)?).map_err(|e| StoreError(e.to_string()))?),
-        (None, Some(g)) => Some(Goal::per_day(to_u32(g)?).map_err(|e| StoreError(e.to_string()))?),
-        (None, None) => None,
+    let bad = |e: super::super::domain::counter::ValidationError| StoreError(e.to_string());
+    let goal = match (per_year, per_week, per_day) {
+        (Some(g), _, _) => Some(Goal::per_year(to_u32(g)?).map_err(bad)?),
+        (None, Some(g), _) => Some(Goal::per_week(to_u32(g)?).map_err(bad)?),
+        (None, None, Some(g)) => Some(Goal::per_day(to_u32(g)?).map_err(bad)?),
+        (None, None, None) => None,
     };
     Ok(Counter {
         id: CounterId(id),
@@ -145,16 +154,17 @@ fn row_to_counter(row: &rusqlite::Row<'_>) -> Result<Counter, StoreError> {
     })
 }
 
-/// The two nullable goal columns a goal maps to.
-fn goal_columns(goal: Option<Goal>) -> (Option<u32>, Option<u32>) {
+/// The nullable goal columns a goal maps to: (per year, per day, per week).
+fn goal_columns(goal: Option<Goal>) -> (Option<u32>, Option<u32>, Option<u32>) {
     match goal {
-        Some(Goal::PerYear(n)) => (Some(n), None),
-        Some(Goal::PerDay(n)) => (None, Some(n)),
-        None => (None, None),
+        Some(Goal::PerYear(n)) => (Some(n), None, None),
+        Some(Goal::PerDay(n)) => (None, Some(n), None),
+        Some(Goal::PerWeek(n)) => (None, None, Some(n)),
+        None => (None, None, None),
     }
 }
 
-const COUNTER_COLS: &str = "id, name, goal_per_year, goal_per_day, created_on, step";
+const COUNTER_COLS: &str = "id, name, goal_per_year, goal_per_day, created_on, step, goal_per_week";
 
 impl CounterStore for SqliteStore {
     fn list_counters(&self) -> Result<Vec<Counter>, StoreError> {
@@ -183,14 +193,15 @@ impl CounterStore for SqliteStore {
         today: NaiveDate,
     ) -> Result<Counter, StoreError> {
         let conn = self.conn()?;
-        let (per_year, per_day) = goal_columns(goal);
+        let (per_year, per_day, per_week) = goal_columns(goal);
         conn.execute(
-            "INSERT INTO counters (name, goal_per_year, goal_per_day, created_on, step)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
+            "INSERT INTO counters (name, goal_per_year, goal_per_day, goal_per_week, created_on, step)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
                 name.as_str(),
                 per_year,
                 per_day,
+                per_week,
                 today.format("%Y-%m-%d").to_string(),
                 step.get()
             ],
@@ -211,11 +222,12 @@ impl CounterStore for SqliteStore {
         goal: Option<Goal>,
         step: Step,
     ) -> Result<(), StoreError> {
-        let (per_year, per_day) = goal_columns(goal);
+        let (per_year, per_day, per_week) = goal_columns(goal);
         self.conn()?.execute(
-            "UPDATE counters SET name = ?1, goal_per_year = ?2, goal_per_day = ?3, step = ?4
-             WHERE id = ?5",
-            params![name.as_str(), per_year, per_day, step.get(), id.0],
+            "UPDATE counters
+             SET name = ?1, goal_per_year = ?2, goal_per_day = ?3, goal_per_week = ?4, step = ?5
+             WHERE id = ?6",
+            params![name.as_str(), per_year, per_day, per_week, step.get(), id.0],
         )?;
         Ok(())
     }
@@ -379,6 +391,17 @@ mod tests {
         assert_eq!(got.name.as_str(), "pull-ups");
         assert_eq!(got.goal, Some(Goal::PerDay(20)));
         assert_eq!(got.step.get(), 25);
+        s.update_counter(
+            c.id,
+            &got.name,
+            Some(Goal::per_week(100).unwrap()),
+            got.step,
+        )
+        .unwrap();
+        assert_eq!(
+            s.get_counter(c.id).unwrap().unwrap().goal,
+            Some(Goal::PerWeek(100))
+        );
         s.update_counter(c.id, &got.name, None, got.step).unwrap();
         assert_eq!(s.get_counter(c.id).unwrap().unwrap().goal, None);
     }

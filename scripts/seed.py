@@ -4,8 +4,8 @@
     scripts/seed.py PATH_TO_odo.db
 
 Adds five counters if they are not there (pull-ups at 15 a day, push-ups at
-10000 a year, pages read with no goal, squats at 40 a day, sit-ups at 12000
-a year) and writes one row per day from
+10000 a year, pages read at 150 a week, squats at 40 a day, sit-ups at
+12000 a year) and writes one row per day from
 January 1 two years back through today, plus the tap events behind each day
 (one to three sessions at realistic hours) so the hourly chart has shape.
 The pattern is deterministic: a weekly rhythm with rest days, a slow upward
@@ -25,12 +25,12 @@ import sqlite3
 import sys
 
 COUNTERS = [
-    # name, goal_per_year, goal_per_day, base reps, per-day noise, step
-    ("pull-ups", None, 15, 10, 5, 1),
-    ("push-ups", 10000, None, 24, 10, 5),
-    ("pages read", None, None, 16, 12, 10),
-    ("squats", None, 40, 30, 12, 10),
-    ("sit-ups", 12000, None, 28, 10, 5),
+    # name, goal_per_year, goal_per_day, goal_per_week, base reps, per-day noise, step
+    ("pull-ups", None, 15, None, 10, 5, 1),
+    ("push-ups", 10000, None, None, 24, 10, 5),
+    ("pages read", None, None, 150, 16, 12, 10),
+    ("squats", None, 40, None, 30, 12, 10),
+    ("sit-ups", 12000, None, None, 28, 10, 5),
 ]
 
 # Hours a session tends to start, weighted: an early block and an evening one.
@@ -43,13 +43,14 @@ def main(path: str) -> None:
     start = dt.date(today.year - 2, 1, 1)
     rng = random.Random(today.year)  # same data every run for a given year
 
-    for name, per_year, per_day, base, noise, step in COUNTERS:
+    for name, per_year, per_day, per_week, base, noise, step in COUNTERS:
         row = db.execute("SELECT id FROM counters WHERE name = ?", (name,)).fetchone()
         if row is None:
             db.execute(
-                "INSERT INTO counters (name, goal_per_year, goal_per_day, created_on, step)"
-                " VALUES (?, ?, ?, ?, ?)",
-                (name, per_year, per_day, start.isoformat(), step),
+                "INSERT INTO counters"
+                " (name, goal_per_year, goal_per_day, goal_per_week, created_on, step)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (name, per_year, per_day, per_week, start.isoformat(), step),
             )
             counter_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
         else:

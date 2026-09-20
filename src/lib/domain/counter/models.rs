@@ -89,6 +89,8 @@ impl std::fmt::Display for CounterName {
 pub enum Goal {
     /// Total for the calendar year.
     PerYear(u32),
+    /// Reps every week; the yearly total is this times the weeks in the year.
+    PerWeek(u32),
     /// Reps every day; the yearly total is this times the days in the year.
     PerDay(u32),
 }
@@ -103,6 +105,14 @@ impl Goal {
     }
 
     /// Rejects zero.
+    pub fn per_week(n: u32) -> Result<Self, ValidationError> {
+        if n == 0 {
+            return Err(ValidationError::ZeroGoal);
+        }
+        Ok(Self::PerWeek(n))
+    }
+
+    /// Rejects zero.
     pub fn per_day(n: u32) -> Result<Self, ValidationError> {
         if n == 0 {
             return Err(ValidationError::ZeroGoal);
@@ -114,6 +124,14 @@ impl Goal {
     pub fn yearly(self, days_in_year: u32) -> u32 {
         match self {
             Self::PerYear(n) => n,
+            // 365 days is 52.14 weeks; round rather than floor so 100 a week
+            // reads as 5,214, not 5,200.
+            Self::PerWeek(n) => {
+                let total = f64::from(n) * f64::from(days_in_year) / 7.0;
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let rounded = total.round() as u32;
+                rounded
+            }
             Self::PerDay(n) => n.saturating_mul(days_in_year),
         }
     }
@@ -122,6 +140,7 @@ impl Goal {
     pub fn daily(self, days_in_year: u32) -> f64 {
         match self {
             Self::PerYear(n) => f64::from(n) / f64::from(days_in_year.max(1)),
+            Self::PerWeek(n) => f64::from(n) / 7.0,
             Self::PerDay(n) => f64::from(n),
         }
     }
@@ -136,6 +155,13 @@ impl Goal {
                     "{}/year, {}/day",
                     thousands(n),
                     rate(self.daily(days_in_year))
+                )
+            }
+            Self::PerWeek(n) => {
+                format!(
+                    "{}/week, {}/year",
+                    thousands(n),
+                    thousands(self.yearly(days_in_year))
                 )
             }
             Self::PerDay(n) => {
@@ -153,6 +179,7 @@ impl std::fmt::Display for Goal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::PerYear(n) => write!(f, "{n}/year"),
+            Self::PerWeek(n) => write!(f, "{n}/week"),
             Self::PerDay(n) => write!(f, "{n}/day"),
         }
     }
@@ -267,6 +294,12 @@ mod tests {
         assert_eq!(Goal::per_year(5000).unwrap().yearly(365), 5000);
         assert_eq!(Goal::per_day(10).unwrap().yearly(365), 3650);
         assert_eq!(Goal::per_day(10).unwrap().yearly(366), 3660);
+        assert_eq!(Goal::per_week(100).unwrap().yearly(365), 5214);
+        assert_eq!(Goal::per_week(0), Err(ValidationError::ZeroGoal));
+        assert_eq!(
+            Goal::per_week(100).unwrap().label(365),
+            "100/week, 5,214/year"
+        );
         assert_eq!(Goal::per_day(15).unwrap().to_string(), "15/day");
         assert_eq!(Goal::per_year(5000).unwrap().to_string(), "5000/year");
         assert_eq!(Goal::per_day(15).unwrap().label(365), "15/day, 5,475/year");

@@ -20,6 +20,7 @@ use crate::{
         },
         now,
         router::Route,
+        screens::new_counter::GoalUnit,
         today, use_store,
     },
 };
@@ -460,7 +461,7 @@ fn EditSheet(
     let toast = use_toast();
     let mut name = use_signal(String::new);
     let mut amount = use_signal(String::new);
-    let mut per_day = use_signal(|| true);
+    let mut unit = use_signal(|| GoalUnit::Day);
     let mut step = use_signal(|| 1u32);
     let mut error = use_signal(|| None::<String>);
 
@@ -469,13 +470,9 @@ fn EditSheet(
         if open() {
             name.set(seed_name.clone());
             match current_goal {
-                Some(Goal::PerDay(n)) => {
+                Some(g @ (Goal::PerDay(n) | Goal::PerWeek(n) | Goal::PerYear(n))) => {
                     amount.set(n.to_string());
-                    per_day.set(true);
-                }
-                Some(Goal::PerYear(n)) => {
-                    amount.set(n.to_string());
-                    per_day.set(false);
+                    unit.set(GoalUnit::of(g));
                 }
                 None => amount.set(String::new()),
             }
@@ -493,13 +490,7 @@ fn EditSheet(
         let goal = if raw.trim().is_empty() {
             None
         } else {
-            let parsed = raw.trim().parse::<u32>().ok().map(|n| {
-                if per_day() {
-                    Goal::per_day(n)
-                } else {
-                    Goal::per_year(n)
-                }
-            });
+            let parsed = raw.trim().parse::<u32>().ok().map(|n| unit().goal(n));
             match parsed {
                 Some(Ok(g)) => Some(g),
                 _ => {
@@ -535,34 +526,44 @@ fn EditSheet(
                 Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
                 Button { variant: ButtonVariant::Util, onclick: save, "Save" }
             },
-            p { class: "field-label", "Name" }
-            input {
-                class: "input",
-                value: "{name}",
-                maxlength: "{CounterName::MAX_LEN}",
-                oninput: move |e| name.set(e.value()),
-            }
-            p { class: "field-label", "Goal (blank for none)" }
-            input {
-                class: "input",
-                r#type: "number",
-                min: "1",
-                inputmode: "numeric",
-                value: "{amount}",
-                oninput: move |e| amount.set(e.value()),
-            }
-            div { class: "chip-row",
-                Chip { selected: per_day(), onclick: move |_| per_day.set(true), "Per day" }
-                Chip { selected: !per_day(), onclick: move |_| per_day.set(false), "Per year" }
-            }
-            p { class: "field-label", "Each tap adds" }
-            div { class: "chip-row",
-                for n in Step::ALLOWED {
-                    Chip { selected: step() == n, onclick: move |_| step.set(n), "{n}" }
+            form { class: "flex-col text-center", onsubmit: move |e| e.prevent_default(),
+                label { class: "label", r#for: "edit_name", "Name" }
+                input {
+                    class: "input",
+                    id: "edit_name",
+                    placeholder: "Not set",
+                    value: "{name}",
+                    maxlength: "{CounterName::MAX_LEN}",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |e| name.set(e.value()),
                 }
-            }
-            if let Some(e) = error() {
-                p { class: "form-error", "{e}" }
+                label { class: "label", r#for: "edit_goal", "Goal" }
+                input {
+                    class: "input",
+                    id: "edit_goal",
+                    r#type: "number",
+                    min: "1",
+                    inputmode: "numeric",
+                    placeholder: "Not set",
+                    value: "{amount}",
+                    oninput: move |e| amount.set(e.value()),
+                }
+                div { class: "chip-row chip-row-center",
+                    Chip { selected: unit() == GoalUnit::Day, onclick: move |_| unit.set(GoalUnit::Day), "Per day" }
+                    Chip { selected: unit() == GoalUnit::Week, onclick: move |_| unit.set(GoalUnit::Week), "Per week" }
+                    Chip { selected: unit() == GoalUnit::Year, onclick: move |_| unit.set(GoalUnit::Year), "Per year" }
+                }
+                label { class: "label", "Each tap adds" }
+                div { class: "chip-row chip-row-center",
+                    for n in Step::ALLOWED {
+                        Chip { selected: step() == n, onclick: move |_| step.set(n), "{n}" }
+                    }
+                }
+                if let Some(e) = error() {
+                    p { class: "form-error", "{e}" }
+                }
             }
         }
     }
