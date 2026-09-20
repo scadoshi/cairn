@@ -18,10 +18,17 @@ Read [`CLAUDE.md`](CLAUDE.md) first for the rules.
 
 ## Current focus
 
-**2026-09-19: scaffold.** The crate builds, the domain (counters, daily
-entries, stats, yearly goals, CSV) has tests, SQLite persists everything
-including the picked theme, and the desktop UI has a home screen and a counter
-screen using the shared zwipe components. Nothing is polished yet.
+**2026-09-20: named Crow, real data loaded, ready for a phone.** The app is
+feature-complete for daily use: counters with per-day entries and tap
+events, goals per day, week, or year with pace, trend charts, tiles, a
+config screen with hints, OS back gesture, toasts, CSV export, and the
+owner's nine months of real pull-up, push-up, and squat taps imported. The
+release device build compiles and stops only at code signing.
 
-**Next:** run it daily, feel out the counter screen, then the iOS build. See
-[`progress/todo.md`](progress/todo.md).
+**Next, 2026-09-21:** register the App ID `com.scadoshi.crow`, the phone,
+and the two profiles, then install straight onto the phone. Every step is
+in [`operations/ios/first_device.md`](operations/ios/first_device.md).
+Push the 46 local commits first. Then TestFlight and review via
+[`operations/ios/submission.md`](operations/ios/submission.md).
+
+See [`progress/todo.md`](progress/todo.md) for the ordered list.
