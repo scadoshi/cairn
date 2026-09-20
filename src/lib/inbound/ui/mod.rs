@@ -103,8 +103,13 @@ pub fn App() -> Element {
         document::Style { {COMPONENTS_CSS} }
         document::Stylesheet { href: MAIN_CSS }
         document::Stylesheet { href: TOAST_CSS }
-        ToastProvider { max_toasts: 3_usize, class: "toast-container",
-            Router::<Route> {}
+        // The theme class sits here as well as on the screen, so the toast
+        // container, which mounts above the router, resolves the same
+        // palette instead of falling through to unset variables.
+        div { class: "theme-root {theme.read().css_class()}",
+            ToastProvider { max_toasts: 3_usize, class: "toast-container",
+                Router::<Route> {}
+            }
         }
     }
 }
