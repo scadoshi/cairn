@@ -2,7 +2,7 @@
 //! bar with +1 and Open; the screen bar goes back home or to the create form.
 
 use crate::{
-    domain::counter::{Counter, stats, stats::days_in_year},
+    domain::counter::{Counter, format::thousands, stats, stats::days_in_year},
     inbound::ui::{
         components::stat_tile::{StatTile, rate},
         now,
@@ -68,7 +68,7 @@ pub fn Counters() -> Element {
                 onclick: move |_| {
                     nav.push(Route::NewCounter {});
                 },
-                "New"
+                "Create"
             }
         }
     }
@@ -90,7 +90,7 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
         move |delta: i64| match bump_store.adjust(id, now(), delta) {
             Ok(total) => {
                 toast.info(
-                    format!("{name}: {total} today"),
+                    format!("{name}: {} today", thousands(total)),
                     ToastOptions::default().duration(Duration::from_millis(900)),
                 );
                 on_bump.call(());
@@ -104,15 +104,15 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
             div { class: "card-header",
                 span { class: "card-title", "{counter.name}" }
                 if let Some(g) = counter.goal {
-                    span { class: "card-subtitle", "goal {g.label(days_in_year(today().year()))}" }
+                    span { class: "stat-chip stat-chip-goal", "{g.label(days_in_year(today().year()))}" }
                 }
             }
             div { class: "stat-grid stat-grid-3",
-                StatTile { label: "Lifetime", value: summary.lifetime.to_string() }
-                StatTile { label: "Today", value: summary.today.to_string() }
+                StatTile { label: "Lifetime", value: thousands(summary.lifetime) }
+                StatTile { label: "Today", value: thousands(summary.today) }
                 StatTile {
                     label: "This year",
-                    value: summary.this_year.total.to_string(),
+                    value: thousands(summary.this_year.total),
                     hint: format!("{}/day", rate(summary.this_year.per_day)),
                 }
             }

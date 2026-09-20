@@ -3,8 +3,12 @@
 
 use crate::{
     domain::counter::{
-        Counter, CounterId, CounterName, DayCount, Event, Goal, Step, series, series::HourlyBasis,
-        stats, stats::Summary,
+        Counter, CounterId, CounterName, DayCount, Event, Goal, Step,
+        format::{thousands, thousands_i64},
+        series,
+        series::HourlyBasis,
+        stats,
+        stats::Summary,
     },
     inbound::ui::{
         bump_store_version,
@@ -73,7 +77,7 @@ pub fn CounterScreen(id: i64) -> Element {
         move |delta: i64| match adjust_store.adjust(id, now(), delta) {
             Ok(total) => {
                 toast.info(
-                    format!("{total} today"),
+                    format!("{} today", thousands(total)),
                     ToastOptions::default().duration(Duration::from_millis(900)),
                 );
                 reload.call(());
@@ -118,13 +122,13 @@ pub fn CounterScreen(id: i64) -> Element {
                 }
                 div { class: "profile-list",
                     div { class: "odometer",
-                        span { class: "odometer-value", "{summary.lifetime}" }
+                        span { class: "odometer-value", "{thousands(summary.lifetime)}" }
                         span { class: "odometer-label", "lifetime since {c.created_on}" }
                     }
                     div { class: "stat-grid stat-grid-3",
-                        StatTile { label: "Today", value: summary.today.to_string() }
+                        StatTile { label: "Today", value: thousands(summary.today) }
                         StatTile { label: "Streak", value: format!("{} days", summary.streak) }
-                        StatTile { label: "This month", value: summary.this_month.to_string() }
+                        StatTile { label: "This month", value: thousands(summary.this_month) }
                     }
                     ActionBar {
                         Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(-step), "-{step}" }
@@ -144,7 +148,7 @@ pub fn CounterScreen(id: i64) -> Element {
                             for y in summary.years.iter() {
                                 tr {
                                     td { "{y.year}" }
-                                    td { "{y.total}" }
+                                    td { "{thousands(y.total)}" }
                                     td { "{rate(y.per_day)}" }
                                     td { "{y.active_days} / {y.days_elapsed}" }
                                 }
@@ -389,15 +393,15 @@ fn NumbersCard(entries: Vec<DayCount>, summary: Summary, goal: Option<Goal>) -> 
     let projection_note = goal.map(|g| {
         let target = g.yearly(year_len);
         if summary.projected_year_end >= target {
-            format!("clears the {target} goal")
+            format!("clears the {} goal", thousands(target))
         } else {
-            format!("short of the {target} goal")
+            format!("short of the {} goal", thousands(target))
         }
     });
     let delta = |a: u32, b: u32| -> String {
         match a.cmp(&b) {
-            std::cmp::Ordering::Greater => format!("up {} on the week before", a - b),
-            std::cmp::Ordering::Less => format!("down {} on the week before", b - a),
+            std::cmp::Ordering::Greater => format!("up {} on the week before", thousands(a - b)),
+            std::cmp::Ordering::Less => format!("down {} on the week before", thousands(b - a)),
             std::cmp::Ordering::Equal => "level with the week before".to_string(),
         }
     };
@@ -407,16 +411,16 @@ fn NumbersCard(entries: Vec<DayCount>, summary: Summary, goal: Option<Goal>) -> 
             div { class: "card-header",
                 span { class: "card-title", "Numbers" }
             }
-            NumberRow { label: "This week", value: week_total.to_string(), hint: format!("{}/day so far, {}", rate(f64::from(week_total) / f64::from(week_days)), delta(week_total, last_week_total)) }
-            NumberRow { label: "Last 7 days", value: last7.to_string(), hint: delta(last7, prev7).replace("the week before", "the 7 before") }
+            NumberRow { label: "This week", value: thousands(week_total), hint: format!("{}/day so far, {}", rate(f64::from(week_total) / f64::from(week_days)), delta(week_total, last_week_total)) }
+            NumberRow { label: "Last 7 days", value: thousands(last7), hint: delta(last7, prev7).replace("the week before", "the 7 before") }
             NumberRow { label: "Streak", value: format!("{} days", summary.streak), hint: format!("longest ever {} days", summary.longest_streak) }
             NumberRow { label: "Consistency", value: format!("{:.0}%", summary.consistency * 100.0), hint: format!("{} of {} days this year", summary.this_year.active_days, summary.this_year.days_elapsed) }
-            NumberRow { label: "Projected year end", value: summary.projected_year_end.to_string(), hint: projection_note.unwrap_or_else(|| "at this year's pace".to_string()) }
+            NumberRow { label: "Projected year end", value: thousands(summary.projected_year_end), hint: projection_note.unwrap_or_else(|| "at this year's pace".to_string()) }
             if let Some(d) = summary.days_since_last {
                 NumberRow { label: "Last logged", value: if d == 0 { "today".to_string() } else { format!("{d} days ago") }, hint: String::new() }
             }
             if let Some((monday, total)) = best_week {
-                NumberRow { label: "Best week", value: total.to_string(), hint: format!("week of {}", monday.format("%-d %b")) }
+                NumberRow { label: "Best week", value: thousands(total), hint: format!("week of {}", monday.format("%-d %b")) }
             }
             if let Some((i, avg)) = best_month {
                 NumberRow { label: "Best month", value: format!("{}/day", rate(avg)), hint: months.get(i).copied().unwrap_or("").to_string() }
@@ -573,31 +577,24 @@ fn YearCard(summary: Summary) -> Element {
             div { class: "card-header",
                 span { class: "card-title", "{y.year}, day {y.days_elapsed}" }
             }
-            div { class: "stat-grid stat-grid-3",
-                StatTile { label: "Total", value: y.total.to_string() }
-                StatTile { label: "Per day", value: rate(y.per_day) }
-                StatTile {
-                    label: "Lifetime/day",
-                    value: rate(summary.lifetime_per_day),
-                    hint: summary.best_day.map(|b| format!("best {} on {}", b.count, b.day)),
-                }
+            NumberRow { label: "Total", value: thousands(y.total), hint: String::new() }
+            NumberRow { label: "Per day", value: rate(y.per_day), hint: String::new() }
+            NumberRow {
+                label: "Lifetime per day",
+                value: rate(summary.lifetime_per_day),
+                hint: summary.best_day.map(|b| format!("best {} on {}", thousands(b.count), b.day)).unwrap_or_default(),
             }
             if let Some(p) = &y.pace {
-                div { class: "stat-grid stat-grid-3",
-                    StatTile {
-                        label: "Goal",
-                        value: p.goal.to_string(),
-                        hint: format!("{} remaining", p.remaining),
-                    }
-                    StatTile {
-                        label: "Target today",
-                        value: p.target_today.to_string(),
-                        hint: if p.delta >= 0 { format!("{} ahead", p.delta) } else { format!("{} behind", -p.delta) },
-                    }
-                    StatTile {
-                        label: "Needed per day",
-                        value: p.needed_per_day.map_or_else(|| "done".to_string(), rate),
-                    }
+                NumberRow { label: "Goal", value: thousands(p.goal), hint: format!("{} remaining", thousands(p.remaining)) }
+                NumberRow {
+                    label: "Target today",
+                    value: thousands(p.target_today),
+                    hint: if p.delta >= 0 { format!("{} ahead", thousands_i64(p.delta)) } else { format!("{} behind", thousands_i64(-p.delta)) },
+                }
+                NumberRow {
+                    label: "Needed per day",
+                    value: p.needed_per_day.map_or_else(|| "done".to_string(), rate),
+                    hint: String::new(),
                 }
             }
         }

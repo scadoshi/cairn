@@ -126,6 +126,47 @@ input {
     width: min(20rem, calc(100% - 2rem));
 }
 
+/* Floating fields, the deck form's shape: labels and inputs straight on the
+   grid, no card. */
+.form-section-title {
+    margin-bottom: 0.5rem;
+}
+
+.label {
+    display: block;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    color: var(--accent-primary);
+    margin-bottom: 0.4rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.chip-row-center {
+    justify-content: center;
+}
+
+/* Themed pills, zwipe's deck-list stat chips. */
+.stat-chip {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    max-width: 100%;
+    text-align: center;
+    color: var(--accent-primary);
+    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
+}
+
+.stat-chip-goal {
+    color: var(--accent-tertiary);
+    background-color: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, transparent);
+}
+
 .home-hero {
     display: flex;
     flex-direction: column;

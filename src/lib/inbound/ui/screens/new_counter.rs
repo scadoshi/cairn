@@ -2,7 +2,7 @@
 //! day or for the year. Save lives in the screen's bar, zwiper style.
 
 use crate::{
-    domain::counter::{CounterName, Goal, Step, stats},
+    domain::counter::{CounterName, Goal, Step, format::thousands, stats},
     inbound::ui::{router::Route, today, use_store},
 };
 use chrono::Datelike;
@@ -33,7 +33,10 @@ pub fn NewCounter() -> Element {
         .filter(|n| *n > 0)
         .map(|n| {
             if per_day() {
-                format!("{n} a day is {} this year", n.saturating_mul(days))
+                format!(
+                    "{n} a day is {} this year",
+                    thousands(n.saturating_mul(days))
+                )
             } else {
                 format!(
                     "{n} this year is {:.1} a day",
@@ -85,44 +88,49 @@ pub fn NewCounter() -> Element {
 
     rsx! {
         div { class: "screen-content",
-            div { class: "profile-sections content-enter",
-                if let Some(e) = error() {
-                    p { class: "form-error", "{e}" }
-                }
-                div { class: "profile-list",
-                    div { class: "card-header",
+            div { class: "container-sm content-enter",
+                form { class: "flex-col text-center", onsubmit: move |e| e.prevent_default(),
+                    div { class: "form-section-title",
                         span { class: "card-title", "Counter" }
                     }
-                    div { class: "form-body",
-                        input {
-                            class: "input",
-                            placeholder: "Name, e.g. pull-ups",
-                            value: "{name}",
-                            maxlength: "{CounterName::MAX_LEN}",
-                            oninput: move |e| name.set(e.value()),
+                    label { class: "label", r#for: "counter_name", "Name" }
+                    input {
+                        class: "input",
+                        id: "counter_name",
+                        placeholder: "pull-ups",
+                        value: "{name}",
+                        maxlength: "{CounterName::MAX_LEN}",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        oninput: move |e| name.set(e.value()),
+                    }
+                    label { class: "label", r#for: "counter_goal", "Goal" }
+                    input {
+                        class: "input",
+                        id: "counter_goal",
+                        r#type: "number",
+                        min: "1",
+                        inputmode: "numeric",
+                        placeholder: "Not set",
+                        value: "{amount}",
+                        oninput: move |e| amount.set(e.value()),
+                    }
+                    div { class: "chip-row chip-row-center",
+                        Chip { selected: per_day(), onclick: move |_| per_day.set(true), "Per day" }
+                        Chip { selected: !per_day(), onclick: move |_| per_day.set(false), "Per year" }
+                    }
+                    if let Some(p) = preview {
+                        p { class: "pref-note", "{p}" }
+                    }
+                    label { class: "label", "Each tap adds" }
+                    div { class: "chip-row chip-row-center",
+                        for n in Step::ALLOWED {
+                            Chip { selected: step() == n, onclick: move |_| step.set(n), "{n}" }
                         }
-                        input {
-                            class: "input",
-                            r#type: "number",
-                            min: "1",
-                            inputmode: "numeric",
-                            placeholder: "Goal (optional)",
-                            value: "{amount}",
-                            oninput: move |e| amount.set(e.value()),
-                        }
-                        div { class: "chip-row",
-                            Chip { selected: per_day(), onclick: move |_| per_day.set(true), "Per day" }
-                            Chip { selected: !per_day(), onclick: move |_| per_day.set(false), "Per year" }
-                        }
-                        if let Some(p) = preview {
-                            p { class: "pref-note", "{p}" }
-                        }
-                        p { class: "field-label", "Each tap adds" }
-                        div { class: "chip-row",
-                            for n in Step::ALLOWED {
-                                Chip { selected: step() == n, onclick: move |_| step.set(n), "{n}" }
-                            }
-                        }
+                    }
+                    if let Some(e) = error() {
+                        p { class: "form-error", "{e}" }
                     }
                 }
             }

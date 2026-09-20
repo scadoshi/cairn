@@ -2,7 +2,7 @@
 //! to the counters and the profile. Same shape as zwiper's home.
 
 use crate::{
-    domain::counter::stats,
+    domain::counter::{format::thousands, stats},
     inbound::ui::{router::Route, today, use_store},
 };
 use chrono::Datelike;
@@ -54,7 +54,7 @@ pub fn Home() -> Element {
                 } else {
                     div { class: "profile-row",
                         span { class: "profile-row-label hero-label", "Logged today" }
-                        div { class: "profile-row-value", "{today_total}" }
+                        div { class: "profile-row-value", "{thousands(today_total)}" }
                     }
                     div { class: "profile-row",
                         span { class: "profile-row-label hero-label", "Counters touched" }

@@ -17,7 +17,5 @@ pub fn StatTile(label: String, value: String, #[props(default)] hint: Option<Str
     }
 }
 
-/// Formats a per-day rate with one decimal.
-pub fn rate(v: f64) -> String {
-    format!("{v:.1}")
-}
+/// Re-exported so screens keep one import for the tile and its number style.
+pub use crate::domain::counter::format::rate;

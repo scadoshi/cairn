@@ -129,9 +129,22 @@ impl Goal {
     /// Both figures, the one entered first: "15/day, 5475/year" or
     /// "10000/year, 27.4/day".
     pub fn label(self, days_in_year: u32) -> String {
+        use super::format::{rate, thousands};
         match self {
-            Self::PerYear(n) => format!("{n}/year, {:.1}/day", self.daily(days_in_year)),
-            Self::PerDay(n) => format!("{n}/day, {}/year", self.yearly(days_in_year)),
+            Self::PerYear(n) => {
+                format!(
+                    "{}/year, {}/day",
+                    thousands(n),
+                    rate(self.daily(days_in_year))
+                )
+            }
+            Self::PerDay(n) => {
+                format!(
+                    "{}/day, {}/year",
+                    thousands(n),
+                    thousands(self.yearly(days_in_year))
+                )
+            }
         }
     }
 }
@@ -256,10 +269,10 @@ mod tests {
         assert_eq!(Goal::per_day(10).unwrap().yearly(366), 3660);
         assert_eq!(Goal::per_day(15).unwrap().to_string(), "15/day");
         assert_eq!(Goal::per_year(5000).unwrap().to_string(), "5000/year");
-        assert_eq!(Goal::per_day(15).unwrap().label(365), "15/day, 5475/year");
+        assert_eq!(Goal::per_day(15).unwrap().label(365), "15/day, 5,475/year");
         assert_eq!(
             Goal::per_year(3650).unwrap().label(365),
-            "3650/year, 10.0/day"
+            "3,650/year, 10.0/day"
         );
     }
 }

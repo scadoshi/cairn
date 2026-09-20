@@ -1,6 +1,7 @@
 //! Counters, their daily entries, and everything computed from them.
 
 pub mod csv;
+pub mod format;
 pub mod models;
 pub mod ports;
 pub mod stats;
