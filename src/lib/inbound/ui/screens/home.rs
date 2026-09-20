@@ -78,9 +78,9 @@ pub fn Home() -> Element {
             Button {
                 variant: ButtonVariant::Util,
                 onclick: move |_| {
-                    nav.push(Route::Profile {});
+                    nav.push(Route::Config {});
                 },
-                "Profile"
+                "Config"
             }
         }
     }

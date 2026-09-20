@@ -1,5 +1,5 @@
-//! Profile: theme and dark mode, laid out like zwiper's profile screen with
-//! its preferences sheet.
+//! Config: everything the person can set, grouped, laid out like zwiper's
+//! profile screen with its preferences sheet.
 
 use crate::{
     domain::{counter::csv, preferences::Preferences},
@@ -41,9 +41,9 @@ fn display_theme_name(slug: &str) -> String {
         .join(" ")
 }
 
-/// The profile screen.
+/// The config screen.
 #[component]
-pub fn Profile() -> Element {
+pub fn Config() -> Element {
     let mut theme = use_context::<Signal<ThemeConfig>>();
     let nav = use_navigator();
     let store = use_store();
@@ -105,7 +105,7 @@ pub fn Profile() -> Element {
         div { class: "profile-sections content-enter",
             div { class: "profile-list",
                 div { class: "card-header",
-                    span { class: "card-title", "Preferences" }
+                    span { class: "card-title", "Appearance" }
                 }
                 div { class: "profile-row",
                     span { class: "profile-row-label", "Theme" }
@@ -115,6 +115,16 @@ pub fn Profile() -> Element {
                             variant: ButtonVariant::Util,
                             onclick: move |_| preferences_open.set(true),
                             "Change"
+                        }
+                    }
+                }
+                div { class: "profile-row",
+                    span { class: "profile-row-label", "Dark mode" }
+                    div { class: "profile-row-value",
+                        Button {
+                            variant: ButtonVariant::Util,
+                            onclick: toggle_dark,
+                            if theme.read().is_dark { "On" } else { "Off" }
                         }
                     }
                 }
@@ -135,15 +145,10 @@ pub fn Profile() -> Element {
                         }
                     }
                 }
-                div { class: "profile-row",
-                    span { class: "profile-row-label", "Week starts" }
-                    div { class: "profile-row-value",
-                        Button {
-                            variant: ButtonVariant::Util,
-                            onclick: move |_| prefs.with_mut(|q| q.week_start = if q.week_start == Weekday::Mon { Weekday::Sun } else { Weekday::Mon }),
-                            if prefs().week_start == Weekday::Mon { "Monday" } else { "Sunday" }
-                        }
-                    }
+            }
+            div { class: "profile-list",
+                div { class: "card-header",
+                    span { class: "card-title", "Counting" }
                 }
                 div { class: "profile-row",
                     span { class: "profile-row-label", "Day starts" }
@@ -162,11 +167,26 @@ pub fn Profile() -> Element {
                     }
                 }
                 div { class: "profile-row",
+                    span { class: "profile-row-label", "Week starts" }
+                    div { class: "profile-row-value",
+                        Button {
+                            variant: ButtonVariant::Util,
+                            onclick: move |_| prefs.with_mut(|q| q.week_start = if q.week_start == Weekday::Mon { Weekday::Sun } else { Weekday::Mon }),
+                            if prefs().week_start == Weekday::Mon { "Monday" } else { "Sunday" }
+                        }
+                    }
+                }
+                div { class: "profile-row",
                     span { class: "profile-row-label", "Rest days" }
                     div { class: "profile-row-value",
                         span { "{rest_label}" }
                         Button { variant: ButtonVariant::Util, onclick: move |_| rest_open.set(true), "Change" }
                     }
+                }
+            }
+            div { class: "profile-list",
+                div { class: "card-header",
+                    span { class: "card-title", "Counters" }
                 }
                 div { class: "profile-row",
                     span { class: "profile-row-label", "Sort counters" }
@@ -188,27 +208,26 @@ pub fn Profile() -> Element {
                         }
                     }
                 }
-                div { class: "profile-row",
-                    span { class: "profile-row-label", "Dark mode" }
-                    div { class: "profile-row-value",
-                        Button {
-                            variant: ButtonVariant::Util,
-                            onclick: toggle_dark,
-                            if theme.read().is_dark { "On" } else { "Off" }
-                        }
-                    }
-                }
             }
             div { class: "profile-list",
                 div { class: "card-header",
                     span { class: "card-title", "Data" }
+                    if let Some(n) = notice() {
+                    p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
                 }
+            }
                 div { class: "profile-row",
                     span { class: "profile-row-label", "Export" }
                     div { class: "profile-row-value",
                         Button { variant: ButtonVariant::Util, onclick: export, "CSV" }
-                    }
+                        if let Some(n) = notice() {
+                    p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
                 }
+            }
+                    if let Some(n) = notice() {
+                    p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
+                }
+            }
                 if let Some(n) = notice() {
                     p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
                 }

@@ -1,9 +1,9 @@
-//! Routes: the landing, the counter list, one counter, and the profile.
+//! Routes: the landing, the counter list, one counter, and config.
 
 use super::{
     Shell,
     components::navigation::back_handler::BackHandlerLayout,
-    screens::{counter::CounterScreen, counters::Counters, home::Home, profile::Profile},
+    screens::{config::Config, counter::CounterScreen, counters::Counters, home::Home},
 };
 use dioxus::prelude::*;
 
@@ -25,7 +25,7 @@ pub enum Route {
             /// `CounterId` as a plain integer, since routes are strings.
             id: i64,
         },
-        /// Preferences: theme and dark mode.
-        #[route("/profile")]
-        Profile {},
+        /// Everything the person can set.
+        #[route("/config")]
+        Config {},
 }
