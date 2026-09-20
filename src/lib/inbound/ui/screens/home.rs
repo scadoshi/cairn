@@ -62,7 +62,7 @@ pub fn Home() -> Element {
                     TileGrid {
                         Tile { label: "logged today", value: compact(today_total) }
                         Tile { label: "touched today", value: compact(u32::try_from(active).unwrap_or(u32::MAX)), hint: format!("of {counters} counters") }
-                        Tile { label: "best streak", value: format!("{streak} days") }
+                        Tile { label: "best streak", value: compact(streak), hint: "days".to_string() }
                     }
                 }
             }

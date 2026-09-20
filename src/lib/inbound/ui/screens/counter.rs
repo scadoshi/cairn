@@ -537,13 +537,14 @@ fn HabitCard(summary: Summary) -> Element {
             div { class: "card-header",
                 span { class: "card-title", "Habit" }
             }
-            TileGrid {
+            div { class: "tile-grid tile-grid-2",
+                Tile { label: "streak", value: compact(summary.streak), hint: "days".to_string() }
+                Tile { label: "longest streak", value: compact(summary.longest_streak), hint: "days".to_string() }
                 Tile {
                     label: "consistency",
                     value: format!("{:.0}%", summary.consistency * 100.0),
                     hint: format!("{} of {} days this year", summary.this_year.active_days, summary.this_year.days_elapsed),
                 }
-                Tile { label: "longest streak", value: format!("{} days", summary.longest_streak) }
                 if let Some(l) = last {
                     Tile { label: "last logged", value: l }
                 }
