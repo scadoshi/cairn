@@ -73,12 +73,13 @@ pub fn Config() -> Element {
             .list_counters()
             .map_err(|e| e.to_string())
             .and_then(|counters| {
-                let dir = paths::exports().map_err(|e| e.to_string())?;
+                let dir = paths::exports().map_err(|e| format!("export folder: {e}"))?;
                 let mut written = 0usize;
                 for c in counters {
                     let entries = store.entries(c.id).map_err(|e| e.to_string())?;
                     let path = dir.join(format!("odo-{}.csv", c.name.slug()));
-                    std::fs::write(&path, csv::render(&entries)).map_err(|e| e.to_string())?;
+                    std::fs::write(&path, csv::render(&entries))
+                        .map_err(|e| format!("{}: {e}", path.display()))?;
                     written += 1;
                 }
                 Ok((written, dir))
@@ -243,9 +244,6 @@ pub fn Config() -> Element {
             div { class: "profile-list",
                 div { class: "card-header",
                     span { class: "card-title", "Data" }
-                    if let Some(n) = notice() {
-                    p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
-                }
             }
                 div { class: "profile-row",
                     span { class: "row-label-with-hint",
@@ -254,17 +252,14 @@ pub fn Config() -> Element {
                     }
                     div { class: "profile-row-value",
                         Button { variant: ButtonVariant::Util, onclick: export, "CSV" }
-                        if let Some(n) = notice() {
-                    p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
-                }
-            }
                     if let Some(n) = notice() {
                     p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
                 }
-            }
                 if let Some(n) = notice() {
                     p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
                 }
+            }
+            }
             }
         }
         }
