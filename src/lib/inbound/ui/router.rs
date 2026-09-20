@@ -1,12 +1,9 @@
-//! Routes: the counter list, one counter, the create form, and the profile.
+//! Routes: the landing, the counter list, one counter, and the profile.
 
 use super::{
     Shell,
     components::navigation::back_handler::BackHandlerLayout,
-    screens::{
-        counter::CounterScreen, counters::Counters, home::Home, new_counter::NewCounter,
-        profile::Profile,
-    },
+    screens::{counter::CounterScreen, counters::Counters, home::Home, profile::Profile},
 };
 use dioxus::prelude::*;
 
@@ -22,9 +19,6 @@ pub enum Route {
         /// The counter list.
         #[route("/counters")]
         Counters {},
-        /// Create a counter.
-        #[route("/new")]
-        NewCounter {},
         /// One counter, by store id.
         #[route("/counters/:id")]
         CounterScreen {

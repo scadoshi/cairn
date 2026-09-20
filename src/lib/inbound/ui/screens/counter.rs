@@ -3,7 +3,7 @@
 
 use crate::{
     domain::counter::{
-        Counter, CounterId, CounterName, DayCount, Event, Goal, Step,
+        Counter, CounterId, DayCount, Event, Goal,
         format::{thousands, thousands_i64},
         series,
         series::HourlyBasis,
@@ -15,12 +15,12 @@ use crate::{
         components::{
             alert_dialog::ConfirmDialog,
             bottom_sheet::BottomSheet,
+            counter_form::{CounterForm, CounterFormState},
             line_chart::{LineChart, Point},
-            stat_tile::{StatTile, rate},
+            tile::{Tile, TileGrid, rate},
         },
         now,
         router::Route,
-        screens::new_counter::GoalUnit,
         today, use_store,
     },
 };
@@ -126,10 +126,10 @@ pub fn CounterScreen(id: i64) -> Element {
                         span { class: "odometer-value", "{thousands(summary.lifetime)}" }
                         span { class: "odometer-label", "lifetime since {c.created_on}" }
                     }
-                    div { class: "stat-grid stat-grid-3",
-                        StatTile { label: "Today", value: thousands(summary.today) }
-                        StatTile { label: "Streak", value: format!("{} days", summary.streak) }
-                        StatTile { label: "This month", value: thousands(summary.this_month) }
+                    TileGrid {
+                        Tile { label: "today", value: thousands(summary.today) }
+                        Tile { label: "streak", value: format!("{} days", summary.streak) }
+                        Tile { label: "this month", value: thousands(summary.this_month) }
                     }
                     ActionBar {
                         Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(-step), "-{step}" }
@@ -366,7 +366,8 @@ fn TrendsCard(
     }
 }
 
-/// The numbers behind the charts, as ruled rows.
+/// The numbers behind the charts: single figures as tiles, comparisons and
+/// dates as ruled rows underneath.
 #[component]
 fn NumbersCard(entries: Vec<DayCount>, summary: Summary, goal: Option<Goal>) -> Element {
     let now = today();
@@ -391,19 +392,22 @@ fn NumbersCard(entries: Vec<DayCount>, summary: Summary, goal: Option<Goal>) -> 
         "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ];
     let year_len = stats::days_in_year(now.year());
-    let projection_note = goal.map(|g| {
-        let target = g.yearly(year_len);
-        if summary.projected_year_end >= target {
-            format!("clears the {} goal", thousands(target))
-        } else {
-            format!("short of the {} goal", thousands(target))
-        }
-    });
-    let delta = |a: u32, b: u32| -> String {
+    let projection_hint = goal.map_or_else(
+        || "at this pace".to_string(),
+        |g| {
+            let target = g.yearly(year_len);
+            if summary.projected_year_end >= target {
+                "clears the goal".to_string()
+            } else {
+                "short of the goal".to_string()
+            }
+        },
+    );
+    let delta = |a: u32, b: u32, than: &str| -> String {
         match a.cmp(&b) {
-            std::cmp::Ordering::Greater => format!("up {} on last week", thousands(a - b)),
-            std::cmp::Ordering::Less => format!("down {} on last week", thousands(b - a)),
-            std::cmp::Ordering::Equal => "level with last week".to_string(),
+            std::cmp::Ordering::Greater => format!("up {} on {than}", thousands(a - b)),
+            std::cmp::Ordering::Less => format!("down {} on {than}", thousands(b - a)),
+            std::cmp::Ordering::Equal => format!("level with {than}"),
         }
     };
 
@@ -412,19 +416,26 @@ fn NumbersCard(entries: Vec<DayCount>, summary: Summary, goal: Option<Goal>) -> 
             div { class: "card-header",
                 span { class: "card-title", "Numbers" }
             }
-            NumberRow { label: "This week", value: thousands(week_total), hint: format!("{}/day so far, {}", rate(f64::from(week_total) / f64::from(week_days)), delta(week_total, last_week_total)) }
-            NumberRow { label: "Last 7 days", value: thousands(last7), hint: delta(last7, prev7).replace("last week", "the 7 before") }
-            NumberRow { label: "Streak", value: format!("{} days", summary.streak), hint: format!("longest {} days", summary.longest_streak) }
-            NumberRow { label: "Consistency", value: format!("{:.0}%", summary.consistency * 100.0), hint: format!("{} of {} days", summary.this_year.active_days, summary.this_year.days_elapsed) }
-            NumberRow { label: "Projected year end", value: thousands(summary.projected_year_end), hint: projection_note.unwrap_or_else(|| "at this year's pace".to_string()) }
+            TileGrid {
+                Tile { label: "this week", value: thousands(week_total), hint: format!("{}/day", rate(f64::from(week_total) / f64::from(week_days))) }
+                Tile { label: "last 7 days", value: thousands(last7) }
+                Tile { label: "consistency", value: format!("{:.0}%", summary.consistency * 100.0), hint: format!("{} of {} days", summary.this_year.active_days, summary.this_year.days_elapsed) }
+                Tile { label: "projected", value: thousands(summary.projected_year_end), hint: projection_hint }
+                Tile { label: "longest streak", value: format!("{} days", summary.longest_streak) }
+                if let Some(b) = summary.best_day {
+                    Tile { label: "best day", value: thousands(b.count), hint: b.day.format("%-d %b").to_string() }
+                }
+            }
+            NumberRow { label: "This week", value: delta(week_total, last_week_total, "last week"), hint: String::new() }
+            NumberRow { label: "Last 7 days", value: delta(last7, prev7, "the 7 before"), hint: String::new() }
             if let Some(d) = summary.days_since_last {
                 NumberRow { label: "Last logged", value: match d { 0 => "today".to_string(), 1 => "yesterday".to_string(), n => format!("{n} days ago") }, hint: String::new() }
             }
             if let Some((monday, total)) = best_week {
-                NumberRow { label: "Best week", value: thousands(total), hint: format!("w/c {}", monday.format("%-d %b")) }
+                NumberRow { label: "Best week", value: format!("{}, w/c {}", thousands(total), monday.format("%-d %b")), hint: String::new() }
             }
             if let Some((i, avg)) = best_month {
-                NumberRow { label: "Best month", value: format!("{}/day", rate(avg)), hint: months.get(i).copied().unwrap_or("").to_string() }
+                NumberRow { label: "Best month", value: format!("{}, {}/day", months.get(i).copied().unwrap_or(""), rate(avg)), hint: String::new() }
             }
         }
     }
@@ -446,7 +457,7 @@ fn NumberRow(label: String, value: String, hint: String) -> Element {
     }
 }
 
-/// Name, goal, and step in a sheet, like zwiper's change-username sheet.
+/// Name, goal, and step in a sheet, the same form the create sheet uses.
 #[component]
 fn EditSheet(
     open: Signal<bool>,
@@ -459,112 +470,42 @@ fn EditSheet(
     let mut open = open;
     let store = use_store();
     let toast = use_toast();
-    let mut name = use_signal(String::new);
-    let mut amount = use_signal(String::new);
-    let mut unit = use_signal(|| GoalUnit::Day);
-    let mut step = use_signal(|| 1u32);
-    let mut error = use_signal(|| None::<String>);
+    let mut form = use_hook(CounterFormState::default);
 
     let seed_name = current_name.clone();
     use_effect(move || {
         if open() {
-            name.set(seed_name.clone());
-            match current_goal {
-                Some(g @ (Goal::PerDay(n) | Goal::PerWeek(n) | Goal::PerYear(n))) => {
-                    amount.set(n.to_string());
-                    unit.set(GoalUnit::of(g));
-                }
-                None => amount.set(String::new()),
-            }
-            step.set(current_step);
-            error.set(None);
+            form.load(&seed_name, current_goal, current_step);
         }
     });
 
     let save = move |_| {
-        let new_name = match CounterName::new(&name()) {
-            Ok(n) => n,
-            Err(e) => return error.set(Some(e.to_string())),
+        let Some((name, goal, step)) = form.validate() else {
+            return;
         };
-        let raw = amount();
-        let goal = if raw.trim().is_empty() {
-            None
-        } else {
-            let parsed = raw.trim().parse::<u32>().ok().map(|n| unit().goal(n));
-            match parsed {
-                Some(Ok(g)) => Some(g),
-                _ => {
-                    return error.set(Some(
-                        "goal must be a whole number of at least 1".to_string(),
-                    ));
-                }
-            }
-        };
-        let new_step = match Step::new(step()) {
-            Ok(s) => s,
-            Err(e) => return error.set(Some(e.to_string())),
-        };
-        match store.update_counter(id, &new_name, goal, new_step) {
+        match store.update_counter(id, &name, goal, step) {
             Ok(()) => {
                 toast.success(
-                    format!("Saved {new_name}"),
+                    format!("Saved {name}"),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
                 bump_store_version();
                 on_saved.call(());
                 open.set(false);
             }
-            Err(e) => error.set(Some(e.to_string())),
+            Err(e) => form.error.set(Some(e.to_string())),
         }
     };
 
     rsx! {
         BottomSheet {
             open,
-            title: "Edit",
+            title: "Edit counter",
             footer: rsx! {
                 Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
                 Button { variant: ButtonVariant::Util, onclick: save, "Save" }
             },
-            form { class: "flex-col text-center", onsubmit: move |e| e.prevent_default(),
-                label { class: "label", r#for: "edit_name", "Name" }
-                input {
-                    class: "input",
-                    id: "edit_name",
-                    placeholder: "Not set",
-                    value: "{name}",
-                    maxlength: "{CounterName::MAX_LEN}",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    oninput: move |e| name.set(e.value()),
-                }
-                label { class: "label", r#for: "edit_goal", "Goal" }
-                input {
-                    class: "input",
-                    id: "edit_goal",
-                    r#type: "number",
-                    min: "1",
-                    inputmode: "numeric",
-                    placeholder: "Not set",
-                    value: "{amount}",
-                    oninput: move |e| amount.set(e.value()),
-                }
-                div { class: "chip-row chip-row-center",
-                    Chip { selected: unit() == GoalUnit::Day, onclick: move |_| unit.set(GoalUnit::Day), "Per day" }
-                    Chip { selected: unit() == GoalUnit::Week, onclick: move |_| unit.set(GoalUnit::Week), "Per week" }
-                    Chip { selected: unit() == GoalUnit::Year, onclick: move |_| unit.set(GoalUnit::Year), "Per year" }
-                }
-                label { class: "label", "Each tap adds" }
-                div { class: "chip-row chip-row-center",
-                    for n in Step::ALLOWED {
-                        Chip { selected: step() == n, onclick: move |_| step.set(n), "{n}" }
-                    }
-                }
-                if let Some(e) = error() {
-                    p { class: "form-error", "{e}" }
-                }
-            }
+            CounterForm { state: form }
         }
     }
 }
@@ -578,24 +519,18 @@ fn YearCard(summary: Summary) -> Element {
             div { class: "card-header",
                 span { class: "card-title", "{y.year}, day {y.days_elapsed}" }
             }
-            NumberRow { label: "Total", value: thousands(y.total), hint: String::new() }
-            NumberRow { label: "Per day", value: rate(y.per_day), hint: String::new() }
-            NumberRow {
-                label: "Lifetime per day",
-                value: rate(summary.lifetime_per_day),
-                hint: summary.best_day.map(|b| format!("best {}, {}", thousands(b.count), b.day.format("%-d %b"))).unwrap_or_default(),
-            }
-            if let Some(p) = &y.pace {
-                NumberRow { label: "Goal", value: thousands(p.goal), hint: format!("{} remaining", thousands(p.remaining)) }
-                NumberRow {
-                    label: "Target today",
-                    value: thousands(p.target_today),
-                    hint: if p.delta >= 0 { format!("{} ahead", thousands_i64(p.delta)) } else { format!("{} behind", thousands_i64(-p.delta)) },
-                }
-                NumberRow {
-                    label: "Needed per day",
-                    value: p.needed_per_day.map_or_else(|| "done".to_string(), rate),
-                    hint: String::new(),
+            TileGrid {
+                Tile { label: "total", value: thousands(y.total) }
+                Tile { label: "per day", value: rate(y.per_day) }
+                Tile { label: "lifetime per day", value: rate(summary.lifetime_per_day) }
+                if let Some(p) = &y.pace {
+                    Tile { label: "goal", value: thousands(p.goal), hint: format!("{} remaining", thousands(p.remaining)) }
+                    Tile {
+                        label: "target today",
+                        value: thousands(p.target_today),
+                        hint: if p.delta >= 0 { format!("{} ahead", thousands_i64(p.delta)) } else { format!("{} behind", thousands_i64(-p.delta)) },
+                    }
+                    Tile { label: "needed per day", value: p.needed_per_day.map_or_else(|| "done".to_string(), rate) }
                 }
             }
         }

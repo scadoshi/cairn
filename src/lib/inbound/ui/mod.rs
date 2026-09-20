@@ -110,7 +110,6 @@ pub fn Shell() -> Element {
     let title = match &route {
         Route::Home {} => "Home".to_string(),
         Route::Counters {} => "Counters".to_string(),
-        Route::NewCounter {} => "Create counter".to_string(),
         Route::Profile {} => "Profile".to_string(),
         Route::CounterScreen { id } => store
             .get_counter(CounterId(*id))

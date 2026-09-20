@@ -393,46 +393,54 @@ input {
 }
 
 /* ==================
-      stat tiles
+        tiles
  ==================== */
 
-.stat-grid {
+/* A readout: number over name in a small box, three to a row. */
+.tile-grid {
     display: grid;
-    gap: 0.75rem;
-    padding: 1rem;
-}
-
-.stat-grid + .stat-grid {
-    border-top: 1px solid var(--border-secondary);
-}
-
-.stat-grid-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
 }
 
-.stat-tile {
+.tile-grid + .tile-grid {
+    padding-top: 0;
+}
+
+.tile {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    align-items: center;
+    text-align: center;
     min-width: 0;
+    padding: 0.7rem 0.35rem 0.6rem;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.8rem;
+    background-color: var(--bg-sink);
+    box-shadow: var(--shadow-sm);
 }
 
-.stat-label {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-}
-
-.stat-value {
-    font-size: 1.4rem;
+.tile-value {
+    font-size: 1.3rem;
     font-weight: 700;
+    line-height: 1.1;
     font-variant-numeric: tabular-nums;
+    color: var(--accent-primary);
     overflow-wrap: anywhere;
 }
 
-.stat-hint {
-    font-size: 0.75rem;
+.tile-label {
+    margin-top: 0.3rem;
+    font-size: 0.68rem;
+    line-height: 1.2;
+    color: var(--text-muted);
+}
+
+.tile-hint {
+    margin-top: 0.15rem;
+    font-size: 0.62rem;
+    line-height: 1.2;
     color: var(--text-subtle);
 }
 

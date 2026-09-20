@@ -4,7 +4,12 @@
 use crate::{
     domain::counter::{Counter, format::thousands, stats, stats::days_in_year},
     inbound::ui::{
-        components::stat_tile::{StatTile, rate},
+        bump_store_version,
+        components::{
+            bottom_sheet::BottomSheet,
+            counter_form::{CounterForm, CounterFormState},
+            tile::{Tile, TileGrid, rate},
+        },
         now,
         router::Route,
         today, use_store,
@@ -23,6 +28,7 @@ pub fn Counters() -> Element {
     let nav = use_navigator();
     let mut counters = use_signal(Vec::<Counter>::new);
     let mut error = use_signal(|| None::<String>);
+    let mut create_open = use_signal(|| false);
 
     let load_store = store.clone();
     let reload = use_callback(move |()| match load_store.list_counters() {
@@ -65,12 +71,11 @@ pub fn Counters() -> Element {
             }
             Button {
                 variant: ButtonVariant::Util,
-                onclick: move |_| {
-                    nav.push(Route::NewCounter {});
-                },
+                onclick: move |_| create_open.set(true),
                 "Create"
             }
         }
+        CreateSheet { open: create_open, on_created: move |()| reload.call(()) }
     }
 }
 
@@ -111,11 +116,11 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
                     }
                 }
             }
-            div { class: "stat-grid stat-grid-3",
-                StatTile { label: "Lifetime", value: thousands(summary.lifetime) }
-                StatTile { label: "Today", value: thousands(summary.today) }
-                StatTile {
-                    label: "This year",
+            TileGrid {
+                Tile { label: "lifetime", value: thousands(summary.lifetime) }
+                Tile { label: "today", value: thousands(summary.today) }
+                Tile {
+                    label: "this year",
                     value: thousands(summary.this_year.total),
                     hint: format!("{}/day", rate(summary.this_year.per_day)),
                 }
@@ -137,6 +142,52 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
                     "Open"
                 }
             }
+        }
+    }
+}
+
+/// Create a counter in a sheet, the same form the edit sheet uses.
+#[component]
+fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
+    let mut open = open;
+    let store = use_store();
+    let toast = use_toast();
+    let mut form = use_hook(CounterFormState::default);
+
+    // Every open starts blank.
+    use_effect(move || {
+        if open() {
+            form.load("", None, 1);
+        }
+    });
+
+    let save = move |_| {
+        let Some((name, goal, step)) = form.validate() else {
+            return;
+        };
+        match store.create_counter(&name, goal, step, today()) {
+            Ok(c) => {
+                toast.success(
+                    format!("Saved {}", c.name),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
+                bump_store_version();
+                on_created.call(());
+                open.set(false);
+            }
+            Err(e) => form.error.set(Some(e.to_string())),
+        }
+    };
+
+    rsx! {
+        BottomSheet {
+            open,
+            title: "Create counter",
+            footer: rsx! {
+                Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
+                Button { variant: ButtonVariant::Util, onclick: save, "Save" }
+            },
+            CounterForm { state: form }
         }
     }
 }

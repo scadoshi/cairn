@@ -3,7 +3,11 @@
 
 use crate::{
     domain::counter::{format::thousands, stats},
-    inbound::ui::{router::Route, today, use_store},
+    inbound::ui::{
+        components::tile::{Tile, TileGrid},
+        router::Route,
+        today, use_store,
+    },
 };
 use chrono::Datelike;
 use dioxus::prelude::*;
@@ -55,17 +59,10 @@ pub fn Home() -> Element {
                 if counters == 0 {
                     p { class: "pref-note", style: "padding: 1rem;", "No counters yet. Counters, then New, starts one." }
                 } else {
-                    div { class: "profile-row",
-                        span { class: "profile-row-label hero-label", "Logged today" }
-                        div { class: "profile-row-value", "{thousands(today_total)}" }
-                    }
-                    div { class: "profile-row",
-                        span { class: "profile-row-label hero-label", "Counters touched" }
-                        div { class: "profile-row-value", "{active} of {counters}" }
-                    }
-                    div { class: "profile-row",
-                        span { class: "profile-row-label hero-label", "Best streak" }
-                        div { class: "profile-row-value", "{streak} days" }
+                    TileGrid {
+                        Tile { label: "logged today", value: thousands(today_total) }
+                        Tile { label: "counters touched", value: format!("{active} of {counters}") }
+                        Tile { label: "best streak", value: format!("{streak} days") }
                     }
                 }
             }
