@@ -13,12 +13,27 @@ pub fn database() -> std::io::Result<PathBuf> {
     Ok(dir.join("odo.db"))
 }
 
-/// Where CSV exports land: the platform Downloads folder, else the data dir.
+/// Where CSV exports land, created if missing.
+///
+/// On iOS the sandbox's HOME is the app container, and its Documents folder
+/// is the one the Files app shows under "On My iPhone > Odo" (Dioxus.toml
+/// sets UIFileSharingEnabled and LSSupportsOpeningDocumentsInPlace for
+/// that). The dirs crate has no iOS notion of a documents folder, and the
+/// sandbox has no Downloads folder, so this builds the path from HOME.
+/// Elsewhere it is the platform Downloads folder, falling back to the data
+/// dir.
 pub fn exports() -> std::io::Result<PathBuf> {
-    match dirs::download_dir() {
-        Some(d) => Ok(d),
-        None => Ok(database()?
+    let preferred = if cfg!(target_os = "ios") {
+        std::env::var_os("HOME").map(|h| PathBuf::from(h).join("Documents"))
+    } else {
+        dirs::download_dir()
+    };
+    let dir = match preferred {
+        Some(d) => d,
+        None => database()?
             .parent()
-            .map_or_else(|| PathBuf::from("."), PathBuf::from)),
-    }
+            .map_or_else(|| PathBuf::from("."), PathBuf::from),
+    };
+    std::fs::create_dir_all(&dir)?;
+    Ok(dir)
 }

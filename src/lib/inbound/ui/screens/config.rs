@@ -16,7 +16,7 @@ use crate::{
 use chrono::Weekday;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
+use std::{fmt::Write as _, path::PathBuf, time::Duration};
 use zwipe_components::{ALLOWED_THEMES, ActionBar, Button, ButtonVariant, Chip, ThemeConfig};
 
 /// Themes with adjusted palettes for color-vision deficiency, grouped at the
@@ -67,13 +67,24 @@ pub fn Config() -> Element {
         rest_count.to_string()
     };
 
-    // One CSV per counter, day and count, into the platform Downloads folder.
+    // One CSV per counter, day and count, into the export folder. Every
+    // attempt also appends a line to export.log beside the database: which
+    // folder, whether it existed, and how it went. The simulator's sandbox
+    // made the folder question hard to answer from the outside.
     let export = move |_| {
+        let mut log = String::new();
         let result = store
             .list_counters()
             .map_err(|e| e.to_string())
             .and_then(|counters| {
                 let dir = paths::exports().map_err(|e| format!("export folder: {e}"))?;
+                let _ = writeln!(
+                    log,
+                    "home={:?} dir={} exists={}",
+                    std::env::var_os("HOME"),
+                    dir.display(),
+                    dir.is_dir()
+                );
                 let mut written = 0usize;
                 for c in counters {
                     let entries = store.entries(c.id).map_err(|e| e.to_string())?;
@@ -84,6 +95,24 @@ pub fn Config() -> Element {
                 }
                 Ok((written, dir))
             });
+        match &result {
+            Ok((n, dir)) => {
+                let _ = writeln!(log, "ok {n} files in {}", dir.display());
+            }
+            Err(e) => {
+                let _ = writeln!(log, "failed: {e}");
+            }
+        }
+        if let Some(d) = paths::database()
+            .ok()
+            .and_then(|db| db.parent().map(PathBuf::from))
+        {
+            let _ = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(d.join("export.log"))
+                .and_then(|mut f| std::io::Write::write_all(&mut f, log.as_bytes()));
+        }
         match result {
             Ok((n, dir)) => {
                 toast.success(
@@ -165,7 +194,7 @@ pub fn Config() -> Element {
             }
             div { class: "profile-list",
                 div { class: "card-header",
-                    span { class: "card-title", "Counting" }
+                    span { class: "card-title", "When to count" }
                 }
                 div { class: "profile-row",
                     span { class: "row-label-with-hint",
@@ -212,7 +241,7 @@ pub fn Config() -> Element {
             }
             div { class: "profile-list",
                 div { class: "card-header",
-                    span { class: "card-title", "Counters" }
+                    span { class: "card-title", "Counter behavior" }
                 }
                 div { class: "profile-row",
                     span { class: "row-label-with-hint",
@@ -252,9 +281,6 @@ pub fn Config() -> Element {
                     }
                     div { class: "profile-row-value",
                         Button { variant: ButtonVariant::Util, onclick: export, "CSV" }
-                    if let Some(n) = notice() {
-                    p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
-                }
                 if let Some(n) = notice() {
                     p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
                 }
