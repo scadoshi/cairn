@@ -47,7 +47,10 @@ pub fn Home() -> Element {
             div { class: "container-sm home-hero content-enter-delayed",
                 div { class: "card-header home-hero-head",
                     span { class: "card-title", "{date}" }
-                    span { class: "card-subtitle", "day {day}, week {week}" }
+                    div { class: "chip-tags",
+                        span { class: "stat-chip stat-chip-goal", "day {day}" }
+                        span { class: "stat-chip", "week {week}" }
+                    }
                 }
                 if counters == 0 {
                     p { class: "pref-note", style: "padding: 1rem;", "No counters yet. Counters, then New, starts one." }

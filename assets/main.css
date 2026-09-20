@@ -161,6 +161,18 @@ input {
     border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
 }
 
+.chip-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.3rem;
+}
+
+.card-header.home-hero-head .chip-tags {
+    justify-content: center;
+    margin-top: 0.2rem;
+}
+
 .stat-chip-goal {
     color: var(--accent-tertiary);
     background-color: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);

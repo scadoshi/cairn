@@ -145,33 +145,29 @@ impl Goal {
         }
     }
 
-    /// Both figures, the one entered first: "15/day, 5475/year" or
-    /// "10000/year, 27.4/day".
-    pub fn label(self, days_in_year: u32) -> String {
+    /// Both figures as separate strings, the one entered first: `15/day` then
+    /// `5,475/year`, or `10,000/year` then `27.4/day`.
+    pub fn parts(self, days_in_year: u32) -> [String; 2] {
         use super::format::{rate, thousands};
         match self {
-            Self::PerYear(n) => {
-                format!(
-                    "{}/year, {}/day",
-                    thousands(n),
-                    rate(self.daily(days_in_year))
-                )
-            }
-            Self::PerWeek(n) => {
-                format!(
-                    "{}/week, {}/year",
-                    thousands(n),
-                    thousands(self.yearly(days_in_year))
-                )
-            }
-            Self::PerDay(n) => {
-                format!(
-                    "{}/day, {}/year",
-                    thousands(n),
-                    thousands(self.yearly(days_in_year))
-                )
-            }
+            Self::PerYear(n) => [
+                format!("{}/year", thousands(n)),
+                format!("{}/day", rate(self.daily(days_in_year))),
+            ],
+            Self::PerWeek(n) => [
+                format!("{}/week", thousands(n)),
+                format!("{}/year", thousands(self.yearly(days_in_year))),
+            ],
+            Self::PerDay(n) => [
+                format!("{}/day", thousands(n)),
+                format!("{}/year", thousands(self.yearly(days_in_year))),
+            ],
         }
+    }
+
+    /// Both figures in one string, for prose: "15/day, 5,475/year".
+    pub fn label(self, days_in_year: u32) -> String {
+        self.parts(days_in_year).join(", ")
     }
 }
 

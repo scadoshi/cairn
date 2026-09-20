@@ -104,7 +104,11 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
             div { class: "card-header",
                 span { class: "card-title", "{counter.name}" }
                 if let Some(g) = counter.goal {
-                    span { class: "stat-chip stat-chip-goal", "{g.label(days_in_year(today().year()))}" }
+                    div { class: "chip-tags",
+                        for part in g.parts(days_in_year(today().year())) {
+                            span { class: "stat-chip stat-chip-goal", "{part}" }
+                        }
+                    }
                 }
             }
             div { class: "stat-grid stat-grid-3",
