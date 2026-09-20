@@ -55,6 +55,7 @@ pub fn CounterScreen(id: i64) -> Element {
     let mut notice = use_signal(|| None::<String>);
     let trend = use_signal(|| Trend::ThisWeek);
     let all_days = use_signal(|| false);
+    let best = use_signal(|| Best::Day);
 
     let load_store = store.clone();
     let reload = use_callback(move |()| {
@@ -98,6 +99,24 @@ pub fn CounterScreen(id: i64) -> Element {
     };
     let summary = stats::summarize(&entries(), c.goal, today());
     let step = i64::from(c.step.get());
+    let now = today();
+    let week_total: u32 = series::this_week(&entries(), now).iter().flatten().sum();
+    let last_week_total = series::window_total(
+        &entries(),
+        series::week_start(now) - ChronoDuration::days(1),
+        7,
+    );
+    let week_delta = match week_total.cmp(&last_week_total) {
+        std::cmp::Ordering::Greater => format!(
+            "up {} on last week",
+            thousands(week_total - last_week_total)
+        ),
+        std::cmp::Ordering::Less => format!(
+            "down {} on last week",
+            thousands(last_week_total - week_total)
+        ),
+        std::cmp::Ordering::Equal => "level with last week".to_string(),
+    };
 
     let mut confirm_delete = use_signal(|| false);
     let mut rename_open = use_signal(|| false);
@@ -128,7 +147,7 @@ pub fn CounterScreen(id: i64) -> Element {
                     }
                     TileGrid {
                         Tile { label: "today", value: thousands(summary.today) }
-                        Tile { label: "streak", value: format!("{} days", summary.streak) }
+                        Tile { label: "this week", value: thousands(week_total), hint: week_delta.clone() }
                         Tile { label: "this month", value: thousands(summary.this_month) }
                     }
                     ActionBar {
@@ -136,9 +155,13 @@ pub fn CounterScreen(id: i64) -> Element {
                         Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(step), "+{step}" }
                     }
                 }
-                TrendsCard { entries: entries(), events: events(), trend, all_days }
-                NumbersCard { entries: entries(), summary: summary.clone(), goal: c.goal }
                 YearCard { summary: summary.clone() }
+                if let Some(g) = c.goal {
+                    GoalCard { summary: summary.clone(), goal: g }
+                }
+                TrendsCard { entries: entries(), events: events(), trend, all_days }
+                BestsCard { entries: entries(), summary: summary.clone(), best }
+                HabitCard { summary: summary.clone() }
                 div { class: "profile-list",
                     div { class: "card-header",
                         span { class: "card-title", "By year" }
@@ -366,91 +389,160 @@ fn TrendsCard(
     }
 }
 
-/// The numbers behind the charts: single figures as tiles, comparisons and
-/// dates as ruled rows underneath.
-#[component]
-fn NumbersCard(entries: Vec<DayCount>, summary: Summary, goal: Option<Goal>) -> Element {
-    let now = today();
-    let week = series::this_week(&entries, now);
-    let week_total: u32 = week.iter().flatten().sum();
-    let week_days = u32::try_from(week.iter().flatten().count())
-        .unwrap_or(1)
-        .max(1);
-    let last_week_end = series::week_start(now) - ChronoDuration::days(1);
-    let last_week_total = series::window_total(&entries, last_week_end, 7);
-    let last7 = series::window_total(&entries, now, 7);
-    let prev7 = series::window_total(&entries, now - ChronoDuration::days(7), 7);
-    let best_week = series::weekly_totals(&entries, now.year())
-        .into_iter()
-        .max_by_key(|(_, t)| *t);
-    let best_month = series::monthly_average(&entries, now.year())
-        .iter()
-        .enumerate()
-        .filter_map(|(i, v)| v.map(|v| (i, v)))
-        .max_by(|a, b| a.1.total_cmp(&b.1));
-    let months = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ];
-    let year_len = stats::days_in_year(now.year());
-    let projection_hint = goal.map_or_else(
-        || "at this pace".to_string(),
-        |g| {
-            let target = g.yearly(year_len);
-            if summary.projected_year_end >= target {
-                "clears the goal".to_string()
-            } else {
-                "short of the goal".to_string()
-            }
-        },
-    );
-    let delta = |a: u32, b: u32, than: &str| -> String {
-        match a.cmp(&b) {
-            std::cmp::Ordering::Greater => format!("up {} on {than}", thousands(a - b)),
-            std::cmp::Ordering::Less => format!("down {} on {than}", thousands(b - a)),
-            std::cmp::Ordering::Equal => format!("level with {than}"),
-        }
-    };
+/// Which best the bests card shows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Best {
+    Day,
+    Week,
+    Month,
+}
 
+/// This year: total, per day, and where that lands by December.
+#[component]
+fn YearCard(summary: Summary) -> Element {
+    let y = &summary.this_year;
     rsx! {
         div { class: "profile-list",
             div { class: "card-header",
-                span { class: "card-title", "Numbers" }
+                span { class: "card-title", "{y.year}, day {y.days_elapsed}" }
             }
             TileGrid {
-                Tile { label: "this week", value: thousands(week_total), hint: format!("{}/day", rate(f64::from(week_total) / f64::from(week_days))) }
-                Tile { label: "last 7 days", value: thousands(last7) }
-                Tile { label: "consistency", value: format!("{:.0}%", summary.consistency * 100.0), hint: format!("{} of {} days", summary.this_year.active_days, summary.this_year.days_elapsed) }
-                Tile { label: "projected", value: thousands(summary.projected_year_end), hint: projection_hint }
-                Tile { label: "longest streak", value: format!("{} days", summary.longest_streak) }
-                if let Some(b) = summary.best_day {
-                    Tile { label: "best day", value: thousands(b.count), hint: b.day.format("%-d %b").to_string() }
-                }
-            }
-            NumberRow { label: "This week", value: delta(week_total, last_week_total, "last week"), hint: String::new() }
-            NumberRow { label: "Last 7 days", value: delta(last7, prev7, "the 7 before"), hint: String::new() }
-            if let Some(d) = summary.days_since_last {
-                NumberRow { label: "Last logged", value: match d { 0 => "today".to_string(), 1 => "yesterday".to_string(), n => format!("{n} days ago") }, hint: String::new() }
-            }
-            if let Some((monday, total)) = best_week {
-                NumberRow { label: "Best week", value: format!("{}, w/c {}", thousands(total), monday.format("%-d %b")), hint: String::new() }
-            }
-            if let Some((i, avg)) = best_month {
-                NumberRow { label: "Best month", value: format!("{}, {}/day", months.get(i).copied().unwrap_or(""), rate(avg)), hint: String::new() }
+                Tile { label: "total", value: thousands(y.total) }
+                Tile { label: "per day", value: rate(y.per_day) }
+                Tile { label: "projected", value: thousands(summary.projected_year_end), hint: "by year end at this pace".to_string() }
             }
         }
     }
 }
 
-/// One ruled row: label left, value right, a muted hint under the value.
+/// Standing against the goal. Remaining and needed go negative past it.
 #[component]
-fn NumberRow(label: String, value: String, hint: String) -> Element {
+fn GoalCard(summary: Summary, goal: Goal) -> Element {
+    let Some(p) = summary.this_year.pace else {
+        return rsx! {};
+    };
+    let year_len = summary.this_year.days_in_year;
+    let (pace_value, pace_hint) = if p.delta >= 0 {
+        (format!("+{}", thousands_i64(p.delta)), "ahead of pace")
+    } else {
+        (thousands_i64(p.delta), "behind pace")
+    };
     rsx! {
-        div { class: "profile-row",
-            span { class: "profile-row-label hero-label", "{label}" }
-            div { class: "profile-row-value number-value",
-                span { "{value}" }
-                if !hint.is_empty() {
-                    span { class: "number-hint", "{hint}" }
+        div { class: "profile-list",
+            div { class: "card-header",
+                span { class: "card-title", "Goal" }
+                div { class: "chip-tags",
+                    for part in goal.parts(year_len) {
+                        span { class: "stat-chip stat-chip-goal", "{part}" }
+                    }
+                }
+            }
+            TileGrid {
+                Tile { label: "remaining", value: thousands_i64(p.remaining) }
+                Tile { label: "needed per day", value: rate(p.needed_per_day), hint: "to land on it".to_string() }
+                Tile { label: "pace", value: pace_value, hint: pace_hint.to_string() }
+            }
+        }
+    }
+}
+
+/// The best day, week, or month, picked by chips: how much, the rate, when.
+#[component]
+fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> Element {
+    let mut best = best;
+    let now = today();
+    let months = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ];
+    let tiles = match best() {
+        Best::Day => summary.best_day.map(|b| {
+            (
+                thousands(b.count),
+                None,
+                b.day.format("%-d %b %Y").to_string(),
+            )
+        }),
+        Best::Week => series::weekly_totals(&entries, now.year())
+            .into_iter()
+            .max_by_key(|(_, t)| *t)
+            .map(|(monday, total)| {
+                (
+                    thousands(total),
+                    Some(rate(f64::from(total) / 7.0)),
+                    format!("w/c {}", monday.format("%-d %b")),
+                )
+            }),
+        Best::Month => series::monthly_totals(&entries, now.year())
+            .iter()
+            .enumerate()
+            .filter_map(|(i, v)| v.map(|(t, n)| (i, t, n)))
+            .max_by_key(|(_, t, _)| *t)
+            .map(|(i, total, active)| {
+                (
+                    thousands(total),
+                    Some(rate(f64::from(total) / f64::from(active))),
+                    months.get(i).copied().unwrap_or("").to_string(),
+                )
+            }),
+    };
+    rsx! {
+        div { class: "profile-list",
+            div { class: "card-header",
+                span { class: "card-title", "Bests" }
+                div { class: "chip-row chip-row-tight",
+                    Chip { selected: best() == Best::Day, onclick: move |_| best.set(Best::Day), "Day" }
+                    Chip { selected: best() == Best::Week, onclick: move |_| best.set(Best::Week), "Week" }
+                    Chip { selected: best() == Best::Month, onclick: move |_| best.set(Best::Month), "Month" }
+                }
+            }
+            if let Some((total, per_day, when)) = tiles {
+                TileGrid {
+                    Tile { label: "total", value: total }
+                    if let Some(r) = per_day {
+                        Tile { label: "per day", value: r }
+                    }
+                    Tile { label: "when", value: when }
+                }
+            } else {
+                p { class: "pref-note", style: "padding: 1rem;", "Nothing logged this year yet." }
+            }
+        }
+    }
+}
+
+/// How regular the habit is.
+#[component]
+fn HabitCard(summary: Summary) -> Element {
+    let last = summary.days_since_last.map(|d| match d {
+        0 => "today".to_string(),
+        1 => "yesterday".to_string(),
+        n => format!("{n} days ago"),
+    });
+    rsx! {
+        div { class: "profile-list",
+            div { class: "card-header",
+                span { class: "card-title", "Habit" }
+            }
+            TileGrid {
+                Tile {
+                    label: "consistency",
+                    value: format!("{:.0}%", summary.consistency * 100.0),
+                    hint: format!("{} of {} days this year", summary.this_year.active_days, summary.this_year.days_elapsed),
+                }
+                Tile { label: "longest streak", value: format!("{} days", summary.longest_streak) }
+                if let Some(l) = last {
+                    Tile { label: "last logged", value: l }
                 }
             }
         }
@@ -506,33 +598,6 @@ fn EditSheet(
                 Button { variant: ButtonVariant::Util, onclick: save, "Save" }
             },
             CounterForm { state: form }
-        }
-    }
-}
-
-/// This year's totals and, if a goal is set, standing against it.
-#[component]
-fn YearCard(summary: Summary) -> Element {
-    let y = &summary.this_year;
-    rsx! {
-        div { class: "profile-list",
-            div { class: "card-header",
-                span { class: "card-title", "{y.year}, day {y.days_elapsed}" }
-            }
-            TileGrid {
-                Tile { label: "total", value: thousands(y.total) }
-                Tile { label: "per day", value: rate(y.per_day) }
-                Tile { label: "lifetime per day", value: rate(summary.lifetime_per_day) }
-                if let Some(p) = &y.pace {
-                    Tile { label: "goal", value: thousands(p.goal), hint: format!("{} remaining", thousands(p.remaining)) }
-                    Tile {
-                        label: "target today",
-                        value: thousands(p.target_today),
-                        hint: if p.delta >= 0 { format!("{} ahead", thousands_i64(p.delta)) } else { format!("{} behind", thousands_i64(-p.delta)) },
-                    }
-                    Tile { label: "needed per day", value: p.needed_per_day.map_or_else(|| "done".to_string(), rate) }
-                }
-            }
         }
     }
 }

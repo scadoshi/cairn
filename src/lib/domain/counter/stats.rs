@@ -16,11 +16,11 @@ pub struct Pace {
     pub target_today: u32,
     /// Total this year minus the target. Negative means behind.
     pub delta: i64,
-    /// Per-day rate over the remaining days (today included) to still make it.
-    /// `None` when the goal is already met.
-    pub needed_per_day: Option<f64>,
-    /// Remaining count, zero once met.
-    pub remaining: u32,
+    /// Per-day rate over the remaining days (today included) to land exactly
+    /// on the goal. Negative once the goal is passed.
+    pub needed_per_day: f64,
+    /// Goal minus the total so far. Negative once the goal is passed.
+    pub remaining: i64,
 }
 
 /// One calendar year of a counter.
@@ -101,9 +101,10 @@ pub fn pace(goal: Goal, total_this_year: u32, today: NaiveDate) -> Pace {
     let target_today = (u64::from(yearly) * u64::from(day) / u64::from(year_len))
         .try_into()
         .unwrap_or(u32::MAX);
-    let remaining = yearly.saturating_sub(total_this_year);
-    let days_left = year_len.saturating_sub(day).saturating_add(1);
-    let needed_per_day = (remaining > 0).then(|| ratio(remaining, days_left));
+    let remaining = i64::from(yearly) - i64::from(total_this_year);
+    let days_left = year_len.saturating_sub(day).saturating_add(1).max(1);
+    #[allow(clippy::cast_precision_loss)]
+    let needed_per_day = remaining as f64 / f64::from(days_left);
     Pace {
         goal: yearly,
         target_today,
@@ -310,7 +311,7 @@ mod tests {
         assert_eq!(p.delta, 0);
         assert_eq!(p.remaining, 2650);
         // 266 days left including today.
-        assert!((p.needed_per_day.unwrap() - 2650.0 / 266.0).abs() < 1e-9);
+        assert!((p.needed_per_day - 2650.0 / 266.0).abs() < 1e-9);
 
         let behind = pace(goal, 900, d(2026, 4, 10));
         assert_eq!(behind.delta, -100);
@@ -324,15 +325,15 @@ mod tests {
         assert_eq!(p.target_today, 1000);
         assert_eq!(p.delta, -50);
         // A per-day goal behind pace still needs more than the base rate.
-        assert!(p.needed_per_day.unwrap() > 10.0);
+        assert!(p.needed_per_day > 10.0);
     }
 
     #[test]
-    fn pace_met_has_no_needed_rate() {
+    fn pace_past_the_goal_goes_negative() {
         let goal = Goal::per_year(10).unwrap();
         let p = pace(goal, 12, d(2026, 6, 1));
-        assert_eq!(p.remaining, 0);
-        assert_eq!(p.needed_per_day, None);
+        assert_eq!(p.remaining, -2);
+        assert!(p.needed_per_day < 0.0);
     }
 
     #[test]
@@ -340,7 +341,7 @@ mod tests {
         let goal = Goal::per_year(366).unwrap();
         let p = pace(goal, 0, d(2028, 12, 31));
         assert_eq!(p.target_today, 366);
-        assert_eq!(p.needed_per_day, Some(366.0));
+        assert!((p.needed_per_day - 366.0).abs() < f64::EPSILON);
     }
 
     #[test]

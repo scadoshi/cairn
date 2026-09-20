@@ -118,6 +118,30 @@ pub fn weekly_totals(entries: &[DayCount], year: i32) -> Vec<(NaiveDate, u32)> {
     out
 }
 
+/// Total and active-day count for each calendar month of `year`. `None`
+/// where nothing was logged that month.
+pub fn monthly_totals(entries: &[DayCount], year: i32) -> [Option<(u32, u32)>; 12] {
+    let mut sums = [0u32; 12];
+    let mut days = [0u32; 12];
+    for e in entries
+        .iter()
+        .filter(|e| e.day.year() == year && e.count > 0)
+    {
+        let m = (e.day.month0()) as usize;
+        if let (Some(s), Some(d)) = (sums.get_mut(m), days.get_mut(m)) {
+            *s = s.saturating_add(e.count);
+            *d += 1;
+        }
+    }
+    let mut out = [None; 12];
+    for ((o, sum), n) in out.iter_mut().zip(sums).zip(days) {
+        if n > 0 {
+            *o = Some((sum, n));
+        }
+    }
+    out
+}
+
 /// Average count per active day, for each calendar month of `year`. `None`
 /// where nothing was logged that month, so the line can skip it.
 pub fn monthly_average(entries: &[DayCount], year: i32) -> [Option<f64>; 12] {
@@ -263,6 +287,17 @@ mod tests {
             2026,
         );
         assert_eq!(s, vec![(d(2026, 1, 5), 3), (d(2026, 1, 12), 3)]);
+    }
+
+    #[test]
+    fn monthly_totals_pair_total_with_active_days() {
+        let m = monthly_totals(
+            &[e(2026, 1, 1, 10), e(2026, 1, 2, 20), e(2026, 3, 1, 5)],
+            2026,
+        );
+        assert_eq!(m[0], Some((30, 2)));
+        assert_eq!(m[1], None);
+        assert_eq!(m[2], Some((5, 1)));
     }
 
     #[test]
