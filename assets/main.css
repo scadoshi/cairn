@@ -229,7 +229,11 @@ input {
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        /* `none`, not translateY(0): the animation keeps its end state, and
+           any transform on an ancestor becomes the containing block for a
+           position: fixed overlay, so a dialog's dim would cover only the
+           content column instead of the screen. */
+        transform: none;
     }
 }
 
