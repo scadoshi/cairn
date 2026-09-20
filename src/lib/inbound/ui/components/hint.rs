@@ -1,7 +1,7 @@
 //! Hint dialogs and the "?" that opens them, zwiper's teaching-moment
 //! pattern. A hint is a centered dialog with a title, a few lines or
 //! bullets, and a single Got it. Body text names on-screen buttons with
-//! [`HintKey`] so the reader recognises what to press.
+//! [`HintKey`] so the reader recognizes what to press.
 
 use super::navigation::overlay_stack::use_overlay_back;
 use dioxus::prelude::*;
@@ -79,7 +79,7 @@ pub fn HintBullet(children: Element) -> Element {
 }
 
 /// An inert reference to an on-screen button, styled like one so the
-/// reader recognises it, deliberately not tappable. `color` is a CSS
+/// reader recognizes it, deliberately not tappable. `color` is a CSS
 /// variable name.
 #[component]
 pub fn HintKey(

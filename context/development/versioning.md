@@ -3,7 +3,7 @@
 The rule, borrowed from zwipe:
 
 - **Minor bump (0.1 to 0.2): the release carries any feature.** A new screen,
-  a new metric, a new behaviour you can see, however small.
+  a new metric, a new behavior you can see, however small.
 - **Patch bump (0.2.0 to 0.2.1): fixes, UI tweaks, copy, polish only.** A
   patch number tells you "nothing new, just better".
 - **Major** is for a product-shape change. 1.0 is the first build that goes

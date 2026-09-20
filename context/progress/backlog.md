@@ -6,7 +6,7 @@ Someday. Not ordered. Promote to `todo.md` when it becomes next.
   `architecture/decisions.md` §8. Prerequisite for the watch.
 - Apple Watch companion; see `plans/watch.md`.
 - Import from CSV, the inverse of export.
-- Per-counter colour so cards and chart lines differ.
+- Per-counter color so cards and chart lines differ.
 - Notes on a day ("sick", "travel") shown as gaps on the charts.
 - Reminders: a daily nudge if nothing is logged by an hour you set.
 - A widget or complication with today's count and one tap to add.

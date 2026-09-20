@@ -310,79 +310,69 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
     match which {
         ConfigHint::Theme => rsx! {
             HintDialog { open, title: "Theme",
-                HintLine { "The colour palette for the whole app. " HintKey { "Change" } " opens the picker; tapping a theme previews it live." }
-                HintBullets {
-                    HintBullet { HintKey { color: "--accent-primary", "Save" } " keeps what you picked." }
-                    HintBullet { HintKey { color: "--accent-primary", "Back" } " or a tap outside puts the old theme back." }
-                    HintBullet { "The four at the bottom are tuned for colour vision deficiency." }
-                }
+                HintLine { "The app's palette. " HintKey { "Change" } " opens the picker and previews as you tap." }
+                HintLine { HintKey { color: "--accent-primary", "Save" } " keeps it. " HintKey { color: "--accent-primary", "Back" } " or a tap outside reverts." }
+                HintLine { "The last four suit color vision deficiency." }
             }
         },
         ConfigHint::DarkMode => rsx! {
             HintDialog { open, title: "Dark mode",
-                HintLine { "Every theme has a light and a dark side. This flips between them without changing the theme." }
+                HintLine { "Every theme has a light and a dark side. This flips between them." }
             }
         },
         ConfigHint::Dates => rsx! {
             HintDialog { open, title: "Dates",
-                HintLine { "How dates are written everywhere: the home screen, the odometer's since date, bests, and chart labels." }
+                HintLine { "How every date is written." }
                 HintBullets {
-                    HintBullet { HintKey { "MM/DD/YY" } " is month first, the US order." }
-                    HintBullet { HintKey { "DD/MM/YY" } " is day first, most of the rest of the world." }
+                    HintBullet { HintKey { "MM/DD/YY" } " month first." }
+                    HintBullet { HintKey { "DD/MM/YY" } " day first." }
                 }
             }
         },
         ConfigHint::DayStarts => rsx! {
             HintDialog { open, title: "Day starts",
-                HintLine { "The hour a new day begins. Reps logged after midnight but before this hour count for the day before, so a late session isn't split in two." }
-                HintBullets {
-                    HintBullet { HintKey { "Midnight" } " is the calendar day, no shift." }
-                    HintBullet { "Changing it re-sorts every past tap under the new boundary. Totals don't move, only which day they sit on." }
-                }
+                HintLine { "When a new day begins. Taps after midnight but before this hour count for the day before." }
+                HintLine { "Changing it re-sorts past taps. Totals don't move." }
             }
         },
         ConfigHint::WeekStarts => rsx! {
             HintDialog { open, title: "Week starts",
-                HintLine { "Which day opens the week. It shapes this week's chart and total, the weekly trend, the week number on home, and the order of weekday labels." }
+                HintLine { "Which day opens the week: this week's chart, weekly totals, and the week number." }
                 HintBullets {
-                    HintBullet { HintKey { "Monday" } " uses ISO weeks, the international standard." }
-                    HintBullet { HintKey { "Sunday" } " is the US calendar convention." }
+                    HintBullet { HintKey { "Monday" } " is ISO." }
+                    HintBullet { HintKey { "Sunday" } " is the US calendar." }
                 }
             }
         },
         ConfigHint::RestDays => rsx! {
             HintDialog { open, title: "Rest days",
-                HintLine { "Weekdays you don't train. They don't count against consistency, and a streak steps over them instead of breaking." }
-                HintBullets {
-                    HintBullet { "Train Monday to Saturday with Sunday off, and a six-week run is a 36-day streak, not six streaks of six." }
-                    HintBullet { "Logging on a rest day still counts; the day just isn't required." }
-                }
+                HintLine { "Days you don't train. They don't count against consistency, and a streak steps over them." }
+                HintLine { "Logging on one still counts." }
             }
         },
         ConfigHint::SortCounters => rsx! {
             HintDialog { open, title: "Sort counters",
-                HintLine { "The order of the counter list." }
                 HintBullets {
-                    HintBullet { HintKey { "Created" } ": oldest first, the order you made them." }
-                    HintBullet { HintKey { "Name" } ": alphabetical." }
-                    HintBullet { HintKey { "Most active" } ": highest total this year first." }
-                    HintBullet { HintKey { "Lifetime" } ": highest lifetime total first." }
+                    HintBullet { HintKey { "Created" } " oldest first." }
+                    HintBullet { HintKey { "Name" } " A to Z." }
+                    HintBullet { HintKey { "Most active" } " this year's total." }
+                    HintBullet { HintKey { "Lifetime" } " all-time total." }
                 }
             }
         },
         ConfigHint::ConfirmMinus => rsx! {
             HintDialog { open, title: "Confirm minus",
-                HintLine { "When on, every " HintKey { color: "--color-error", "-10" } " button asks before subtracting. Worth it on a counter with a big step, where one stray tap is a lot." }
-                HintLine { "Minus only ever touches today's count, and never goes below zero." }
+                HintLine { "Every minus button asks first. Worth it when the step is big." }
+                HintLine { "Minus only touches today and never goes below zero." }
             }
         },
         ConfigHint::Export => rsx! {
             HintDialog { open, title: "Export",
-                HintLine { HintKey { color: "--accent-primary", "CSV" } " writes one file per counter, two columns: day and count." }
+                HintLine { HintKey { color: "--accent-primary", "CSV" } " writes one file per counter: day and count." }
                 HintBullets {
-                    HintBullet { "On iPhone the files land in the Files app under On My iPhone, Odo." }
-                    HintBullet { "On desktop they go to Downloads." }
-                    HintBullet { "Each export overwrites the last file of the same name." }
+                    HintBullet { "iPhone: Files app, On My iPhone, Odo." }
+                    HintBullet { "Desktop: Downloads." }
+                    HintBullet { "Same names overwrite." }
                 }
             }
         },
