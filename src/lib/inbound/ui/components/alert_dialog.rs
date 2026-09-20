@@ -5,6 +5,7 @@
 //! extra dependency. Tapping the backdrop or Cancel closes it; only the danger
 //! button confirms.
 
+use super::navigation::overlay_stack::use_overlay_back;
 use dioxus::prelude::*;
 
 /// A yes/no dialog. `open` is host-owned so the caller keeps the state that
@@ -21,6 +22,7 @@ pub fn ConfirmDialog(
     on_confirm: EventHandler<()>,
 ) -> Element {
     let mut open = open;
+    use_overlay_back(open);
     if !open() {
         return rsx! {};
     }

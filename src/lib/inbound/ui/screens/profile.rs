@@ -137,7 +137,11 @@ pub fn Profile() -> Element {
             Button {
                 variant: ButtonVariant::Util,
                 onclick: move |_| {
-                    nav.push(Route::Home {});
+                    if nav.can_go_back() {
+                        nav.go_back();
+                    } else {
+                        nav.push(Route::Home {});
+                    }
                 },
                 "Back"
             }

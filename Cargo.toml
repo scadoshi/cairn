@@ -32,7 +32,17 @@ dirs = "6"
 dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "02801f27e4b3e30606e5c77e435c9d955c708eb3", version = "0.0.1", default-features = false }
 # Only for the bottom sheet's post-mount timer (see components/bottom_sheet.rs);
 # dioxus-desktop already brings the runtime in.
-tokio = { version = "1", features = ["time"] }
+tokio = { version = "1", features = ["time", "sync"] }
+
+# iOS: the left-edge back swipe is a UIKit gesture recognizer attached to the
+# WKWebView (components/navigation/back_handler.rs).
+[target.'cfg(target_os = "ios")'.dependencies]
+objc2 = "0.6"
+
+# Android: finishing the Activity from a root screen goes through JNI.
+[target.'cfg(target_os = "android")'.dependencies]
+ndk-context = "0.1"
+jni = "0.21"
 
 [features]
 default = ["desktop"]

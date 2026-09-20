@@ -56,6 +56,8 @@ pub fn App() -> Element {
     let theme = use_signal(move || saved.unwrap_or_default());
     use_context_provider(|| theme);
     use_context_provider(|| StoreVersion(Signal::new(0)));
+    let overlays = components::navigation::overlay_stack::use_overlay_back_stack();
+    use_context_provider(|| overlays);
 
     // Persist every theme change. Runs once at mount too, which is harmless:
     // it writes back whatever was just loaded.

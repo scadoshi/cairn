@@ -1,5 +1,6 @@
 //! Slide-up bottom sheet, zwiper's pattern.
 
+use super::navigation::overlay_stack::use_overlay_back_action;
 use dioxus::prelude::*;
 use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
@@ -17,6 +18,17 @@ pub fn BottomSheet(
     footer: Option<Element>,
     on_dismiss: Option<EventHandler<()>>,
 ) -> Element {
+    // The OS back gesture closes the sheet the way a backdrop tap does:
+    // `on_dismiss` first (the theme sheet relies on it to revert), then close.
+    let dismiss = use_callback(move |()| {
+        let mut open = open;
+        if let Some(h) = on_dismiss {
+            h.call(());
+        }
+        open.set(false);
+    });
+    use_overlay_back_action(open.into(), dismiss);
+
     // First render carries `transition: none` via the premount class, dropped
     // once mounted. Without it iOS WebKit replays the transform transition on
     // insert and a freshly mounted sheet visibly slides away. The flag has to

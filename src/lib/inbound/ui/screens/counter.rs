@@ -158,7 +158,11 @@ pub fn CounterScreen(id: i64) -> Element {
             Button {
                 variant: ButtonVariant::Util,
                 onclick: move |_| {
-                    nav.push(Route::Counters {});
+                    if nav.can_go_back() {
+                        nav.go_back();
+                    } else {
+                        nav.push(Route::Counters {});
+                    }
                 },
                 "Back"
             }

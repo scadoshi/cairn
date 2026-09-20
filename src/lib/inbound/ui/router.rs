@@ -2,6 +2,7 @@
 
 use super::{
     Shell,
+    components::navigation::back_handler::BackHandlerLayout,
     screens::{
         counter::CounterScreen, counters::Counters, home::Home, new_counter::NewCounter,
         profile::Profile,
@@ -13,6 +14,7 @@ use dioxus::prelude::*;
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 pub enum Route {
+    #[layout(BackHandlerLayout)]
     #[layout(Shell)]
         /// The landing screen.
         #[route("/")]
