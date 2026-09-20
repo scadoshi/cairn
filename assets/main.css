@@ -734,7 +734,7 @@ input {
 }
 
 .chart-overlay {
-    stroke: var(--accent-secondary);
+    stroke: var(--accent-tertiary);
     stroke-width: 2.2;
     animation-duration: 1.3s;
     animation-delay: 0.15s;
@@ -744,6 +744,38 @@ input {
     to {
         stroke-dashoffset: 0;
     }
+}
+
+.chart-legend {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.legend-swatch {
+    display: inline-block;
+    width: 1rem;
+    height: 2px;
+    border-radius: 1px;
+}
+
+.legend-swatch + span,
+.legend-line + * {
+    margin-left: 0;
+}
+
+.legend-overlay {
+    margin-left: 0.6rem;
+    background: var(--accent-tertiary);
+    height: 3px;
+}
+
+.legend-line {
+    background: var(--accent-primary);
 }
 
 .chart-note {

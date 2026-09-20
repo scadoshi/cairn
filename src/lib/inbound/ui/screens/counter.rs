@@ -343,6 +343,14 @@ fn TrendsCard(
                     }
                 }
                 LineChart { points, overlay, unit }
+                if trend() == Trend::Daily {
+                    p { class: "chart-legend",
+                        span { class: "legend-swatch legend-line" }
+                        "each day"
+                        span { class: "legend-swatch legend-overlay" }
+                        "7-day average"
+                    }
+                }
                 p { class: "chart-note", "{note}" }
             }
         }
