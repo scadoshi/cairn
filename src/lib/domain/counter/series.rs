@@ -2,6 +2,7 @@
 //! with `today` or a year passed in; the UI picks which to draw.
 
 use super::{DayCount, Event};
+use crate::domain::preferences::Preferences;
 use chrono::{Datelike, Duration, NaiveDate, Timelike, Weekday};
 
 /// One count per day for every day from `from` to `to` inclusive, zero where
@@ -39,18 +40,19 @@ pub fn rolling_average(series: &[(NaiveDate, u32)], window: usize) -> Vec<(Naive
         .collect()
 }
 
-/// The Monday of the week containing `day`.
-pub fn week_start(day: NaiveDate) -> NaiveDate {
-    day - Duration::days(i64::from(day.weekday().num_days_from_monday()))
+/// The first day of the week containing `day`, per the week-start setting.
+pub fn week_start(day: NaiveDate, prefs: &Preferences) -> NaiveDate {
+    prefs.week_start_of(day)
 }
 
-/// Counts for Monday through Sunday of the week containing `today`; days
-/// after today are `None` so the line stops at the present.
-pub fn this_week(entries: &[DayCount], today: NaiveDate) -> [Option<u32>; 7] {
-    let monday = week_start(today);
+/// Counts for the seven days of the week containing `today`, in the
+/// preference's weekday order; days after today are `None` so the line
+/// stops at the present.
+pub fn this_week(entries: &[DayCount], today: NaiveDate, prefs: &Preferences) -> [Option<u32>; 7] {
+    let first = week_start(today, prefs);
     let mut out = [None; 7];
     for (i, slot) in (0i64..).zip(out.iter_mut()) {
-        let day = monday + Duration::days(i);
+        let day = first + Duration::days(i);
         if day <= today {
             *slot = Some(entries.iter().find(|e| e.day == day).map_or(0, |e| e.count));
         }
@@ -104,11 +106,15 @@ pub fn weekday_index(day: NaiveDate) -> usize {
     }
 }
 
-/// Total per ISO week, keyed by the Monday, for the weeks touching `year`.
-pub fn weekly_totals(entries: &[DayCount], year: i32) -> Vec<(NaiveDate, u32)> {
+/// Total per week, keyed by its first day, for the weeks touching `year`.
+pub fn weekly_totals(
+    entries: &[DayCount],
+    year: i32,
+    prefs: &Preferences,
+) -> Vec<(NaiveDate, u32)> {
     let mut out: Vec<(NaiveDate, u32)> = Vec::new();
     for e in entries.iter().filter(|e| e.day.year() == year) {
-        let monday = week_start(e.day);
+        let monday = week_start(e.day, prefs);
         match out.iter_mut().find(|(m, _)| *m == monday) {
             Some((_, total)) => *total = total.saturating_add(e.count),
             None => out.push((monday, e.count)),
@@ -233,8 +239,20 @@ mod tests {
     #[test]
     fn this_week_stops_at_today() {
         // 2026-09-16 is a Wednesday.
-        let w = this_week(&[e(2026, 9, 14, 5), e(2026, 9, 16, 7)], d(2026, 9, 16));
+        let p = Preferences::default();
+        let w = this_week(&[e(2026, 9, 14, 5), e(2026, 9, 16, 7)], d(2026, 9, 16), &p);
         assert_eq!(w, [Some(5), Some(0), Some(7), None, None, None, None]);
+        let sun = Preferences {
+            week_start: Weekday::Sun,
+            ..p
+        };
+        let w = this_week(
+            &[e(2026, 9, 13, 9), e(2026, 9, 14, 5)],
+            d(2026, 9, 16),
+            &sun,
+        );
+        assert_eq!(w[0], Some(9));
+        assert_eq!(w[1], Some(5));
     }
 
     #[test]
@@ -285,6 +303,7 @@ mod tests {
         let s = weekly_totals(
             &[e(2026, 1, 5, 1), e(2026, 1, 7, 2), e(2026, 1, 12, 3)],
             2026,
+            &Preferences::default(),
         );
         assert_eq!(s, vec![(d(2026, 1, 5), 3), (d(2026, 1, 12), 3)]);
     }

@@ -2,16 +2,17 @@
 //! its preferences sheet.
 
 use crate::{
-    domain::counter::csv,
+    domain::{counter::csv, preferences::Preferences},
     inbound::ui::{
-        components::bottom_sheet::BottomSheet, router::Route, use_date_format, use_store,
+        components::bottom_sheet::BottomSheet, router::Route, use_date_format, use_prefs, use_store,
     },
     outbound::paths,
 };
+use chrono::Weekday;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_components::{ALLOWED_THEMES, ActionBar, Button, ButtonVariant, ThemeConfig};
+use zwipe_components::{ALLOWED_THEMES, ActionBar, Button, ButtonVariant, Chip, ThemeConfig};
 
 /// Themes with adjusted palettes for color-vision deficiency, grouped at the
 /// bottom of the picker. Same list zwiper and the site picker use.
@@ -50,6 +51,14 @@ pub fn Profile() -> Element {
     let mut notice = use_signal(|| None::<String>);
     let toast = use_toast();
     let mut date_format = use_date_format();
+    let mut prefs = use_prefs();
+    let mut rest_open = use_signal(|| false);
+    let rest_count = (0..7).filter(|i| prefs().rest_days & (1 << i) != 0).count();
+    let rest_label = if rest_count == 0 {
+        "None".to_string()
+    } else {
+        rest_count.to_string()
+    };
 
     // One CSV per counter, day and count, into the platform Downloads folder.
     let export = move |_| {
@@ -127,6 +136,59 @@ pub fn Profile() -> Element {
                     }
                 }
                 div { class: "profile-row",
+                    span { class: "profile-row-label", "Week starts" }
+                    div { class: "profile-row-value",
+                        Button {
+                            variant: ButtonVariant::Util,
+                            onclick: move |_| prefs.with_mut(|q| q.week_start = if q.week_start == Weekday::Mon { Weekday::Sun } else { Weekday::Mon }),
+                            if prefs().week_start == Weekday::Mon { "Monday" } else { "Sunday" }
+                        }
+                    }
+                }
+                div { class: "profile-row",
+                    span { class: "profile-row-label", "Day starts" }
+                    div { class: "profile-row-value",
+                        Button {
+                            variant: ButtonVariant::Util,
+                            onclick: move |_| prefs.with_mut(|q| {
+                                let i = Preferences::ROLLOVER_HOURS.iter().position(|h| *h == q.rollover_hour).unwrap_or(0);
+                                q.rollover_hour = Preferences::ROLLOVER_HOURS
+                                    .get((i + 1) % Preferences::ROLLOVER_HOURS.len())
+                                    .copied()
+                                    .unwrap_or(0);
+                            }),
+                            {rollover_label(prefs().rollover_hour)}
+                        }
+                    }
+                }
+                div { class: "profile-row",
+                    span { class: "profile-row-label", "Rest days" }
+                    div { class: "profile-row-value",
+                        span { "{rest_label}" }
+                        Button { variant: ButtonVariant::Util, onclick: move |_| rest_open.set(true), "Change" }
+                    }
+                }
+                div { class: "profile-row",
+                    span { class: "profile-row-label", "Sort counters" }
+                    div { class: "profile-row-value",
+                        Button {
+                            variant: ButtonVariant::Util,
+                            onclick: move |_| prefs.with_mut(|q| q.counter_order = q.counter_order.next()),
+                            "{prefs().counter_order.label()}"
+                        }
+                    }
+                }
+                div { class: "profile-row",
+                    span { class: "profile-row-label", "Confirm minus" }
+                    div { class: "profile-row-value",
+                        Button {
+                            variant: ButtonVariant::Util,
+                            onclick: move |_| prefs.with_mut(|q| q.confirm_minus = !q.confirm_minus),
+                            if prefs().confirm_minus { "On" } else { "Off" }
+                        }
+                    }
+                }
+                div { class: "profile-row",
                     span { class: "profile-row-label", "Dark mode" }
                     div { class: "profile-row-value",
                         Button {
@@ -167,6 +229,46 @@ pub fn Profile() -> Element {
             }
         }
         PreferencesSheet { open: preferences_open }
+        RestDaysSheet { open: rest_open }
+    }
+}
+
+/// "Midnight", "2am", "4am", "6am".
+fn rollover_label(hour: u32) -> String {
+    match hour {
+        0 => "Midnight".to_string(),
+        h => format!("{h}am"),
+    }
+}
+
+/// Pick the weekdays that don't count. Applies as you tap.
+#[component]
+fn RestDaysSheet(open: Signal<bool>) -> Element {
+    const DAYS: [(Weekday, &str); 7] = [
+        (Weekday::Mon, "Monday"),
+        (Weekday::Tue, "Tuesday"),
+        (Weekday::Wed, "Wednesday"),
+        (Weekday::Thu, "Thursday"),
+        (Weekday::Fri, "Friday"),
+        (Weekday::Sat, "Saturday"),
+        (Weekday::Sun, "Sunday"),
+    ];
+    let mut prefs = use_prefs();
+    rsx! {
+        BottomSheet {
+            open,
+            title: "Rest days",
+            p { class: "pref-note", "Rest days don't break a streak and don't count against consistency." }
+            div { class: "chip-row chip-row-center", style: "flex-wrap: wrap;",
+                for (day, name) in DAYS {
+                    Chip {
+                        selected: prefs().rest_days & (1 << day.num_days_from_monday()) != 0,
+                        onclick: move |_| prefs.with_mut(|q| *q = q.toggle_rest(day)),
+                        "{name}"
+                    }
+                }
+            }
+        }
     }
 }
 

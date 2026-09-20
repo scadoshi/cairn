@@ -7,6 +7,7 @@ pub mod screens;
 use crate::domain::{
     counter::{CounterId, Store},
     date_format::DateFormat,
+    preferences::Preferences,
 };
 use chrono::{Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
@@ -33,10 +34,19 @@ pub fn use_date_format() -> Signal<DateFormat> {
     use_context::<Signal<DateFormat>>()
 }
 
-/// Today in local time, read at the UI edge so the domain never touches the
-/// clock.
+/// The preferences, provided by [`App`].
+pub fn use_prefs() -> Signal<Preferences> {
+    use_context::<Signal<Preferences>>()
+}
+
+/// The day the app is on: local time, shifted by the rollover hour, so a
+/// tap at 00:30 after a late session still lands on the day before. Read
+/// at the UI edge so the domain never touches the clock.
 pub fn today() -> NaiveDate {
-    Local::now().date_naive()
+    let prefs = try_use_context::<Signal<Preferences>>()
+        .map(|p| p())
+        .unwrap_or_default();
+    prefs.day_of(Local::now().naive_local())
 }
 
 /// The current local wall-clock time, for recording a tap.
@@ -64,6 +74,21 @@ pub fn App() -> Element {
     let theme = use_signal(move || saved.unwrap_or_default());
     use_context_provider(|| theme);
     use_context_provider(|| StoreVersion(Signal::new(0)));
+    let saved_prefs = store.preferences().unwrap_or_default();
+    let prefs = use_signal(move || saved_prefs);
+    use_context_provider(|| prefs);
+    // Persist every change; when the rollover hour moves, rebuild the daily
+    // entries from the events so history follows the new day boundary.
+    let prefs_store = store.clone();
+    let mut last_rollover = use_signal(move || saved_prefs.rollover_hour);
+    use_effect(move || {
+        let current = prefs();
+        let _ = prefs_store.set_preferences(&current);
+        if current.rollover_hour != last_rollover() {
+            last_rollover.set(current.rollover_hour);
+            let _ = prefs_store.rebuild_entries(&current);
+        }
+    });
     let saved_format = store.date_format().unwrap_or_default();
     let date_format = use_signal(move || saved_format);
     use_context_provider(|| date_format);

@@ -2,22 +2,26 @@
 //! bar with +1 and Open; the screen bar goes back home or to the create form.
 
 use crate::{
-    domain::counter::{
-        Counter,
-        format::{compact, thousands},
-        stats,
-        stats::days_in_year,
+    domain::{
+        counter::{
+            Counter,
+            format::{compact, thousands},
+            stats,
+            stats::days_in_year,
+        },
+        preferences::CounterOrder,
     },
     inbound::ui::{
-        bump_store_version,
+        SharedStore, bump_store_version,
         components::{
+            alert_dialog::ConfirmDialog,
             bottom_sheet::BottomSheet,
             counter_form::{CounterForm, CounterFormState},
             tile::{Tile, TileGrid, rate},
         },
         now,
         router::Route,
-        today, use_store,
+        today, use_prefs, use_store,
     },
 };
 use chrono::Datelike;
@@ -34,6 +38,7 @@ pub fn Counters() -> Element {
     let mut counters = use_signal(Vec::<Counter>::new);
     let mut error = use_signal(|| None::<String>);
     let mut create_open = use_signal(|| false);
+    let prefs = use_prefs();
 
     let load_store = store.clone();
     let reload = use_callback(move |()| match load_store.list_counters() {
@@ -51,7 +56,7 @@ pub fn Counters() -> Element {
                 if counters().is_empty() {
                     p { class: "pref-note", "No counters yet. New counter starts one." }
                 }
-                for c in counters() {
+                for c in ordered(&counters(), &store, prefs().counter_order) {
                     CounterCard {
                         counter: c.clone(),
                         on_bump: move |()| reload.call(()),
@@ -96,8 +101,10 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
     let toast = use_toast();
     let name = counter.name.to_string();
     let step = i64::from(counter.step.get());
+    let confirm_minus = use_prefs()().confirm_minus;
+    let mut confirm_open = use_signal(|| false);
     let bump = use_callback(
-        move |delta: i64| match bump_store.adjust(id, now(), delta) {
+        move |delta: i64| match bump_store.adjust(id, now(), today(), delta) {
             Ok(total) => {
                 toast.info(
                     format!("{name}: {} today", thousands(total)),
@@ -133,7 +140,7 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
             ActionBar {
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| bump.call(-step),
+                    onclick: move |_| if confirm_minus { confirm_open.set(true) } else { bump.call(-step) },
                     "-{step}"
                 }
                 Button {
@@ -146,6 +153,13 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
                     onclick: move |_| on_open.call(id.0),
                     "Open"
                 }
+            }
+            ConfirmDialog {
+                open: confirm_open,
+                title: format!("Take {step} off {}?", counter.name),
+                body: "This subtracts from today's count.".to_string(),
+                confirm_label: format!("Take {step}"),
+                on_confirm: move |()| bump.call(-step),
             }
         }
     }
@@ -195,4 +209,27 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
             CounterForm { state: form }
         }
     }
+}
+
+/// The list in the preferred order. Activity orders need each counter's
+/// figures, so they read the store; created order is free.
+fn ordered(counters: &[Counter], store: &SharedStore, order: CounterOrder) -> Vec<Counter> {
+    let mut list = counters.to_vec();
+    match order {
+        CounterOrder::Created => {}
+        CounterOrder::Name => list.sort_by_key(|c| c.name.as_str().to_lowercase()),
+        CounterOrder::MostActive | CounterOrder::Lifetime => {
+            let key = |c: &Counter| {
+                let entries = store.entries(c.id).unwrap_or_default();
+                let s = stats::summarize(&entries, c.goal, today());
+                if order == CounterOrder::Lifetime {
+                    s.lifetime
+                } else {
+                    s.this_year.total
+                }
+            };
+            list.sort_by_key(|c| std::cmp::Reverse(key(c)));
+        }
+    }
+    list
 }

@@ -9,6 +9,7 @@ use crate::domain::{
         StoreError,
     },
     date_format::DateFormat,
+    preferences::Preferences,
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rusqlite::{Connection, OptionalExtension, params};
@@ -64,6 +65,7 @@ const SCHEMA_V5: &str = "ALTER TABLE counters ADD COLUMN goal_per_week INTEGER;"
 
 const THEME_KEY: &str = "theme";
 const DATE_FORMAT_KEY: &str = "date_format";
+const PREFS_KEY: &str = "prefs";
 
 /// A connection behind a mutex. rusqlite is synchronous and every query here
 /// is tiny, so the UI calls straight through.
@@ -262,6 +264,10 @@ impl CounterStore for SqliteStore {
         .collect()
     }
 
+    fn rebuild_entries(&self, prefs: &Preferences) -> Result<(), StoreError> {
+        self.rebuild(prefs)
+    }
+
     fn events(&self, id: CounterId) -> Result<Vec<Event>, StoreError> {
         let conn = self.conn()?;
         let mut stmt =
@@ -280,13 +286,19 @@ impl CounterStore for SqliteStore {
         .collect()
     }
 
-    fn adjust(&self, id: CounterId, at: NaiveDateTime, delta: i64) -> Result<u32, StoreError> {
+    fn adjust(
+        &self,
+        id: CounterId,
+        at: NaiveDateTime,
+        day: NaiveDate,
+        delta: i64,
+    ) -> Result<u32, StoreError> {
         let conn = self.conn()?;
         conn.execute(
             "INSERT INTO events (counter_id, at, delta) VALUES (?1, ?2, ?3)",
             params![id.0, at.format("%Y-%m-%dT%H:%M:%S").to_string(), delta],
         )?;
-        let day = at.date().format("%Y-%m-%d").to_string();
+        let day = day.format("%Y-%m-%d").to_string();
         let current: i64 = conn
             .query_row(
                 "SELECT count FROM entries WHERE counter_id = ?1 AND day = ?2",
@@ -334,7 +346,55 @@ impl SqliteStore {
     }
 }
 
+impl SqliteStore {
+    /// Every counter's entries, re-derived from its events under `prefs`.
+    fn rebuild(&self, prefs: &Preferences) -> Result<(), StoreError> {
+        let mut conn = self.conn()?;
+        let tx = conn.transaction()?;
+        tx.execute("DELETE FROM entries", [])?;
+        let mut totals: std::collections::BTreeMap<(i64, NaiveDate), i64> =
+            std::collections::BTreeMap::new();
+        {
+            let mut stmt = tx.prepare("SELECT counter_id, at, delta FROM events")?;
+            let rows = stmt.query_map([], |r| {
+                let id: i64 = r.get(0)?;
+                let at: String = r.get(1)?;
+                let delta: i64 = r.get(2)?;
+                Ok((id, at, delta))
+            })?;
+            for row in rows {
+                let (id, at, delta) = row?;
+                let at = NaiveDateTime::parse_from_str(&at, "%Y-%m-%dT%H:%M:%S")
+                    .map_err(|e| StoreError(format!("bad time {at:?} in database: {e}")))?;
+                *totals.entry((id, prefs.day_of(at))).or_default() += delta;
+            }
+        }
+        for ((id, day), total) in totals {
+            if total > 0 {
+                tx.execute(
+                    "INSERT INTO entries (counter_id, day, count) VALUES (?1, ?2, ?3)",
+                    params![id, day.format("%Y-%m-%d").to_string(), total],
+                )?;
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    }
+}
+
 impl SettingsStore for SqliteStore {
+    fn preferences(&self) -> Result<Preferences, StoreError> {
+        Ok(self
+            .setting(PREFS_KEY)?
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or_default())
+    }
+
+    fn set_preferences(&self, prefs: &Preferences) -> Result<(), StoreError> {
+        let json = serde_json::to_string(prefs).map_err(|e| StoreError(e.to_string()))?;
+        self.set_setting(PREFS_KEY, &json)
+    }
+
     fn date_format(&self) -> Result<DateFormat, StoreError> {
         Ok(self
             .setting(DATE_FORMAT_KEY)?
@@ -471,13 +531,13 @@ mod tests {
             )
             .unwrap();
         let today = at(2026, 1, 1);
-        assert_eq!(s.adjust(c.id, today, 3).unwrap(), 3);
-        assert_eq!(s.adjust(c.id, today, 2).unwrap(), 5);
-        assert_eq!(s.adjust(c.id, today, -10).unwrap(), 0);
+        assert_eq!(s.adjust(c.id, today, today.date(), 3).unwrap(), 3);
+        assert_eq!(s.adjust(c.id, today, today.date(), 2).unwrap(), 5);
+        assert_eq!(s.adjust(c.id, today, today.date(), -10).unwrap(), 0);
         assert_eq!(s.events(c.id).unwrap().len(), 3);
         assert!(s.entries(c.id).unwrap().is_empty());
-        s.adjust(c.id, at(2026, 1, 2), 7).unwrap();
-        s.adjust(c.id, at(2026, 1, 1), 1).unwrap();
+        s.adjust(c.id, at(2026, 1, 2), d(2026, 1, 2), 7).unwrap();
+        s.adjust(c.id, at(2026, 1, 1), d(2026, 1, 1), 1).unwrap();
         assert_eq!(
             s.entries(c.id).unwrap(),
             vec![
@@ -504,7 +564,7 @@ mod tests {
                 d(2026, 1, 1),
             )
             .unwrap();
-        s.adjust(c.id, at(2026, 1, 1), 1).unwrap();
+        s.adjust(c.id, at(2026, 1, 1), d(2026, 1, 1), 1).unwrap();
         s.delete_counter(c.id).unwrap();
         assert!(s.entries(c.id).unwrap().is_empty());
         assert!(s.events(c.id).unwrap().is_empty());
@@ -531,6 +591,43 @@ mod tests {
         assert_eq!(s.date_format().unwrap(), DateFormat::MonthDayYear);
         s.set_date_format(DateFormat::DayMonthYear).unwrap();
         assert_eq!(s.date_format().unwrap(), DateFormat::DayMonthYear);
+    }
+
+    #[test]
+    fn preferences_round_trip_and_default() {
+        let s = store();
+        assert_eq!(s.preferences().unwrap(), Preferences::default());
+        let p = Preferences {
+            rollover_hour: 4,
+            ..Preferences::default()
+        };
+        s.set_preferences(&p).unwrap();
+        assert_eq!(s.preferences().unwrap(), p);
+    }
+
+    #[test]
+    fn rebuild_reassigns_late_taps_by_rollover() {
+        let s = store();
+        let c = s
+            .create_counter(
+                &CounterName::new("x").unwrap(),
+                None,
+                Step::default(),
+                d(2026, 1, 1),
+            )
+            .unwrap();
+        let late = d(2026, 1, 2).and_hms_opt(0, 30, 0).unwrap();
+        s.adjust(c.id, late, d(2026, 1, 2), 5).unwrap();
+        assert_eq!(s.entries(c.id).unwrap()[0].day, d(2026, 1, 2));
+        let p = Preferences {
+            rollover_hour: 4,
+            ..Preferences::default()
+        };
+        s.rebuild_entries(&p).unwrap();
+        let entries = s.entries(c.id).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].day, d(2026, 1, 1));
+        assert_eq!(entries[0].count, 5);
     }
 
     #[test]

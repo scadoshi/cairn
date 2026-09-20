@@ -6,7 +6,7 @@ use crate::{
     inbound::ui::{
         components::tile::{Tile, TileGrid},
         router::Route,
-        today, use_date_format, use_store,
+        today, use_date_format, use_prefs, use_store,
     },
 };
 use chrono::Datelike;
@@ -30,7 +30,7 @@ pub fn Home() -> Element {
             let mut streak = 0u32;
             for c in &list {
                 let entries = store.entries(c.id).unwrap_or_default();
-                let s = stats::summarize(&entries, c.goal, today());
+                let s = stats::summarize_with(&entries, c.goal, today(), &use_prefs()());
                 total = total.saturating_add(s.today);
                 if s.today > 0 {
                     active += 1;
@@ -43,7 +43,7 @@ pub fn Home() -> Element {
     let now = today();
     let date = format!("{} {}", now.format("%a"), use_date_format()().date(now));
     let day = now.ordinal();
-    let week = now.iso_week().week();
+    let week = use_prefs()().week_number(now);
 
     rsx! {
         div { class: "screen-content centered",

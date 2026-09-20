@@ -21,7 +21,7 @@ use crate::{
         },
         now,
         router::Route,
-        today, use_date_format, use_store,
+        today, use_date_format, use_prefs, use_store,
     },
 };
 use chrono::{Datelike, Duration as ChronoDuration};
@@ -54,7 +54,6 @@ pub fn CounterScreen(id: i64) -> Element {
     let mut events = use_signal(Vec::<Event>::new);
     let mut notice = use_signal(|| None::<String>);
     let trend = use_signal(|| Trend::ThisWeek);
-    let all_days = use_signal(|| false);
     let best = use_signal(|| Best::Day);
 
     let load_store = store.clone();
@@ -75,18 +74,19 @@ pub fn CounterScreen(id: i64) -> Element {
     use_effect(move || reload.call(()));
 
     let adjust_store = store.clone();
-    let adjust = use_callback(
-        move |delta: i64| match adjust_store.adjust(id, now(), delta) {
-            Ok(total) => {
-                toast.info(
-                    format!("{} today", thousands(total)),
-                    ToastOptions::default().duration(Duration::from_millis(900)),
-                );
-                reload.call(());
-            }
-            Err(e) => toast.error(e.to_string(), ToastOptions::default()),
-        },
-    );
+    let adjust =
+        use_callback(
+            move |delta: i64| match adjust_store.adjust(id, now(), today(), delta) {
+                Ok(total) => {
+                    toast.info(
+                        format!("{} today", thousands(total)),
+                        ToastOptions::default().duration(Duration::from_millis(900)),
+                    );
+                    reload.call(());
+                }
+                Err(e) => toast.error(e.to_string(), ToastOptions::default()),
+            },
+        );
 
     let Some(c) = counter() else {
         return rsx! {
@@ -97,13 +97,17 @@ pub fn CounterScreen(id: i64) -> Element {
             }
         };
     };
-    let summary = stats::summarize(&entries(), c.goal, today());
     let step = i64::from(c.step.get());
     let now = today();
-    let week_total: u32 = series::this_week(&entries(), now).iter().flatten().sum();
+    let prefs = use_prefs()();
+    let summary = stats::summarize_with(&entries(), c.goal, now, &prefs);
+    let week_total: u32 = series::this_week(&entries(), now, &prefs)
+        .iter()
+        .flatten()
+        .sum();
     let last_week_total = series::window_total(
         &entries(),
-        series::week_start(now) - ChronoDuration::days(1),
+        series::week_start(now, &prefs) - ChronoDuration::days(1),
         7,
     );
     let week_delta = match week_total.cmp(&last_week_total) {
@@ -119,6 +123,7 @@ pub fn CounterScreen(id: i64) -> Element {
     };
 
     let mut confirm_delete = use_signal(|| false);
+    let mut confirm_minus = use_signal(|| false);
     let mut rename_open = use_signal(|| false);
     let delete_name = c.name.to_string();
     let delete_store = store.clone();
@@ -154,7 +159,11 @@ pub fn CounterScreen(id: i64) -> Element {
                         Tile { label: "this month", value: compact(summary.this_month) }
                     }
                     ActionBar {
-                        Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(-step), "-{step}" }
+                        Button {
+                            variant: ButtonVariant::Util,
+                            onclick: move |_| if prefs.confirm_minus { confirm_minus.set(true) } else { adjust.call(-step) },
+                            "-{step}"
+                        }
                         Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(step), "+{step}" }
                     }
                 }
@@ -162,7 +171,7 @@ pub fn CounterScreen(id: i64) -> Element {
                 if let Some(g) = c.goal {
                     GoalCard { summary: summary.clone(), goal: g }
                 }
-                TrendsCard { entries: entries(), events: events(), trend, all_days }
+                TrendsCard { entries: entries(), events: events(), trend }
                 BestsCard { entries: entries(), summary: summary.clone(), best }
                 HabitCard { summary: summary.clone() }
                 div { class: "profile-list",
@@ -214,6 +223,13 @@ pub fn CounterScreen(id: i64) -> Element {
             on_saved: move |()| reload.call(()),
         }
         ConfirmDialog {
+            open: confirm_minus,
+            title: format!("Take {step} off {}?", c.name),
+            body: "This subtracts from today's count.".to_string(),
+            confirm_label: format!("Take {step}"),
+            on_confirm: move |()| adjust.call(-step),
+        }
+        ConfirmDialog {
             open: confirm_delete,
             title: format!("Delete {}?", c.name),
             body: format!(
@@ -228,26 +244,21 @@ pub fn CounterScreen(id: i64) -> Element {
 
 /// The trend chart with chips to pick the series.
 #[component]
-fn TrendsCard(
-    entries: Vec<DayCount>,
-    events: Vec<Event>,
-    trend: Signal<Trend>,
-    /// Hourly view only: divide by every day since the first tap rather than
-    /// by days with taps.
-    all_days: Signal<bool>,
-) -> Element {
+fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) -> Element {
     let mut trend = trend;
-    let mut all_days = all_days;
     let now = today();
     let year = now.year();
     let df = use_date_format()();
+    let mut prefs = use_prefs();
+    let p = prefs();
+    let labels = p.weekday_labels();
 
     let (points, overlay, unit, note) = match trend() {
         Trend::ThisWeek => {
-            let week = series::this_week(&entries, now);
+            let week = series::this_week(&entries, now, &p);
             let points = week
                 .iter()
-                .zip(series::WEEKDAYS)
+                .zip(labels)
                 .map(|(v, n)| Point {
                     label: n.to_string(),
                     value: v.map(f64::from),
@@ -262,9 +273,14 @@ fn TrendsCard(
         }
         Trend::Weekday => {
             let avg = series::weekday_average(&entries);
-            let points = avg
+            let start = p.week_start.num_days_from_monday() as usize;
+            let mut rotated = [None; 7];
+            for (i, slot) in rotated.iter_mut().enumerate() {
+                *slot = avg.get((start + i) % 7).copied().flatten();
+            }
+            let points = rotated
                 .iter()
-                .zip(series::WEEKDAYS)
+                .zip(labels)
                 .map(|(v, n)| Point {
                     label: n.to_string(),
                     value: *v,
@@ -297,7 +313,7 @@ fn TrendsCard(
             )
         }
         Trend::Weekly => {
-            let weeks = series::weekly_totals(&entries, year);
+            let weeks = series::weekly_totals(&entries, year, &p);
             let points = weeks
                 .iter()
                 .map(|(d, c)| Point {
@@ -333,7 +349,7 @@ fn TrendsCard(
             )
         }
         Trend::Hourly => {
-            let basis = if all_days() {
+            let basis = if p.hourly_all_days {
                 let first = events.first().map_or(now, |e| e.at.date());
                 let days = u32::try_from((now - first).num_days() + 1).unwrap_or(1);
                 HourlyBasis::AllDays { days }
@@ -349,7 +365,7 @@ fn TrendsCard(
                     value: Some(*v),
                 })
                 .collect();
-            let note = if all_days() {
+            let note = if p.hourly_all_days {
                 "average reps per hour, over every day since the first tap"
             } else {
                 "average reps per hour, over days with taps"
@@ -374,8 +390,8 @@ fn TrendsCard(
             div { class: "chart-body",
                 if trend() == Trend::Hourly {
                     div { class: "chip-row chip-row-tight chip-row-basis",
-                        Chip { selected: !all_days(), onclick: move |_| all_days.set(false), "Active days" }
-                        Chip { selected: all_days(), onclick: move |_| all_days.set(true), "All days" }
+                        Chip { selected: !p.hourly_all_days, onclick: move |_| prefs.with_mut(|q| q.hourly_all_days = false), "Active days" }
+                        Chip { selected: p.hourly_all_days, onclick: move |_| prefs.with_mut(|q| q.hourly_all_days = true), "All days" }
                     }
                 }
                 LineChart { points, overlay, unit }
@@ -474,7 +490,7 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
         Best::Day => summary
             .best_day
             .map(|b| (thousands(b.count), None, df.date(b.day))),
-        Best::Week => series::weekly_totals(&entries, now.year())
+        Best::Week => series::weekly_totals(&entries, now.year(), &use_prefs()())
             .into_iter()
             .max_by_key(|(_, t)| *t)
             .map(|(monday, total)| {

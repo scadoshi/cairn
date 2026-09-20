@@ -5,6 +5,7 @@
 //! UI edge, so these are testable with fixed dates.
 
 use super::{DayCount, Goal};
+use crate::domain::preferences::Preferences;
 use chrono::{Datelike, NaiveDate};
 
 /// Standing against a yearly goal as of `today`.
@@ -150,7 +151,25 @@ fn summarize_year(
     }
 }
 
-fn longest_streak(entries: &[DayCount]) -> u32 {
+/// Whether `prev` to `next` is one step of a streak: consecutive days, or
+/// separated only by rest days, which neither extend nor break it.
+fn adjacent(prev: NaiveDate, next: NaiveDate, prefs: &Preferences) -> bool {
+    let mut d = prev;
+    loop {
+        let Some(n) = d.succ_opt() else {
+            return false;
+        };
+        if n == next {
+            return true;
+        }
+        if !prefs.is_rest(n) {
+            return false;
+        }
+        d = n;
+    }
+}
+
+fn longest_streak(entries: &[DayCount], prefs: &Preferences) -> u32 {
     let mut days: Vec<NaiveDate> = entries
         .iter()
         .filter(|e| e.count > 0)
@@ -163,7 +182,7 @@ fn longest_streak(entries: &[DayCount]) -> u32 {
     let mut prev: Option<NaiveDate> = None;
     for d in days {
         run = match prev {
-            Some(p) if p.succ_opt() == Some(d) => run + 1,
+            Some(p) if adjacent(p, d, prefs) => run + 1,
             _ => 1,
         };
         best = best.max(run);
@@ -172,19 +191,34 @@ fn longest_streak(entries: &[DayCount]) -> u32 {
     best
 }
 
-fn streak(entries: &[DayCount], today: NaiveDate) -> u32 {
+/// Consecutive logged days ending today (or yesterday if today is still
+/// empty), stepping over rest days.
+fn streak(entries: &[DayCount], today: NaiveDate, prefs: &Preferences) -> u32 {
     let has = |d: NaiveDate| entries.iter().any(|e| e.day == d && e.count > 0);
-    let mut cursor = if has(today) {
-        today
-    } else {
-        match today.pred_opt() {
-            Some(y) if has(y) => y,
-            _ => return 0,
+    // Walk back over today and any rest days to the last day that counts.
+    let mut cursor = today;
+    let mut allow_empty = true; // today may be unlogged without breaking
+    loop {
+        if has(cursor) {
+            break;
         }
-    };
+        if prefs.is_rest(cursor) || allow_empty {
+            allow_empty = false;
+            match cursor.pred_opt() {
+                Some(p) => cursor = p,
+                None => return 0,
+            }
+        } else {
+            return 0;
+        }
+    }
     let mut n = 0u32;
-    while has(cursor) {
-        n += 1;
+    loop {
+        if has(cursor) {
+            n += 1;
+        } else if !prefs.is_rest(cursor) {
+            break;
+        }
         match cursor.pred_opt() {
             Some(prev) => cursor = prev,
             None => break,
@@ -193,8 +227,42 @@ fn streak(entries: &[DayCount], today: NaiveDate) -> u32 {
     n
 }
 
-/// Computes the full [`Summary`] for one counter.
+/// Elapsed days of `year` through `today` that are not rest days.
+fn counting_days(year: i32, today: NaiveDate, prefs: &Preferences) -> u32 {
+    let Some(mut d) = NaiveDate::from_ymd_opt(year, 1, 1) else {
+        return 0;
+    };
+    let end = if year < today.year() {
+        NaiveDate::from_ymd_opt(year, 12, 31).unwrap_or(today)
+    } else {
+        today
+    };
+    let mut n = 0u32;
+    while d <= end {
+        if !prefs.is_rest(d) {
+            n += 1;
+        }
+        match d.succ_opt() {
+            Some(next) => d = next,
+            None => break,
+        }
+    }
+    n
+}
+
+/// Computes the full [`Summary`] for one counter with default rules.
 pub fn summarize(entries: &[DayCount], goal: Option<Goal>, today: NaiveDate) -> Summary {
+    summarize_with(entries, goal, today, &Preferences::default())
+}
+
+/// Computes the full [`Summary`] for one counter under the given rules:
+/// rest days don't break streaks or count against consistency.
+pub fn summarize_with(
+    entries: &[DayCount],
+    goal: Option<Goal>,
+    today: NaiveDate,
+    prefs: &Preferences,
+) -> Summary {
     let today_count = entries
         .iter()
         .find(|e| e.day == today)
@@ -229,7 +297,13 @@ pub fn summarize(entries: &[DayCount], goal: Option<Goal>, today: NaiveDate) -> 
         .copied();
     let last_logged = entries.iter().filter(|e| e.count > 0).map(|e| e.day).max();
     let days_since_last = last_logged.and_then(|d| u32::try_from((today - d).num_days()).ok());
-    let consistency = ratio(this_year.active_days, this_year.days_elapsed);
+    let consistency = ratio(
+        this_year.active_days,
+        counting_days(today.year(), today, prefs)
+            .min(this_year.days_elapsed)
+            .max(1),
+    )
+    .min(1.0);
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let projected_year_end = (this_year.per_day * f64::from(this_year.days_in_year)).round() as u32;
 
@@ -241,8 +315,8 @@ pub fn summarize(entries: &[DayCount], goal: Option<Goal>, today: NaiveDate) -> 
         this_year,
         years,
         best_day,
-        streak: streak(entries, today),
-        longest_streak: longest_streak(entries),
+        streak: streak(entries, today, prefs),
+        longest_streak: longest_streak(entries, prefs),
         days_since_last,
         consistency,
         projected_year_end,
@@ -355,14 +429,32 @@ mod tests {
     #[test]
     fn streak_counts_back_from_today_or_yesterday() {
         let entries = [e(2026, 9, 17, 1), e(2026, 9, 18, 1), e(2026, 9, 19, 1)];
-        assert_eq!(streak(&entries, d(2026, 9, 19)), 3);
+        let p = Preferences::default();
+        assert_eq!(streak(&entries, d(2026, 9, 19), &p), 3);
         // Today empty, yesterday counted: streak still alive.
-        assert_eq!(streak(&entries, d(2026, 9, 20)), 3);
+        assert_eq!(streak(&entries, d(2026, 9, 20), &p), 3);
         // Two days gap: broken.
-        assert_eq!(streak(&entries, d(2026, 9, 21)), 0);
+        assert_eq!(streak(&entries, d(2026, 9, 21), &p), 0);
         // Zero rows don't count.
         let with_zero = [e(2026, 9, 18, 0), e(2026, 9, 19, 5)];
-        assert_eq!(streak(&with_zero, d(2026, 9, 19)), 1);
+        assert_eq!(streak(&with_zero, d(2026, 9, 19), &p), 1);
+    }
+
+    #[test]
+    fn rest_days_neither_break_nor_extend_streaks() {
+        use chrono::Weekday;
+        // Fri 18, Sat 19, skip Sun 20 (rest), Mon 21.
+        let entries = [e(2026, 9, 18, 1), e(2026, 9, 19, 1), e(2026, 9, 21, 1)];
+        let p = Preferences::default().toggle_rest(Weekday::Sun);
+        assert_eq!(streak(&entries, d(2026, 9, 21), &p), 3);
+        assert_eq!(longest_streak(&entries, &p), 3);
+        assert_eq!(longest_streak(&entries, &Preferences::default()), 2);
+        // Consistency ignores rest days in the denominator: 3 of 3 counting days.
+        let s = summarize_with(&entries, None, d(2026, 9, 21), &p);
+        let counting = counting_days(2026, d(2026, 9, 21), &p);
+        assert!(
+            (s.consistency - 3.0 / f64::from(counting.min(s.this_year.days_elapsed))).abs() < 1e-9
+        );
     }
 
     #[test]

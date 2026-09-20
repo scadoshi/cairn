@@ -2,7 +2,7 @@
 //! adapter in `outbound` implements these; a watch build would add another.
 
 use super::{Counter, CounterId, CounterName, DayCount, Event, Goal, Step};
-use crate::domain::date_format::DateFormat;
+use crate::domain::{date_format::DateFormat, preferences::Preferences};
 use chrono::{NaiveDate, NaiveDateTime};
 use thiserror::Error;
 use zwipe_components::ThemeConfig;
@@ -41,10 +41,20 @@ pub trait CounterStore {
     fn entries(&self, id: CounterId) -> Result<Vec<DayCount>, StoreError>;
     /// Every tap for a counter, oldest first.
     fn events(&self, id: CounterId) -> Result<Vec<Event>, StoreError>;
-    /// Records a tap at `at` and adds `delta` to that day's total, clamped at
-    /// zero. Returns the new total. Creates the day row on first touch and
-    /// removes it when it hits zero.
-    fn adjust(&self, id: CounterId, at: NaiveDateTime, delta: i64) -> Result<u32, StoreError>;
+    /// Records a tap at `at` and adds `delta` to `day`'s total, clamped at
+    /// zero. `day` is the caller's call (the rollover preference decides
+    /// which day a late tap belongs to). Returns the new total. Creates the
+    /// day row on first touch and removes it when it hits zero.
+    fn adjust(
+        &self,
+        id: CounterId,
+        at: NaiveDateTime,
+        day: NaiveDate,
+        delta: i64,
+    ) -> Result<u32, StoreError>;
+    /// Rebuilds every counter's daily entries from its events, assigning each
+    /// tap to a day by `prefs`. Called when the rollover hour changes.
+    fn rebuild_entries(&self, prefs: &Preferences) -> Result<(), StoreError>;
 }
 
 /// App-wide preferences.
@@ -57,6 +67,10 @@ pub trait SettingsStore {
     fn date_format(&self) -> Result<DateFormat, StoreError>;
     /// Persists the date format.
     fn set_date_format(&self, format: DateFormat) -> Result<(), StoreError>;
+    /// The saved preferences, or the defaults.
+    fn preferences(&self) -> Result<Preferences, StoreError>;
+    /// Persists the preferences.
+    fn set_preferences(&self, prefs: &Preferences) -> Result<(), StoreError>;
 }
 
 /// Both ports behind one object, which is what the UI holds in context.
