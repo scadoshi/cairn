@@ -6,7 +6,7 @@ use crate::{
     inbound::ui::{
         components::tile::{Tile, TileGrid},
         router::Route,
-        today, use_store,
+        today, use_date_format, use_store,
     },
 };
 use chrono::Datelike;
@@ -41,7 +41,7 @@ pub fn Home() -> Element {
         });
 
     let now = today();
-    let date = now.format("%a %-d %b %Y").to_string();
+    let date = format!("{} {}", now.format("%a"), use_date_format()().date(now));
     let day = now.ordinal();
     let week = now.iso_week().week();
 

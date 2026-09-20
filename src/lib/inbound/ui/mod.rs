@@ -4,7 +4,10 @@ pub mod components;
 pub mod router;
 pub mod screens;
 
-use crate::domain::counter::{CounterId, Store};
+use crate::domain::{
+    counter::{CounterId, Store},
+    date_format::DateFormat,
+};
 use chrono::{Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::ToastProvider;
@@ -23,6 +26,11 @@ pub type SharedStore = Arc<dyn Store + Send + Sync>;
 /// The store from context. Provided once by [`App`].
 pub fn use_store() -> SharedStore {
     use_context::<SharedStore>()
+}
+
+/// The date format preference, provided by [`App`].
+pub fn use_date_format() -> Signal<DateFormat> {
+    use_context::<Signal<DateFormat>>()
 }
 
 /// Today in local time, read at the UI edge so the domain never touches the
@@ -56,6 +64,13 @@ pub fn App() -> Element {
     let theme = use_signal(move || saved.unwrap_or_default());
     use_context_provider(|| theme);
     use_context_provider(|| StoreVersion(Signal::new(0)));
+    let saved_format = store.date_format().unwrap_or_default();
+    let date_format = use_signal(move || saved_format);
+    use_context_provider(|| date_format);
+    let format_store = store.clone();
+    use_effect(move || {
+        let _ = format_store.set_date_format(date_format());
+    });
     let overlays = components::navigation::overlay_stack::use_overlay_back_stack();
     use_context_provider(|| overlays);
 

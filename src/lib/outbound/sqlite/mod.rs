@@ -3,9 +3,12 @@
 //! All SQL in the crate lives in this file. Rows are mapped to domain types
 //! here and nowhere else.
 
-use crate::domain::counter::{
-    Counter, CounterId, CounterName, CounterStore, DayCount, Event, Goal, SettingsStore, Step,
-    StoreError,
+use crate::domain::{
+    counter::{
+        Counter, CounterId, CounterName, CounterStore, DayCount, Event, Goal, SettingsStore, Step,
+        StoreError,
+    },
+    date_format::DateFormat,
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rusqlite::{Connection, OptionalExtension, params};
@@ -60,6 +63,7 @@ const SCHEMA_V4: &str = "ALTER TABLE counters ADD COLUMN step INTEGER NOT NULL D
 const SCHEMA_V5: &str = "ALTER TABLE counters ADD COLUMN goal_per_week INTEGER;";
 
 const THEME_KEY: &str = "theme";
+const DATE_FORMAT_KEY: &str = "date_format";
 
 /// A connection behind a mutex. rusqlite is synchronous and every query here
 /// is tiny, so the UI calls straight through.
@@ -308,7 +312,39 @@ impl CounterStore for SqliteStore {
     }
 }
 
+impl SqliteStore {
+    fn setting(&self, key: &str) -> Result<Option<String>, StoreError> {
+        Ok(self
+            .conn()?
+            .query_row(
+                "SELECT value FROM settings WHERE key = ?1",
+                params![key],
+                |r| r.get(0),
+            )
+            .optional()?)
+    }
+
+    fn set_setting(&self, key: &str, value: &str) -> Result<(), StoreError> {
+        self.conn()?.execute(
+            "INSERT INTO settings (key, value) VALUES (?1, ?2)
+             ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+            params![key, value],
+        )?;
+        Ok(())
+    }
+}
+
 impl SettingsStore for SqliteStore {
+    fn date_format(&self) -> Result<DateFormat, StoreError> {
+        Ok(self
+            .setting(DATE_FORMAT_KEY)?
+            .map_or(DateFormat::default(), |k| DateFormat::from_key(&k)))
+    }
+
+    fn set_date_format(&self, format: DateFormat) -> Result<(), StoreError> {
+        self.set_setting(DATE_FORMAT_KEY, format.key())
+    }
+
     fn theme(&self) -> Result<Option<ThemeConfig>, StoreError> {
         let conn = self.conn()?;
         let raw: Option<String> = conn
@@ -487,6 +523,14 @@ mod tests {
         let got = s.theme().unwrap().unwrap();
         assert_eq!(got.name, "dracula");
         assert!(!got.is_dark);
+    }
+
+    #[test]
+    fn date_format_round_trips_and_defaults() {
+        let s = store();
+        assert_eq!(s.date_format().unwrap(), DateFormat::MonthDayYear);
+        s.set_date_format(DateFormat::DayMonthYear).unwrap();
+        assert_eq!(s.date_format().unwrap(), DateFormat::DayMonthYear);
     }
 
     #[test]

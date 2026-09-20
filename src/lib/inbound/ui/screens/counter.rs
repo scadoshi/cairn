@@ -21,7 +21,7 @@ use crate::{
         },
         now,
         router::Route,
-        today, use_store,
+        today, use_date_format, use_store,
     },
 };
 use chrono::{Datelike, Duration as ChronoDuration};
@@ -146,7 +146,7 @@ pub fn CounterScreen(id: i64) -> Element {
                             class: if summary.lifetime >= 10_000_000 { "odometer-value odometer-value-xl" } else if summary.lifetime >= 100_000 { "odometer-value odometer-value-l" } else { "odometer-value" },
                             "{thousands(summary.lifetime)}"
                         }
-                        span { class: "odometer-label", "lifetime since {c.created_on}" }
+                        span { class: "odometer-label", "lifetime since {use_date_format()().date(c.created_on)}" }
                     }
                     TileGrid {
                         Tile { label: "today", value: compact(summary.today) }
@@ -240,6 +240,7 @@ fn TrendsCard(
     let mut all_days = all_days;
     let now = today();
     let year = now.year();
+    let df = use_date_format()();
 
     let (points, overlay, unit, note) = match trend() {
         Trend::ThisWeek => {
@@ -283,7 +284,7 @@ fn TrendsCard(
             let points = daily
                 .iter()
                 .map(|(d, c)| Point {
-                    label: d.format("%b %-d").to_string(),
+                    label: df.short(*d),
                     value: Some(f64::from(*c)),
                 })
                 .collect();
@@ -300,7 +301,7 @@ fn TrendsCard(
             let points = weeks
                 .iter()
                 .map(|(d, c)| Point {
-                    label: d.format("%b %-d").to_string(),
+                    label: df.short(*d),
                     value: Some(f64::from(*c)),
                 })
                 .collect();
@@ -454,6 +455,7 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
 fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> Element {
     let mut best = best;
     let now = today();
+    let df = use_date_format()();
     let months = [
         "January",
         "February",
@@ -469,13 +471,9 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
         "December",
     ];
     let tiles = match best() {
-        Best::Day => summary.best_day.map(|b| {
-            (
-                thousands(b.count),
-                None,
-                b.day.format("%-d %b %Y").to_string(),
-            )
-        }),
+        Best::Day => summary
+            .best_day
+            .map(|b| (thousands(b.count), None, df.date(b.day))),
         Best::Week => series::weekly_totals(&entries, now.year())
             .into_iter()
             .max_by_key(|(_, t)| *t)
@@ -483,7 +481,7 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
                 (
                     thousands(total),
                     Some(rate(f64::from(total) / 7.0)),
-                    format!("w/c {}", monday.format("%-d %b")),
+                    format!("w/c {}", df.short(monday)),
                 )
             }),
         Best::Month => series::monthly_totals(&entries, now.year())

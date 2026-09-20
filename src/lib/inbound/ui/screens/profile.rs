@@ -3,7 +3,9 @@
 
 use crate::{
     domain::counter::csv,
-    inbound::ui::{components::bottom_sheet::BottomSheet, router::Route, use_store},
+    inbound::ui::{
+        components::bottom_sheet::BottomSheet, router::Route, use_date_format, use_store,
+    },
     outbound::paths,
 };
 use dioxus::prelude::*;
@@ -47,6 +49,7 @@ pub fn Profile() -> Element {
     let mut preferences_open = use_signal(|| false);
     let mut notice = use_signal(|| None::<String>);
     let toast = use_toast();
+    let mut date_format = use_date_format();
 
     // One CSV per counter, day and count, into the platform Downloads folder.
     let export = move |_| {
@@ -103,6 +106,23 @@ pub fn Profile() -> Element {
                             variant: ButtonVariant::Util,
                             onclick: move |_| preferences_open.set(true),
                             "Change"
+                        }
+                    }
+                }
+                div { class: "profile-row",
+                    span { class: "profile-row-label", "Dates" }
+                    div { class: "profile-row-value",
+                        Button {
+                            variant: ButtonVariant::Util,
+                            onclick: move |_| {
+                                let next = date_format().next();
+                                date_format.set(next);
+                                toast.success(
+                                    format!("Dates as {}", next.label()),
+                                    ToastOptions::default().duration(Duration::from_millis(1200)),
+                                );
+                            },
+                            "{date_format().label()}"
                         }
                     }
                 }

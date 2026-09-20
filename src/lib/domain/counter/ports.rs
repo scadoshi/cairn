@@ -2,6 +2,7 @@
 //! adapter in `outbound` implements these; a watch build would add another.
 
 use super::{Counter, CounterId, CounterName, DayCount, Event, Goal, Step};
+use crate::domain::date_format::DateFormat;
 use chrono::{NaiveDate, NaiveDateTime};
 use thiserror::Error;
 use zwipe_components::ThemeConfig;
@@ -52,6 +53,10 @@ pub trait SettingsStore {
     fn theme(&self) -> Result<Option<ThemeConfig>, StoreError>;
     /// Persists the theme.
     fn set_theme(&self, theme: &ThemeConfig) -> Result<(), StoreError>;
+    /// The saved date format, or the default.
+    fn date_format(&self) -> Result<DateFormat, StoreError>;
+    /// Persists the date format.
+    fn set_date_format(&self, format: DateFormat) -> Result<(), StoreError>;
 }
 
 /// Both ports behind one object, which is what the UI holds in context.
