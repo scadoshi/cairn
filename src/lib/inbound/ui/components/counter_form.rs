@@ -153,15 +153,19 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                 oninput: move |e| name.set(e.value()),
             }
             label { class: "label", r#for: "counter_goal", "Goal" }
+            // A text field, not type=number: iOS WebKit drops keystrokes when a
+            // number input's value is rewritten mid-typing, which a bound value
+            // does on every key. inputmode still brings up the number pad, and
+            // the handler keeps only digits.
             input {
                 class: "input",
                 id: "counter_goal",
-                r#type: "number",
-                min: "1",
+                r#type: "text",
                 inputmode: "numeric",
+                pattern: "[0-9]*",
                 placeholder: "Not set",
                 value: "{amount}",
-                oninput: move |e| amount.set(e.value()),
+                oninput: move |e| amount.set(e.value().chars().filter(char::is_ascii_digit).collect()),
             }
             div { class: "chip-row chip-row-center",
                 Chip { selected: unit() == GoalUnit::Day, onclick: move |_| unit.set(GoalUnit::Day), "Per day" }
