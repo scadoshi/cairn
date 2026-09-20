@@ -169,6 +169,43 @@ impl Goal {
     pub fn label(self, days_in_year: u32) -> String {
         self.parts(days_in_year).join(", ")
     }
+
+    /// The goal in every period, day then week then year, each formatted:
+    /// whole numbers grouped, derived fractions to one decimal. `entered`
+    /// says which of the three is the one typed in.
+    pub fn breakdown(self, days_in_year: u32) -> [(String, bool); 3] {
+        use super::format::{rate, thousands};
+        let days = f64::from(days_in_year.max(1));
+        let (day, week, year) = match self {
+            Self::PerDay(n) => (f64::from(n), f64::from(n) * 7.0, f64::from(n) * days),
+            Self::PerWeek(n) => (f64::from(n) / 7.0, f64::from(n), f64::from(n) * days / 7.0),
+            Self::PerYear(n) => (f64::from(n) / days, f64::from(n) * 7.0 / days, f64::from(n)),
+        };
+        let show = |v: f64, exact: bool| {
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let whole = v.round() as u32;
+            if exact || (v - v.round()).abs() < 1e-9 {
+                thousands(whole)
+            } else {
+                rate(v)
+            }
+        };
+        let unit = |v: f64, exact: bool, suffix: &str| format!("{}/{suffix}", show(v, exact));
+        [
+            (
+                unit(day, matches!(self, Self::PerDay(_)), "day"),
+                matches!(self, Self::PerDay(_)),
+            ),
+            (
+                unit(week, matches!(self, Self::PerWeek(_)), "week"),
+                matches!(self, Self::PerWeek(_)),
+            ),
+            (
+                unit(year, matches!(self, Self::PerYear(_)), "year"),
+                matches!(self, Self::PerYear(_)),
+            ),
+        ]
+    }
 }
 
 impl std::fmt::Display for Goal {

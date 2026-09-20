@@ -173,6 +173,18 @@ input {
     margin-top: 0.2rem;
 }
 
+.chip-tags-center {
+    justify-content: center;
+    margin: 0.1rem 0 1rem;
+}
+
+/* A figure worked out from the entered one: quieter than the goal pill. */
+.stat-chip-derived {
+    color: var(--text-muted);
+    background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
+    border-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
+}
+
 .stat-chip-goal {
     color: var(--accent-tertiary);
     background-color: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);

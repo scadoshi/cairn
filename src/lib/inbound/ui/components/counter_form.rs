@@ -135,7 +135,8 @@ pub fn CounterForm(state: CounterFormState) -> Element {
         .parse::<u32>()
         .ok()
         .filter(|n| *n > 0)
-        .map(|n| unit().goal(n).map(|g| g.label(days)).unwrap_or_default());
+        .and_then(|n| unit().goal(n).ok())
+        .map(|g| g.breakdown(days));
 
     rsx! {
         form { class: "flex-col text-center", onsubmit: move |e| e.prevent_default(),
@@ -167,8 +168,15 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                 Chip { selected: unit() == GoalUnit::Week, onclick: move |_| unit.set(GoalUnit::Week), "Per week" }
                 Chip { selected: unit() == GoalUnit::Year, onclick: move |_| unit.set(GoalUnit::Year), "Per year" }
             }
-            if let Some(p) = preview {
-                p { class: "pref-note", "{p}" }
+            if let Some(parts) = preview {
+                div { class: "chip-tags chip-tags-center",
+                    for (text, entered) in parts {
+                        span {
+                            class: if entered { "stat-chip stat-chip-goal" } else { "stat-chip stat-chip-derived" },
+                            "{text}"
+                        }
+                    }
+                }
             }
             label { class: "label", "Each tap adds" }
             div { class: "chip-row chip-row-center",
