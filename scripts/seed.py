@@ -88,7 +88,8 @@ def main(path: str, stress: bool = False) -> None:
         while day <= today:
             weekday = day.weekday()  # 0 = Monday
             progress = (day - start).days / total_days  # 0 at the start, 1 today
-            if weekday == 6 or rng.random() < 0.12:
+            daily = any(name == n for n, *_ in STRESS)  # steps and water happen every day
+            if (weekday == 6 and not daily) or rng.random() < (0.02 if daily else 0.12):
                 count = 0  # Sundays off, plus the odd missed day
             else:
                 count = base + int(base * 1.2 * progress) + rng.randint(-noise, noise)
