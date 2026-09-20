@@ -81,7 +81,8 @@ context/
 ├── README.md         — start-here index + current focus
 ├── CLAUDE.md         — this file
 ├── architecture/     — structure.md (layout), decisions.md (why)
-├── development/      — commit_guidelines, documentation, ownership, dioxus cheatsheet
+├── development/      — commit_guidelines, versioning, documentation, ownership, dioxus cheatsheet
+├── operations/       — ios/ (submission runbook, build history)
 ├── plans/            — specs for in-flight work (watch.md is the far horizon)
-└── progress/         — todo.md (open work)
+└── progress/         — overview.md (live), todo.md (next), backlog.md (someday), changelog.md
 ```

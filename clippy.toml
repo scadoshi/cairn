@@ -1,3 +1,11 @@
+# Thresholds and behavior only; lint levels live in Cargo.toml [lints.clippy].
+
+# Above seven arguments, reach for a struct or a builder.
+too-many-arguments-threshold = 7
+type-complexity-threshold = 250
+cognitive-complexity-threshold = 25
+
+# Panics are the right failure mode inside tests.
 allow-unwrap-in-tests = true
 allow-expect-in-tests = true
 allow-panic-in-tests = true

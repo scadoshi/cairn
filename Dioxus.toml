@@ -13,5 +13,16 @@ title = "Odo"
 [ios.plist]
 CFBundlePackageType = "APPL"
 MinimumOSVersion = "16.0"
+# Apple's submission allowlist requires a binary linked against the current
+# Xcode and SDK, and Dioxus writes these from a stale template. Keep them at
+# whatever `xcodebuild -version` and `xcrun --sdk iphoneos --show-sdk-version`
+# say on the build machine; operations/ios/submission.md re-patches them at
+# release time anyway.
+DTPlatformName = "iphoneos"
+DTPlatformVersion = "27.0"
+DTSDKName = "iphoneos27.0"
+DTXcode = "2700"
+DTXcodeBuild = "27A266a"
+DTCompiler = "com.apple.compilers.llvm.clang.1_0"
 UISupportedInterfaceOrientations = ["UIInterfaceOrientationPortrait"]
 "UISupportedInterfaceOrientations~ipad" = ["UIInterfaceOrientationPortrait"]

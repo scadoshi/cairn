@@ -12,8 +12,9 @@ Read [`CLAUDE.md`](CLAUDE.md) first for the rules.
 |-----------|--------------|
 | [`architecture/`](architecture/) | `structure.md` (the tree and who owns what), `decisions.md` (the numbered why) |
 | [`development/`](development/) | How to write code here: ownership (read first), commit and doc standards, the Dioxus 0.7 cheatsheet |
+| [`operations/`](operations/) | How to ship: `ios/submission.md` and the build history |
 | [`plans/`](plans/) | Specs for upcoming work. `watch.md` is the Apple Watch horizon |
-| [`progress/`](progress/) | `todo.md`, the ordered open work |
+| [`progress/`](progress/) | `overview.md` (live), `todo.md` (next), `backlog.md` (someday), `changelog.md` |
 
 ## Current focus
 

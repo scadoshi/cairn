@@ -1,7 +1,12 @@
 /target/
 /dist/
 .DS_Store
+.vscode
+.env
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
+# iOS and Android archives from release builds
+*.ipa
+*.aab
