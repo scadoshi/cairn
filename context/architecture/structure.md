@@ -1,13 +1,13 @@
 # Structure
 
 ```
-odo/
+notch/
 ├── Cargo.toml              # single crate; lib + one bin
 ├── Dioxus.toml             # app name, bundle id, iOS plist
 ├── assets/                 # main.css, fonts, ASCII logo
 ├── context/                # this documentation
 └── src/
-    ├── bin/odo.rs          # open the store, launch Dioxus with it in context
+    ├── bin/notch.rs          # open the store, launch Dioxus with it in context
     └── lib/
         ├── lib.rs
         ├── domain/

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fill an Odo database with plausible test data across several years.
+"""Fill an Notch database with plausible test data across several years.
 
     scripts/seed.py PATH_TO_odo.db
 
@@ -19,8 +19,8 @@ so tiles, pills, and the odometer meet numbers that need shortening.
 Only stdlib, so it runs anywhere python3 does. Point it at the simulator's
 copy with:
 
-    xcrun simctl get_app_container booted com.scadoshi.odo data
-    # then append /Library/Application Support/odo/odo.db
+    xcrun simctl get_app_container booted com.scadoshi.notch data
+    # then append /Library/Application Support/notch/notch.db
 """
 
 import datetime as dt

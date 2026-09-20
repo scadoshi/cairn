@@ -10,7 +10,7 @@ so desktop, iOS, and later the watch ship the same engine.
 
 ## 2. Single crate, hexagonal inside
 
-zwipe needs a workspace because it has a server, an app, and a site. Odo has
+zwipe needs a workspace because it has a server, an app, and a site. Notch has
 one binary. The hexagonal split (domain / inbound / outbound) is kept as
 modules inside one crate, which is enough to keep the domain portable to a
 watch target without a workspace's overhead.
@@ -41,7 +41,7 @@ the commit. Upgrading is a deliberate `cargo update -p zwipe-components`.
 
 ## 7. Theme stored in SQLite
 
-The portfolio keeps the theme in `localStorage` because it is a website. Odo
+The portfolio keeps the theme in `localStorage` because it is a website. Notch
 has a database already, so the theme goes in a `settings` table and there is
 one persistence path.
 
@@ -52,10 +52,10 @@ answer is not a hosted backend. iOS device backup already carries the app's
 data folder, and CSV export covers the rest. What a server would add (more
 than one device, a web view, Android, anything social) is a product change,
 and it brings accounts, auth, Postgres, hosting, a privacy policy, and a
-service to run for as long as anyone uses it. zwipe has all of that; Odo
+service to run for as long as anyone uses it. zwipe has all of that; Notch
 does not want it.
 
-When Odo needs data on more than one device, which the Apple Watch will
+When Notch needs data on more than one device, which the Apple Watch will
 force, the answer is CloudKit's private database: the user's own records,
 synced by Apple, no accounts, no server, no cost. It needs a native bridge
 in the shape of the back gesture's objc2 module. The README's promise holds:
@@ -65,3 +65,12 @@ The sync unit is the events table. Every tap is an append-only record with
 a timestamp, and entries are derivable from it, so events merge cleanly
 across devices where daily totals would conflict. Nothing goes into the
 schema that is not derivable from events.
+
+## 9. Renamed from Odo to Notch
+
+2026-09-20. An "odo" step-counter with odometer digits already sits in the
+App Store, same concept, same name. Notch is free there, one syllable, and
+means the thing: one notch per rep, notching up. The bundle id is
+`com.scadoshi.notch`; the data folder and database moved with it. The big
+lifetime readout is still called the odometer in the code, since that is
+what it is.

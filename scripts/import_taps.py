@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Import a tap log export into an Odo database.
+"""Import a tap log export into an Notch database.
 
     scripts/import_taps.py EXPORT.csv PATH_TO_odo.db [--replace]
 
 The export is one file with a totals block at the top, then a section per
 counter headed `N-<name>-export.csv` with rows of
 `Time Stamp, Date, Time, Counter Value, Increment`. Each row is one tap;
-Increment is signed (the -10s are undos). That is Odo's events table
+Increment is signed (the -10s are undos). That is Notch's events table
 exactly, so every row becomes an event with its timestamp, and the daily
 entries are rebuilt as the sum of each day's increments.
 

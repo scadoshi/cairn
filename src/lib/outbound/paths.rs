@@ -1,22 +1,22 @@
-//! Where Odo's files live on this platform.
+//! Where Notch's files live on this platform.
 
 use std::path::PathBuf;
 
-/// The database path: `<data dir>/odo/odo.db`, with the directory created.
-/// `~/Library/Application Support/odo/odo.db` on macOS. Falls back to the
+/// The database path: `<data dir>/notch/notch.db`, with the directory created.
+/// `~/Library/Application Support/notch/notch.db` on macOS. Falls back to the
 /// working directory if the platform has no data dir.
 pub fn database() -> std::io::Result<PathBuf> {
     let dir = dirs::data_local_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("odo");
+        .join("notch");
     std::fs::create_dir_all(&dir)?;
-    Ok(dir.join("odo.db"))
+    Ok(dir.join("notch.db"))
 }
 
 /// Where CSV exports land, created if missing.
 ///
 /// On iOS the sandbox's HOME is the app container, and its Documents folder
-/// is the one the Files app shows under "On My iPhone > Odo" (Dioxus.toml
+/// is the one the Files app shows under "On My iPhone > Notch" (Dioxus.toml
 /// sets UIFileSharingEnabled and LSSupportsOpeningDocumentsInPlace for
 /// that). The dirs crate has no iOS notion of a documents folder, and the
 /// sandbox has no Downloads folder, so this builds the path from HOME.

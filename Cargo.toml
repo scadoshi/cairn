@@ -1,17 +1,17 @@
 [package]
-name = "odo"
+name = "notch"
 version = "0.1.0"
 authors = ["Scotty Fermo <scottyfermo@hotmail.com>"]
 edition = "2024"
 publish = false
 
 [lib]
-name = "odo"
+name = "notch"
 path = "src/lib/lib.rs"
 
 [[bin]]
-name = "odo"
-path = "src/bin/odo.rs"
+name = "notch"
+path = "src/bin/notch.rs"
 
 [dependencies]
 dioxus = { version = "0.7.10", features = ["router"] }

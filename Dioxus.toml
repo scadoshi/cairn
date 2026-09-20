@@ -1,20 +1,20 @@
 [application]
-name = "Odo"
+name = "Notch"
 
 [bundle]
-identifier = "com.scadoshi.odo"
+identifier = "com.scadoshi.notch"
 publisher = "scadoshi"
-# The "o" from the wordmark, rendered by scripts/icon.py from assets/o.txt.
+# The "o" from the wordmark, rendered by scripts/icon.py from assets/n.txt.
 icon = ["assets/favicon/icon-1024.png"]
 
 [web.app]
-title = "Odo"
+title = "Notch"
 
 [ios.plist]
 CFBundlePackageType = "APPL"
 MinimumOSVersion = "16.0"
 # CSV exports go to the app's Documents folder; these two keys make the Files
-# app show it under "On My iPhone > Odo" so the files can be opened or shared.
+# app show it under "On My iPhone > Notch" so the files can be opened or shared.
 UIFileSharingEnabled = true
 LSSupportsOpeningDocumentsInPlace = true
 # Apple's submission allowlist requires a binary linked against the current

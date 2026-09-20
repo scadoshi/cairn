@@ -5,7 +5,7 @@
 #
 # The router is in-memory, so the OS back never reaches it on its own; wry's
 # Activity would finish the app. The unified OnBackPressedDispatcher catches
-# both the gesture and the button and forwards it to the app as an `odo:back`
+# both the gesture and the button and forwards it to the app as an `notch:back`
 # DOM event; the Rust side (components/navigation/back_handler.rs) decides:
 # go_back, or finish the Activity at a root screen.
 #
@@ -16,7 +16,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-KT="${1:-$REPO_ROOT/target/dx/odo/release/android/app/app/src/main/kotlin/dev/dioxus/main/MainActivity.kt}"
+KT="${1:-$REPO_ROOT/target/dx/notch/release/android/app/app/src/main/kotlin/dev/dioxus/main/MainActivity.kt}"
 
 [ -f "$KT" ] || { echo "MainActivity.kt not found: $KT" >&2; exit 1; }
 
@@ -27,7 +27,7 @@ import android.os.Bundle
 import android.webkit.WebView
 import androidx.activity.OnBackPressedCallback
 
-typealias BuildConfig = com.scadoshi.odo.BuildConfig
+typealias BuildConfig = com.scadoshi.notch.BuildConfig
 
 class MainActivity : WryActivity() {
     private var appWebView: WebView? = null
@@ -45,7 +45,7 @@ class MainActivity : WryActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 appWebView?.evaluateJavascript(
-                    "window.dispatchEvent(new Event('odo:back'))",
+                    "window.dispatchEvent(new Event('notch:back'))",
                     null
                 )
             }

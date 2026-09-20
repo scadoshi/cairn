@@ -4,8 +4,8 @@ Guidance for Claude Code and any other AI assistant working in this repository.
 
 ## Project Overview
 
-Odo (as in odometer) is a lifetime counter. You name a thing you do (pull-ups,
-push-ups, pages read), log how many you did each day, and Odo keeps the running
+Notch is a lifetime counter, one notch per rep. You name a thing you do (pull-ups,
+push-ups, pages read), log how many you did each day, and Notch keeps the running
 total plus the rates and averages that make a total mean something: this year's
 total, average per day, where you stand against a yearly goal, and what today
 needs to be to stay on pace.
@@ -23,7 +23,7 @@ Hexagonal, the same shape as zwipe and zynergy, sized for one crate:
 
 ```
 src/
-├── bin/odo.rs            # entrypoint: opens the store, launches the app
+├── bin/notch.rs            # entrypoint: opens the store, launches the app
 └── lib/
     ├── domain/counter/   # pure: models, stats, goals, csv, ports (no dioxus, no sqlite)
     ├── inbound/ui/       # Dioxus: router, screens/, components/
@@ -60,7 +60,7 @@ cargo clippy --all-targets -- -D warnings # what CI runs
 ```
 
 The database lives at the platform data dir, `~/Library/Application
-Support/odo/odo.db` on macOS. Delete it to start over.
+Support/notch/notch.db` on macOS. Delete it to start over.
 
 ## Linting
 

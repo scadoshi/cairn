@@ -1,4 +1,4 @@
-use odo::{
+use notch::{
     inbound::ui::{App, SharedStore},
     outbound::{paths, sqlite::SqliteStore},
 };
@@ -14,14 +14,14 @@ fn main() {
     let path = match paths::database() {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("odo: cannot locate data directory: {e}");
+            eprintln!("notch: cannot locate data directory: {e}");
             return;
         }
     };
     let store = match SqliteStore::open(&path) {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("odo: cannot open {}: {e}", path.display());
+            eprintln!("notch: cannot open {}: {e}", path.display());
             return;
         }
     };

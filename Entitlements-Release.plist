@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
     <key>application-identifier</key>
-    <string>VV74WQ89GD.com.scadoshi.odo</string>
+    <string>VV74WQ89GD.com.scadoshi.notch</string>
     <key>keychain-access-groups</key>
     <array>
-        <string>VV74WQ89GD.com.scadoshi.odo</string>
+        <string>VV74WQ89GD.com.scadoshi.notch</string>
     </array>
     <key>get-task-allow</key>
     <false/>

@@ -37,7 +37,7 @@ Fastest way to start using it daily. Plug the phone in, trust the Mac, then:
 
 ```bash
 dx build --release --platform ios --device true
-APP=target/dx/odo/release/ios/Odo.app
+APP=target/dx/notch/release/ios/Notch.app
 cp ~/certs/Odo_Development.mobileprovision $APP/embedded.mobileprovision
 codesign --force --sign "Apple Development: SCOTTY RAY FERMO (NVSWB62C54)" \
   --entitlements Entitlements.plist $APP

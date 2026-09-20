@@ -1,10 +1,10 @@
-# Odo
+# Notch
 
-A counter, like an odometer. You name something you do, log how many you did
-today, and the number goes up and stays up.
+A counter. One notch per rep. You name something you do, log how many you
+did today, and the number goes up and stays up.
 
 I built it to track lifetime pull-ups and push-ups. A lifetime total on its own
-is a trivia fact, so Odo also breaks it down by year: this year's total, the
+is a trivia fact, so Notch also breaks it down by year: this year's total, the
 average per day, what day of the year it is, and if you set a yearly goal,
 whether you're ahead or behind and what today needs to be to catch up.
 
