@@ -2,6 +2,8 @@
 
 Someday. Not ordered. Promote to `todo.md` when it becomes next.
 
+- CloudKit sync of the events table across a user's devices; see
+  `architecture/decisions.md` §8. Prerequisite for the watch.
 - Apple Watch companion; see `plans/watch.md`.
 - Import from CSV, the inverse of export.
 - Per-counter colour so cards and chart lines differ.

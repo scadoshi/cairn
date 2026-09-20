@@ -44,3 +44,24 @@ the commit. Upgrading is a deliberate `cargo update -p zwipe-components`.
 The portfolio keeps the theme in `localStorage` because it is a website. Odo
 has a database already, so the theme goes in a `settings` table and there is
 one persistence path.
+
+## 8. No server. Sync, when it comes, is CloudKit
+
+Decided 2026-09-20. The worry was losing a phone and losing the counts; the
+answer is not a hosted backend. iOS device backup already carries the app's
+data folder, and CSV export covers the rest. What a server would add (more
+than one device, a web view, Android, anything social) is a product change,
+and it brings accounts, auth, Postgres, hosting, a privacy policy, and a
+service to run for as long as anyone uses it. zwipe has all of that; Odo
+does not want it.
+
+When Odo needs data on more than one device, which the Apple Watch will
+force, the answer is CloudKit's private database: the user's own records,
+synced by Apple, no accounts, no server, no cost. It needs a native bridge
+in the shape of the back gesture's objc2 module. The README's promise holds:
+nothing leaves the phone except into the user's own iCloud.
+
+The sync unit is the events table. Every tap is an append-only record with
+a timestamp, and entries are derivable from it, so events merge cleanly
+across devices where daily totals would conflict. Nothing goes into the
+schema that is not derivable from events.
