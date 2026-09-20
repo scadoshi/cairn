@@ -13,7 +13,7 @@ use chrono::Datelike;
 use dioxus::prelude::*;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 
-const LOGO: &str = include_str!("../../../../../assets/notch.txt");
+const LOGO: &str = include_str!("../../../../../assets/crow.txt");
 
 /// The landing screen.
 #[component]
@@ -47,7 +47,7 @@ pub fn Home() -> Element {
 
     rsx! {
         div { class: "screen-content centered",
-            pre { class: "logo", "aria-label": "Notch", "{LOGO}" }
+            pre { class: "logo", "aria-label": "Crow", "{LOGO}" }
             div { class: "container-sm home-hero content-enter-delayed",
                 div { class: "card-header home-hero-head",
                     span { class: "card-title", "{date}" }

@@ -1,4 +1,4 @@
-use notch::{
+use crow::{
     inbound::ui::{App, SharedStore},
     outbound::{paths, sqlite::SqliteStore},
 };
@@ -14,14 +14,14 @@ fn main() {
     let path = match paths::database() {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("notch: cannot locate data directory: {e}");
+            eprintln!("crow: cannot locate data directory: {e}");
             return;
         }
     };
     let store = match SqliteStore::open(&path) {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("notch: cannot open {}: {e}", path.display());
+            eprintln!("crow: cannot open {}: {e}", path.display());
             return;
         }
     };

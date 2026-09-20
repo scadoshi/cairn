@@ -13,7 +13,7 @@
 ## CI: how your commits get checked (run these BEFORE you push)
 
 `.github/workflows/ci.yml` runs `test` and `lint` on every push to `main` and
-every pull request, on macOS runners (notch ships to macOS and iOS, and the
+every pull request, on macOS runners (crow ships to macOS and iOS, and the
 default feature pulls dioxus-desktop). Reproduce the gate locally first.
 
 ### 1. Format with nightly

@@ -5,7 +5,7 @@ someday.
 
 ## State
 
-Notch runs on desktop and in the iOS simulator. Nothing has shipped to a real
+Crow runs on desktop and in the iOS simulator. Nothing has shipped to a real
 phone yet; there is no App Store listing. The database schema is at v4.
 
 ## What works

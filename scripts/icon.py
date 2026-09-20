@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Render the app icon set from the wordmark's "n".
+"""Render the app icon set from the wordmark's "c".
 
     scripts/icon.py
 
-Reads assets/notch.txt, cuts the first letter out (8 cells wide, leaning one
-column per row), writes it to assets/n.txt, and renders it with JetBrains
+Reads assets/crow.txt, cuts the first letter out (8 cells wide, leaning one
+column per row), writes it to assets/c.txt, and renders it with JetBrains
 Mono at line-height 0.9 (the wordmark's own spacing, so rows overlap into
 solid strokes the way zwipe's Z icon does) onto gruvbox dark, cream on
 #282828. Writes every size iOS, the web, and Android need into
@@ -25,14 +25,14 @@ SIZES = [16, 32, 40, 60, 80, 87, 120, 180, 192, 512]
 
 
 def mark_from_wordmark() -> list[str]:
-    """The icon mark is the wordmark's first letter, kept in assets/n.txt."""
-    return (ROOT / "assets/n.txt").read_text().rstrip("\n").split("\n")
+    """The icon mark is the wordmark's first letter, kept in assets/c.txt."""
+    return (ROOT / "assets/c.txt").read_text().rstrip("\n").split("\n")
 
 
 def ttf_path() -> str:
     font = TTFont(ROOT / "assets/fonts/jetbrains-mono-400.woff2")
     font.flavor = None
-    out = pathlib.Path(tempfile.gettempdir()) / "notch-jbm-400.ttf"
+    out = pathlib.Path(tempfile.gettempdir()) / "crow-jbm-400.ttf"
     font.save(out)
     return str(out)
 

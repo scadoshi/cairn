@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    # macOS, not Linux: notch ships to macOS and iOS, and its default feature
+    # macOS, not Linux: crow ships to macOS and iOS, and its default feature
     # pulls dioxus-desktop, which would need a pile of webkit2gtk system
     # packages on a Linux runner. Public repo, so macOS minutes are free.
     runs-on: macos-latest

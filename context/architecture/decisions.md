@@ -74,3 +74,12 @@ means the thing: one notch per rep, notching up. The bundle id is
 `com.scadoshi.notch`; the data folder and database moved with it. The big
 lifetime readout is still called the odometer in the code, since that is
 what it is.
+
+## 10. Renamed again, from Notch to Crow
+
+2026-09-20, the same day. Notch was fine but anonymous. Crows count: a
+2024 study had carrion crows caw a set number of times on cue, and corvid
+numeracy is the best studied among birds. It also sits in the bird
+lineage with chickadee and steller. The store name will be "scadoshi
+count" with Crow under the icon; the bundle id `com.scadoshi.crow` is the
+part that lasts.

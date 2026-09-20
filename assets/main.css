@@ -1,4 +1,4 @@
-/* Notch's own rules, ported from zwiper's main.css so the two apps feel the
+/* Crow's own rules, ported from zwiper's main.css so the two apps feel the
    same. Loaded after zwipe-components' themes.css and components.css, so
    anything here overrides them at equal specificity. Colors come only from
    the theme variables; never hardcode a palette. */

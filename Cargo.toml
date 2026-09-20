@@ -1,17 +1,17 @@
 [package]
-name = "notch"
+name = "crow"
 version = "0.1.0"
 authors = ["Scotty Fermo <scottyfermo@hotmail.com>"]
 edition = "2024"
 publish = false
 
 [lib]
-name = "notch"
+name = "crow"
 path = "src/lib/lib.rs"
 
 [[bin]]
-name = "notch"
-path = "src/bin/notch.rs"
+name = "crow"
+path = "src/bin/crow.rs"
 
 [dependencies]
 dioxus = { version = "0.7.10", features = ["router"] }

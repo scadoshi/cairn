@@ -1,8 +1,8 @@
 # iOS: build, sign, upload
 
-Notch's version of zwipe's runbook, with the parts a local-only app never needs
+Crow's version of zwipe's runbook, with the parts a local-only app never needs
 cut out. One-time setup (Apple Developer account, the App ID for
-`com.scadoshi.notch`, an Apple Distribution certificate, an App Store
+`com.scadoshi.crow`, an Apple Distribution certificate, an App Store
 provisioning profile saved as `~/certs/Odo_App_Store.mobileprovision`) is the
 same as zwipe's `context/operations/ios/setup.md`; do that once and don't
 repeat it here.
@@ -19,7 +19,7 @@ release build, update Xcode from the App Store, check `xcodebuild -version`,
 then wipe the cached iOS objects so cargo relinks:
 
 ```bash
-rm -rf target/aarch64-apple-ios target/dx/notch/release/ios
+rm -rf target/aarch64-apple-ios target/dx/crow/release/ios
 ```
 
 The plist keys in `Dioxus.toml` are re-patched below anyway.
@@ -28,7 +28,7 @@ The plist keys in `Dioxus.toml` are re-patched below anyway.
 
 ```bash
 dx build --release --platform ios --device true
-APP=target/dx/notch/release/ios/Notch.app
+APP=target/dx/crow/release/ios/Crow.app
 ```
 
 ## 2. Patch Info.plist
@@ -36,7 +36,7 @@ APP=target/dx/notch/release/ios/Notch.app
 Dioxus writes these from a stale template.
 
 ```bash
-# iPhone only: Apple wants exactly one platform and notch has no iPad layout.
+# iPhone only: Apple wants exactly one platform and crow has no iPad layout.
 /usr/libexec/PlistBuddy \
   -c "Delete :CFBundleSupportedPlatforms" \
   -c "Add :CFBundleSupportedPlatforms array" \
@@ -124,12 +124,12 @@ codesign --force --sign "<HASH-OR-NAME>" --entitlements Entitlements-Release.pli
 ## 5. Package
 
 ```bash
-rm -f Notch.ipa && mkdir -p Payload && cp -r $APP Payload/ && zip -r Notch.ipa Payload && rm -rf Payload
+rm -f Crow.ipa && mkdir -p Payload && cp -r $APP Payload/ && zip -r Crow.ipa Payload && rm -rf Payload
 ```
 
 ## 6. Upload and submit
 
-Use Transporter from the Mac App Store: sign in, drag `Notch.ipa` in, Deliver.
+Use Transporter from the Mac App Store: sign in, drag `Crow.ipa` in, Deliver.
 Not `xcrun altool` (deprecated, and its metadata errors trigger false "beta
 Xcode" rejections) and not `iTMSTransporter` (wants `.itmsp`, not `.ipa`).
 
