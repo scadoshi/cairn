@@ -665,6 +665,75 @@ input {
 }
 
 /* ==================
+        hints
+ ==================== */
+
+/* The "?" beside a label. */
+.info-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+    margin-left: 0.35rem;
+    padding: 0;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background: var(--bg-primary);
+    color: var(--text-muted);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.75rem;
+    line-height: 1;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.row-label-with-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.hint-body {
+    padding: 0.5rem 0;
+    text-align: left;
+    opacity: 1;
+}
+
+.hint-line {
+    margin: 0 0 0.6rem;
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
+.hint-line:last-child {
+    margin-bottom: 0;
+}
+
+.hint-bullets {
+    margin: 0 0 0.5rem;
+    padding-left: 1.2rem;
+    text-align: left;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.hint-bullets li {
+    margin-bottom: 0.4rem;
+}
+
+.hint-key {
+    border: 1px solid var(--accent-tertiary);
+    color: var(--accent-tertiary);
+    border-radius: 0.5rem;
+    padding: 0.05rem 0.45rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* ==================
      alert dialog
  ==================== */
 

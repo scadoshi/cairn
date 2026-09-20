@@ -4,7 +4,12 @@
 use crate::{
     domain::{counter::csv, preferences::Preferences},
     inbound::ui::{
-        components::bottom_sheet::BottomSheet, router::Route, use_date_format, use_prefs, use_store,
+        components::{
+            bottom_sheet::BottomSheet,
+            hint::{HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton},
+        },
+        router::Route,
+        use_date_format, use_prefs, use_store,
     },
     outbound::paths,
 };
@@ -53,6 +58,8 @@ pub fn Config() -> Element {
     let mut date_format = use_date_format();
     let mut prefs = use_prefs();
     let mut rest_open = use_signal(|| false);
+    let mut hint = use_signal(|| None::<ConfigHint>);
+    let mut hint_open = use_signal(|| false);
     let rest_count = (0..7).filter(|i| prefs().rest_days & (1 << i) != 0).count();
     let rest_label = if rest_count == 0 {
         "None".to_string()
@@ -108,7 +115,10 @@ pub fn Config() -> Element {
                     span { class: "card-title", "Appearance" }
                 }
                 div { class: "profile-row",
-                    span { class: "profile-row-label", "Theme" }
+                    span { class: "row-label-with-hint",
+                        span { class: "profile-row-label", "Theme" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Theme)); hint_open.set(true); } }
+                    }
                     div { class: "profile-row-value",
                         span { {display_theme_name(&theme.read().name)} }
                         Button {
@@ -119,7 +129,10 @@ pub fn Config() -> Element {
                     }
                 }
                 div { class: "profile-row",
-                    span { class: "profile-row-label", "Dark mode" }
+                    span { class: "row-label-with-hint",
+                        span { class: "profile-row-label", "Dark mode" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::DarkMode)); hint_open.set(true); } }
+                    }
                     div { class: "profile-row-value",
                         Button {
                             variant: ButtonVariant::Util,
@@ -129,7 +142,10 @@ pub fn Config() -> Element {
                     }
                 }
                 div { class: "profile-row",
-                    span { class: "profile-row-label", "Dates" }
+                    span { class: "row-label-with-hint",
+                        span { class: "profile-row-label", "Dates" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Dates)); hint_open.set(true); } }
+                    }
                     div { class: "profile-row-value",
                         Button {
                             variant: ButtonVariant::Util,
@@ -151,7 +167,10 @@ pub fn Config() -> Element {
                     span { class: "card-title", "Counting" }
                 }
                 div { class: "profile-row",
-                    span { class: "profile-row-label", "Day starts" }
+                    span { class: "row-label-with-hint",
+                        span { class: "profile-row-label", "Day starts" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::DayStarts)); hint_open.set(true); } }
+                    }
                     div { class: "profile-row-value",
                         Button {
                             variant: ButtonVariant::Util,
@@ -167,7 +186,10 @@ pub fn Config() -> Element {
                     }
                 }
                 div { class: "profile-row",
-                    span { class: "profile-row-label", "Week starts" }
+                    span { class: "row-label-with-hint",
+                        span { class: "profile-row-label", "Week starts" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::WeekStarts)); hint_open.set(true); } }
+                    }
                     div { class: "profile-row-value",
                         Button {
                             variant: ButtonVariant::Util,
@@ -177,7 +199,10 @@ pub fn Config() -> Element {
                     }
                 }
                 div { class: "profile-row",
-                    span { class: "profile-row-label", "Rest days" }
+                    span { class: "row-label-with-hint",
+                        span { class: "profile-row-label", "Rest days" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::RestDays)); hint_open.set(true); } }
+                    }
                     div { class: "profile-row-value",
                         span { "{rest_label}" }
                         Button { variant: ButtonVariant::Util, onclick: move |_| rest_open.set(true), "Change" }
@@ -189,7 +214,10 @@ pub fn Config() -> Element {
                     span { class: "card-title", "Counters" }
                 }
                 div { class: "profile-row",
-                    span { class: "profile-row-label", "Sort counters" }
+                    span { class: "row-label-with-hint",
+                        span { class: "profile-row-label", "Sort counters" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::SortCounters)); hint_open.set(true); } }
+                    }
                     div { class: "profile-row-value",
                         Button {
                             variant: ButtonVariant::Util,
@@ -199,7 +227,10 @@ pub fn Config() -> Element {
                     }
                 }
                 div { class: "profile-row",
-                    span { class: "profile-row-label", "Confirm minus" }
+                    span { class: "row-label-with-hint",
+                        span { class: "profile-row-label", "Confirm minus" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::ConfirmMinus)); hint_open.set(true); } }
+                    }
                     div { class: "profile-row-value",
                         Button {
                             variant: ButtonVariant::Util,
@@ -217,7 +248,10 @@ pub fn Config() -> Element {
                 }
             }
                 div { class: "profile-row",
-                    span { class: "profile-row-label", "Export" }
+                    span { class: "row-label-with-hint",
+                        span { class: "profile-row-label", "Export" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Export)); hint_open.set(true); } }
+                    }
                     div { class: "profile-row-value",
                         Button { variant: ButtonVariant::Util, onclick: export, "CSV" }
                         if let Some(n) = notice() {
@@ -249,6 +283,109 @@ pub fn Config() -> Element {
         }
         PreferencesSheet { open: preferences_open }
         RestDaysSheet { open: rest_open }
+        ConfigHintDialog { open: hint_open, which: hint() }
+    }
+}
+
+/// Which config row's hint is showing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ConfigHint {
+    Theme,
+    DarkMode,
+    Dates,
+    DayStarts,
+    WeekStarts,
+    RestDays,
+    SortCounters,
+    ConfirmMinus,
+    Export,
+}
+
+/// One dialog for the whole screen, its content picked by `which`.
+#[component]
+fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
+    let Some(which) = which else {
+        return rsx! {};
+    };
+    match which {
+        ConfigHint::Theme => rsx! {
+            HintDialog { open, title: "Theme",
+                HintLine { "The colour palette for the whole app. " HintKey { "Change" } " opens the picker; tapping a theme previews it live." }
+                HintBullets {
+                    HintBullet { HintKey { color: "--accent-primary", "Save" } " keeps what you picked." }
+                    HintBullet { HintKey { color: "--accent-primary", "Back" } " or a tap outside puts the old theme back." }
+                    HintBullet { "The four at the bottom are tuned for colour vision deficiency." }
+                }
+            }
+        },
+        ConfigHint::DarkMode => rsx! {
+            HintDialog { open, title: "Dark mode",
+                HintLine { "Every theme has a light and a dark side. This flips between them without changing the theme." }
+            }
+        },
+        ConfigHint::Dates => rsx! {
+            HintDialog { open, title: "Dates",
+                HintLine { "How dates are written everywhere: the home screen, the odometer's since date, bests, and chart labels." }
+                HintBullets {
+                    HintBullet { HintKey { "MM/DD/YY" } " is month first, the US order." }
+                    HintBullet { HintKey { "DD/MM/YY" } " is day first, most of the rest of the world." }
+                }
+            }
+        },
+        ConfigHint::DayStarts => rsx! {
+            HintDialog { open, title: "Day starts",
+                HintLine { "The hour a new day begins. Reps logged after midnight but before this hour count for the day before, so a late session isn't split in two." }
+                HintBullets {
+                    HintBullet { HintKey { "Midnight" } " is the calendar day, no shift." }
+                    HintBullet { "Changing it re-sorts every past tap under the new boundary. Totals don't move, only which day they sit on." }
+                }
+            }
+        },
+        ConfigHint::WeekStarts => rsx! {
+            HintDialog { open, title: "Week starts",
+                HintLine { "Which day opens the week. It shapes this week's chart and total, the weekly trend, the week number on home, and the order of weekday labels." }
+                HintBullets {
+                    HintBullet { HintKey { "Monday" } " uses ISO weeks, the international standard." }
+                    HintBullet { HintKey { "Sunday" } " is the US calendar convention." }
+                }
+            }
+        },
+        ConfigHint::RestDays => rsx! {
+            HintDialog { open, title: "Rest days",
+                HintLine { "Weekdays you don't train. They don't count against consistency, and a streak steps over them instead of breaking." }
+                HintBullets {
+                    HintBullet { "Train Monday to Saturday with Sunday off, and a six-week run is a 36-day streak, not six streaks of six." }
+                    HintBullet { "Logging on a rest day still counts; the day just isn't required." }
+                }
+            }
+        },
+        ConfigHint::SortCounters => rsx! {
+            HintDialog { open, title: "Sort counters",
+                HintLine { "The order of the counter list." }
+                HintBullets {
+                    HintBullet { HintKey { "Created" } ": oldest first, the order you made them." }
+                    HintBullet { HintKey { "Name" } ": alphabetical." }
+                    HintBullet { HintKey { "Most active" } ": highest total this year first." }
+                    HintBullet { HintKey { "Lifetime" } ": highest lifetime total first." }
+                }
+            }
+        },
+        ConfigHint::ConfirmMinus => rsx! {
+            HintDialog { open, title: "Confirm minus",
+                HintLine { "When on, every " HintKey { color: "--color-error", "-10" } " button asks before subtracting. Worth it on a counter with a big step, where one stray tap is a lot." }
+                HintLine { "Minus only ever touches today's count, and never goes below zero." }
+            }
+        },
+        ConfigHint::Export => rsx! {
+            HintDialog { open, title: "Export",
+                HintLine { HintKey { color: "--accent-primary", "CSV" } " writes one file per counter, two columns: day and count." }
+                HintBullets {
+                    HintBullet { "On iPhone the files land in the Files app under On My iPhone, Odo." }
+                    HintBullet { "On desktop they go to Downloads." }
+                    HintBullet { "Each export overwrites the last file of the same name." }
+                }
+            }
+        },
     }
 }
 
