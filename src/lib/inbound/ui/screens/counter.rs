@@ -105,7 +105,7 @@ pub fn CounterScreen(id: i64) -> Element {
                 ToastOptions::default().duration(Duration::from_millis(1500)),
             );
             bump_store_version();
-            nav.push(Route::Home {});
+            nav.push(Route::Counters {});
         }
         Err(e) => toast.error(e.to_string(), ToastOptions::default()),
     };
@@ -158,7 +158,7 @@ pub fn CounterScreen(id: i64) -> Element {
             Button {
                 variant: ButtonVariant::Util,
                 onclick: move |_| {
-                    nav.push(Route::Home {});
+                    nav.push(Route::Counters {});
                 },
                 "Back"
             }

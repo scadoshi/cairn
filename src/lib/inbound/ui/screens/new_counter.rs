@@ -77,7 +77,7 @@ pub fn NewCounter() -> Element {
                     format!("Saved {}", c.name),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
-                nav.push(Route::Home {});
+                nav.push(Route::Counters {});
             }
             Err(e) => error.set(Some(e.to_string())),
         }
@@ -131,7 +131,7 @@ pub fn NewCounter() -> Element {
             Button {
                 variant: ButtonVariant::Util,
                 onclick: move |_| {
-                    nav.push(Route::Home {});
+                    nav.push(Route::Counters {});
                 },
                 "Back"
             }
