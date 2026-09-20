@@ -4,7 +4,7 @@
 use crate::{
     domain::counter::{
         Counter, CounterId, DayCount, Event, Goal,
-        format::{compact, compact_i64, thousands},
+        format::{compact, compact_i64, thousands, thousands_i64},
         series,
         series::HourlyBasis,
         stats,
@@ -74,19 +74,23 @@ pub fn CounterScreen(id: i64) -> Element {
     use_effect(move || reload.call(()));
 
     let adjust_store = store.clone();
-    let adjust =
-        use_callback(
-            move |delta: i64| match adjust_store.adjust(id, now(), today(), delta) {
-                Ok(total) => {
-                    toast.info(
-                        format!("{} today", thousands(total)),
-                        ToastOptions::default().duration(Duration::from_millis(900)),
-                    );
-                    reload.call(());
-                }
-                Err(e) => toast.error(e.to_string(), ToastOptions::default()),
-            },
-        );
+    let adjust = use_callback(move |delta: i64| {
+        let name = counter().map(|c| c.name.to_string()).unwrap_or_default();
+        match adjust_store.adjust(id, now(), today(), delta) {
+            Ok(_) => {
+                toast.info(
+                    if delta >= 0 {
+                        format!("+{} to {name}", thousands_i64(delta))
+                    } else {
+                        format!("-{} from {name}", thousands_i64(-delta))
+                    },
+                    ToastOptions::default().duration(Duration::from_millis(900)),
+                );
+                reload.call(());
+            }
+            Err(e) => toast.error(e.to_string(), ToastOptions::default()),
+        }
+    });
 
     let Some(c) = counter() else {
         return rsx! {

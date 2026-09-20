@@ -5,7 +5,7 @@ use crate::{
     domain::{
         counter::{
             Counter,
-            format::{compact, thousands},
+            format::{compact, thousands_i64},
             stats,
             stats::days_in_year,
         },
@@ -105,9 +105,13 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
     let mut confirm_open = use_signal(|| false);
     let bump = use_callback(
         move |delta: i64| match bump_store.adjust(id, now(), today(), delta) {
-            Ok(total) => {
+            Ok(_) => {
                 toast.info(
-                    format!("{name}: {} today", thousands(total)),
+                    if delta >= 0 {
+                        format!("+{} to {name}", thousands_i64(delta))
+                    } else {
+                        format!("-{} from {name}", thousands_i64(-delta))
+                    },
                     ToastOptions::default().duration(Duration::from_millis(900)),
                 );
                 on_bump.call(());
