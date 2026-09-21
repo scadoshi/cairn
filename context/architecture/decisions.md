@@ -83,3 +83,17 @@ numeracy is the best studied among birds. It also sits in the bird
 lineage with chickadee and steller. The store name will be "scadoshi
 count" with Crow under the icon; the bundle id `com.scadoshi.crow` is the
 part that lasts.
+
+## 11. Crow stays the repo name; the app is Count
+
+2026-09-21. Crow is a fine repo name (bird repos, like chickadee and
+steller) but it says nothing to a stranger reading an App Store listing.
+So the split: the repo, crate, and internal event names stay `crow`;
+everything that lands on a device (bundle id, data folder
+`scadoshi-count/count.db`, CSV names) says count. The product is
+"Scadoshi Count" on the store, "Count" under the home-screen icon (the
+label truncates past about twelve characters), and the wordmark on the
+home screen says "scadoshi", the dev name. The bundle id is
+`com.scadoshi.count`, name-agnostic on purpose: it is the one thing App
+Store Connect never lets you change, so the display name can move again
+without it.

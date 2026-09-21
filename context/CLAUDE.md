@@ -60,7 +60,7 @@ cargo clippy --all-targets -- -D warnings # what CI runs
 ```
 
 The database lives at the platform data dir, `~/Library/Application
-Support/crow/crow.db` on macOS. Delete it to start over.
+Support/scadoshi-count/count.db` on macOS. Delete it to start over.
 
 ## Linting
 

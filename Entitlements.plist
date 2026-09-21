@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
     <key>application-identifier</key>
-    <string>VV74WQ89GD.com.scadoshi.crow</string>
+    <string>VV74WQ89GD.com.scadoshi.count</string>
     <key>keychain-access-groups</key>
     <array>
-        <string>VV74WQ89GD.com.scadoshi.crow</string>
+        <string>VV74WQ89GD.com.scadoshi.count</string>
     </array>
     <key>get-task-allow</key>
     <true/>

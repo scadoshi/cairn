@@ -88,7 +88,7 @@ pub fn Config() -> Element {
                 let mut written = 0usize;
                 for c in counters {
                     let entries = store.entries(c.id).map_err(|e| e.to_string())?;
-                    let path = dir.join(format!("crow-{}.csv", c.name.slug()));
+                    let path = dir.join(format!("count-{}.csv", c.name.slug()));
                     std::fs::write(&path, csv::render(&entries))
                         .map_err(|e| format!("{}: {e}", path.display()))?;
                     written += 1;
@@ -391,7 +391,7 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
             HintDialog { open, title: "Export",
                 HintLine { HintKey { color: "--accent-primary", "CSV" } " writes one file per counter: day and count." }
                 HintBullets {
-                    HintBullet { "iPhone: Files app, On My iPhone, Crow." }
+                    HintBullet { "iPhone: Files app, On My iPhone, Count." }
                     HintBullet { "Desktop: Downloads." }
                     HintBullet { "Same names overwrite." }
                 }

@@ -1,20 +1,25 @@
 [application]
-name = "Crow"
+name = "Count"
 
 [bundle]
-identifier = "com.scadoshi.crow"
+identifier = "com.scadoshi.count"
 publisher = "scadoshi"
 # The "o" from the wordmark, rendered by scripts/icon.py from assets/c.txt.
 icon = ["assets/favicon/icon-1024.png"]
 
 [web.app]
-title = "Crow"
+title = "Count"
 
 [ios.plist]
 CFBundlePackageType = "APPL"
+# dx derives the bundle name from the crate (Crow). These override it for the
+# home-screen label; the plist ends up with both keys twice and the last one
+# wins. operations/ios/submission.md dedupes it with plutil before signing.
+CFBundleDisplayName = "Count"
+CFBundleName = "Count"
 MinimumOSVersion = "16.0"
 # CSV exports go to the app's Documents folder; these two keys make the Files
-# app show it under "On My iPhone > Crow" so the files can be opened or shared.
+# app show it under "On My iPhone > Count" so the files can be opened or shared.
 UIFileSharingEnabled = true
 LSSupportsOpeningDocumentsInPlace = true
 # Apple's submission allowlist requires a binary linked against the current

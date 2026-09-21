@@ -19,8 +19,8 @@ so tiles, pills, and the odometer meet numbers that need shortening.
 Only stdlib, so it runs anywhere python3 does. Point it at the simulator's
 copy with:
 
-    xcrun simctl get_app_container booted com.scadoshi.crow data
-    # then append /Library/Application Support/crow/crow.db
+    xcrun simctl get_app_container booted com.scadoshi.count data
+    # then append /Library/Application Support/scadoshi-count/count.db
 """
 
 import datetime as dt

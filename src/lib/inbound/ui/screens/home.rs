@@ -47,7 +47,7 @@ pub fn Home() -> Element {
 
     rsx! {
         div { class: "screen-content centered",
-            pre { class: "logo", "aria-label": "Crow", "{LOGO}" }
+            pre { class: "logo", "aria-label": "scadoshi", "{LOGO}" }
             div { class: "container-sm home-hero content-enter-delayed",
                 div { class: "card-header home-hero-head",
                     span { class: "card-title", "{date}" }

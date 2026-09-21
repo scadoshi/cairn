@@ -27,7 +27,7 @@ import android.os.Bundle
 import android.webkit.WebView
 import androidx.activity.OnBackPressedCallback
 
-typealias BuildConfig = com.scadoshi.crow.BuildConfig
+typealias BuildConfig = com.scadoshi.count.BuildConfig
 
 class MainActivity : WryActivity() {
     private var appWebView: WebView? = null
