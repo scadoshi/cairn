@@ -13,6 +13,7 @@
 #   scripts/ios/deploy.sh              # backup, debug build, install
 #   scripts/ios/deploy.sh --release    # same with a release build
 #   scripts/ios/deploy.sh --no-backup  # skip the backup (rarely what you want)
+#   scripts/ios/deploy.sh --device matthew   # when more than one is plugged in
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -21,19 +22,21 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 PROFILE=debug
 BACKUP=1
+WANT=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --release) PROFILE=release; shift ;;
     --no-backup) BACKUP=0; shift ;;
+    --device) WANT="${2:?--device needs a name}"; shift 2 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 
-find_device
+find_device "$WANT"
 echo "device: $DEVICE_NAME"
 
 if [ "$BACKUP" -eq 1 ]; then
-  "$REPO_ROOT/scripts/ios/backup_db.sh"
+  "$REPO_ROOT/scripts/ios/backup_db.sh" --device "$UDID"
 fi
 
 if [ "$PROFILE" = release ]; then
@@ -45,5 +48,7 @@ fi
 APP="$REPO_ROOT/target/dx/crow/$PROFILE/ios/Crow.app"
 [ -d "$APP" ] || { echo "no app bundle at $APP" >&2; exit 1; }
 
-ios-deploy --bundle "$APP"
+# --id matters: with two phones attached ios-deploy otherwise picks one
+# of them on its own.
+ios-deploy --id "$UDID" --bundle "$APP"
 echo "installed $PROFILE build on $DEVICE_NAME"

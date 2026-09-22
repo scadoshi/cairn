@@ -28,15 +28,17 @@ IDENTITY="Apple Development: SCOTTY RAY FERMO (NVSWB62C54)"
 
 DB=""
 BUILD=1
+WANT=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --db) DB="${2:?--db needs a path}"; shift 2 ;;
     --db-only) DB="${2:?--db-only needs a path}"; BUILD=0; shift 2 ;;
+    --device) WANT="${2:?--device needs a name}"; shift 2 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 
-find_device
+find_device "$WANT"
 echo "device: $DEVICE_NAME ($UDID)"
 
 if [ "$BUILD" -eq 1 ]; then
@@ -66,7 +68,7 @@ if [ -n "$DB" ]; then
 
   # This overwrites whatever is on the phone, so keep a copy of that first.
   # Skipped when restoring a backup onto a phone that has nothing yet.
-  "$REPO_ROOT/scripts/ios/backup_db.sh"
+  "$REPO_ROOT/scripts/ios/backup_db.sh" --device "$UDID"
 
   # The app creates Library/Application Support/scadoshi-count on first run,
   # and the copy needs that directory to exist. Stopping it also closes its

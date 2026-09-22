@@ -4,31 +4,34 @@
 # Count is in daily use while it is also being developed, so the phone holds
 # the only copy of the newest taps. Every deploy runs this first.
 #
-# Backups land in ~/Developer/crow-data/backups/count-YYYYMMDD-HHMMSS.db,
-# outside the repo, which gitignores *.db anyway. A pull that matches the
-# newest backup byte for byte is dropped instead of stored twice, so running
-# this repeatedly costs nothing.
+# Backups land in ~/Developer/crow-data/backups/<phone>/count-YYYYMMDD-HHMMSS.db,
+# outside the repo, which gitignores *.db anyway. One directory per phone,
+# because a tester's counts are not yours and must never be restored over
+# them. A pull that matches the newest backup byte for byte is dropped
+# instead of stored twice, so running this repeatedly costs nothing.
 #
 # Restore one with:
 #   scripts/ios/install_device.sh --db-only <backup file>
 #
-# Usage: scripts/ios/backup_db.sh [--keep N]
+# Usage: scripts/ios/backup_db.sh [--device NAME] [--keep N]
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=device.sh
 . "$REPO_ROOT/scripts/ios/device.sh"
 
-DIR="$HOME/Developer/crow-data/backups"
 KEEP=30
+WANT=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    --device) WANT="${2:?--device needs a name}"; shift 2 ;;
     --keep) KEEP="${2:?--keep needs a number}"; shift 2 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 
-find_device
+find_device "$WANT"
+DIR="$HOME/Developer/crow-data/backups/$(device_slug)"
 mkdir -p "$DIR"
 
 stop_app
@@ -59,7 +62,7 @@ else
   OUT="$DIR/count-$(date +%Y%m%d-%H%M%S).db"
   cp "$TMP/count.db" "$OUT"
   TOTAL="$(sqlite3 "$OUT" 'select coalesce(sum(count), 0) from entries')"
-  echo "backup: $(basename "$OUT") ($(du -h "$OUT" | cut -f1), $TOTAL logged)"
+  echo "backup: $(device_slug)/$(basename "$OUT") ($(du -h "$OUT" | cut -f1), $TOTAL logged)"
 fi
 
 # Keep the newest N. These are a few megabytes each and the phone is the
