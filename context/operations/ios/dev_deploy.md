@@ -54,6 +54,10 @@ If iOS says "Untrusted Developer": Settings, VPN & Device Management, your Apple
 
 ---
 
+## Someone else's phone
+
+[`testers.md`](testers.md). TestFlight for anyone not in the room, a second device on the development profile if they are.
+
 ## Backups
 
 Count is in daily use while it is also being developed, so the phone holds taps that exist nowhere else. `scripts/ios/backup_db.sh` pulls the live database off and keeps it at `~/Developer/crow-data/backups/count-YYYYMMDD-HHMMSS.db`, outside the repo, which gitignores `*.db` anyway.
