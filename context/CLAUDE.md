@@ -82,7 +82,7 @@ context/
 ├── CLAUDE.md         — this file
 ├── architecture/     — structure.md (layout), decisions.md (why)
 ├── development/      — commit_guidelines, versioning, documentation, ownership, dioxus cheatsheet
-├── operations/       — ios/ (first_device, submission runbook, build history)
+├── operations/       — ios/ (dev_deploy, first_device, submission, build history)
 ├── plans/            — specs for in-flight work (watch.md is the far horizon)
 └── progress/         — overview.md (live), todo.md (next), backlog.md (someday), changelog.md
 ```

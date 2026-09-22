@@ -1,22 +1,12 @@
 # iOS: build, sign, upload
 
-Crow's version of zwipe's runbook, with the parts a local-only app never needs
-cut out. One-time setup (Apple Developer account, the App ID for
-`com.scadoshi.count`, an Apple Distribution certificate, an App Store
-provisioning profile saved as `~/certs/Count_App_Store.mobileprovision`) is the
-same as zwipe's `context/operations/ios/setup.md`; do that once and don't
-repeat it here.
+Crow's version of zwipe's runbook, with the parts a local-only app never needs cut out. One-time setup (Apple Developer account, the App ID for `com.scadoshi.count`, an Apple Distribution certificate, an App Store provisioning profile saved as `~/certs/Count_App_Store.mobileprovision`) is the same as zwipe's `context/operations/ios/setup.md`; do that once and don't repeat it here.
 
-Entitlements are checked in: `Entitlements.plist` for debug and
-`Entitlements-Release.plist` for the store, identical except
-`get-task-allow`. The team prefix is zwipe's.
+Entitlements are checked in: `Entitlements.plist` for debug and `Entitlements-Release.plist` for the store, identical except `get-task-allow`. The team prefix is zwipe's.
 
 ## Always the latest Xcode
 
-Apple's submission allowlist rejects binaries linked against anything but
-the current Xcode and SDK, with a misleading "beta Xcode" message. Before a
-release build, update Xcode from the App Store, check `xcodebuild -version`,
-then wipe the cached iOS objects so cargo relinks:
+Apple's submission allowlist rejects binaries linked against anything but the current Xcode and SDK, with a misleading "beta Xcode" message. Before a release build, update Xcode from the App Store, check `xcodebuild -version`, then wipe the cached iOS objects so cargo relinks:
 
 ```bash
 rm -rf target/aarch64-apple-ios target/dx/crow/release/ios
@@ -83,21 +73,15 @@ done
 
 ## 3. Compile the icon catalog
 
-dx never runs `actool`, so without this the bundle has no `Assets.car` and
-Apple rejects the upload with "Missing required icon file ... 120x120".
-`scripts/icon.py` writes every size this needs into `assets/favicon/`, and
-the catalog build is a script so the device route and this one stay
-identical:
+dx never runs `actool`, so without this the bundle has no `Assets.car` and Apple rejects the upload with "Missing required icon file ... 120x120". `scripts/icon.py` writes every size this needs into `assets/favicon/`, and the catalog build is a script so the device route and this one stay identical:
 
 ```bash
 scripts/ios/icons.sh $APP
 ```
 
-It compiles the catalog, adds the `CFBundleIcons` keys, and fails loudly if
-no `Assets.car` came out. Safe to run twice on the same bundle.
+It compiles the catalog, adds the `CFBundleIcons` keys, and fails loudly if no `Assets.car` came out. Safe to run twice on the same bundle.
 
-If `actool` can't produce `Assets.car`, the iOS platform isn't installed:
-`xcodebuild -downloadPlatform iOS`.
+If `actool` can't produce `Assets.car`, the iOS platform isn't installed: `xcodebuild -downloadPlatform iOS`.
 
 ## 4. Sign
 
@@ -115,13 +99,8 @@ rm -f Crow.ipa && mkdir -p Payload && cp -r $APP Payload/ && zip -r Crow.ipa Pay
 
 ## 6. Upload and submit
 
-Use Transporter from the Mac App Store: sign in, drag `Crow.ipa` in, Deliver.
-Not `xcrun altool` (deprecated, and its metadata errors trigger false "beta
-Xcode" rejections) and not `iTMSTransporter` (wants `.itmsp`, not `.ipa`).
+Use Transporter from the Mac App Store: sign in, drag `Crow.ipa` in, Deliver. Not `xcrun altool` (deprecated, and its metadata errors trigger false "beta Xcode" rejections) and not `iTMSTransporter` (wants `.itmsp`, not `.ipa`).
 
-The build appears in App Store Connect after five to ten minutes. Create the
-version if needed, select the build, answer No to export compliance (no
-encryption beyond the OS), submit. TestFlight first for anything you want on
-your own phone before review.
+The build appears in App Store Connect after five to ten minutes. Create the version if needed, select the build, answer No to export compliance (no encryption beyond the OS), submit. TestFlight first for anything you want on your own phone before review.
 
 Then add a row to `history.md`.

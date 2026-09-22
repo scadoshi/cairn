@@ -169,6 +169,12 @@ that once on the wrapper rather than on each of its two dozen fields.
 
 ---
 
+### Markdown files
+
+Do not hard-wrap prose in markdown. Write each paragraph, list item, and table row as one long line and let the editor or viewer wrap it. Hard breaks make every later edit a reflow, which turns a one-word change into a paragraph-sized diff and hides the real change in the noise.
+
+Code blocks keep their own line breaks, obviously.
+
 ## Balancing Signal vs. Noise
 
 **Good documentation has high signal-to-noise ratio:**
