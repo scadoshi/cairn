@@ -316,6 +316,18 @@ input {
 }
 
 /* A bar inside a card is tighter than the screen bar. */
+/* The readable half of a counter card opens it. Only the press state says
+   so: a whole-card hover or border would fight the card's own edges, and on
+   a phone there is no hover anyway. */
+.card-tap {
+    cursor: pointer;
+}
+
+.card-tap:active {
+    opacity: 0.6;
+    transition: opacity 0.06s;
+}
+
 .profile-list > .util-bar {
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;

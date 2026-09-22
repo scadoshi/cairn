@@ -1,5 +1,9 @@
 //! The counter list. Each card shows the headline numbers and carries its own
-//! bar with +1 and Open; the screen bar goes back home or to the create form.
+//! bar with +1 and Edit; tapping the name and numbers opens the counter, so
+//! the handler sits on that region rather than the whole card and never has
+//! to compete with the buttons below it. The screen bar goes back home or to
+//! the create form. Both sheets hang off the screen rather than off a card,
+//! because a fixed overlay inside a card is clipped by its rounded corners.
 
 use crate::{
     domain::{
@@ -16,7 +20,7 @@ use crate::{
         components::{
             alert_dialog::ConfirmDialog,
             bottom_sheet::BottomSheet,
-            counter_form::{CounterForm, CounterFormState},
+            counter_form::{CounterForm, CounterFormState, EditSheet},
             tile::{Tile, TileGrid, rate},
         },
         now,
@@ -38,6 +42,8 @@ pub fn Counters() -> Element {
     let mut counters = use_signal(Vec::<Counter>::new);
     let mut error = use_signal(|| None::<String>);
     let mut create_open = use_signal(|| false);
+    let mut edit_open = use_signal(|| false);
+    let mut editing = use_signal(|| None::<Counter>);
     let prefs = use_prefs();
 
     let load_store = store.clone();
@@ -63,6 +69,23 @@ pub fn Counters() -> Element {
                         on_open: move |id: i64| {
                             nav.push(Route::CounterScreen { id });
                         },
+                        on_edit: {
+                            let c = c.clone();
+                            move |()| {
+                                // Mount the sheet closed, then open it a beat
+                                // later. One that mounts already open has no
+                                // off-screen state to slide up from, so it
+                                // appears in place instead of rising. The wait
+                                // has to outlast BottomSheet's own premount
+                                // guard, which drops `transition: none` after
+                                // WebKit's first post-insert paint.
+                                editing.set(Some(c.clone()));
+                                spawn(async move {
+                                    tokio::time::sleep(Duration::from_millis(70)).await;
+                                    edit_open.set(true);
+                                });
+                            }
+                        },
                     }
                 }
             }
@@ -86,13 +109,30 @@ pub fn Counters() -> Element {
             }
         }
         CreateSheet { open: create_open, on_created: move |()| reload.call(()) }
+        if let Some(c) = editing() {
+            EditSheet {
+                key: "{c.id.0}",
+                open: edit_open,
+                id: c.id,
+                current_name: c.name.to_string(),
+                current_goal: c.goal,
+                current_step: c.step.get(),
+                on_saved: move |()| reload.call(()),
+            }
+        }
     }
 }
 
 /// One counter on the home list: name and goal up top, the headline numbers,
-/// and a bar with +1 and Open.
+/// and a bar that adjusts today's count or edits the counter. Tapping the
+/// numbers opens it.
 #[component]
-fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandler<i64>) -> Element {
+fn CounterCard(
+    counter: Counter,
+    on_bump: EventHandler<()>,
+    on_open: EventHandler<i64>,
+    on_edit: EventHandler<()>,
+) -> Element {
     let store = use_store();
     let entries = store.entries(counter.id).unwrap_or_default();
     let summary = stats::summarize(&entries, counter.goal, today());
@@ -122,23 +162,28 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
 
     rsx! {
         div { class: "profile-list",
-            div { class: "card-header",
-                span { class: "card-title", "{counter.name}" }
-                if let Some(g) = counter.goal {
-                    div { class: "chip-tags",
-                        for part in g.parts(days_in_year(today().year())) {
-                            span { class: "stat-chip stat-chip-goal", "{part}" }
+            div {
+                class: "card-tap",
+                role: "button",
+                onclick: move |_| on_open.call(id.0),
+                div { class: "card-header",
+                    span { class: "card-title", "{counter.name}" }
+                    if let Some(g) = counter.goal {
+                        div { class: "chip-tags",
+                            for part in g.parts(days_in_year(today().year())) {
+                                span { class: "stat-chip stat-chip-goal", "{part}" }
+                            }
                         }
                     }
                 }
-            }
-            TileGrid {
-                Tile { label: "lifetime", value: compact(summary.lifetime) }
-                Tile { label: "today", value: compact(summary.today) }
-                Tile {
-                    label: "this year",
-                    value: compact(summary.this_year.total),
-                    hint: format!("{}/day", rate(summary.this_year.per_day)),
+                TileGrid {
+                    Tile { label: "lifetime", value: compact(summary.lifetime) }
+                    Tile { label: "today", value: compact(summary.today) }
+                    Tile {
+                        label: "this year",
+                        value: compact(summary.this_year.total),
+                        hint: format!("{}/day", rate(summary.this_year.per_day)),
+                    }
                 }
             }
             ActionBar {
@@ -154,8 +199,8 @@ fn CounterCard(counter: Counter, on_bump: EventHandler<()>, on_open: EventHandle
                 }
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| on_open.call(id.0),
-                    "Open"
+                    onclick: move |_| on_edit.call(()),
+                    "Edit"
                 }
             }
             ConfirmDialog {

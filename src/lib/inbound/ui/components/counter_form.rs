@@ -1,13 +1,18 @@
-//! The counter form body: name, goal with its unit, and step. Shared by the
-//! create sheet on the list and the edit sheet on the counter screen so the
-//! two never drift. The host owns the signals and does the saving.
+//! The counter form body: name, goal with its unit, and step, plus the edit
+//! sheet that wraps it. Shared by the create sheet on the list, the edit
+//! button on each card, and the counter screen, so the three never drift.
+//! The host owns the signals and does the saving.
 
-use crate::domain::counter::{CounterName, Goal, Step, ValidationError, stats};
+use crate::domain::counter::{CounterId, CounterName, Goal, Step, ValidationError, stats};
 use chrono::Datelike;
 use dioxus::prelude::*;
-use zwipe_components::Chip;
+use dioxus_primitives::toast::{ToastOptions, use_toast};
+use std::time::Duration;
+use zwipe_components::{Button, ButtonVariant, Chip};
 
-use crate::inbound::ui::today;
+use crate::inbound::ui::{
+    bump_store_version, components::bottom_sheet::BottomSheet, today, use_store,
+};
 
 /// Which period a typed goal amount is for.
 #[allow(missing_docs)]
@@ -191,6 +196,63 @@ pub fn CounterForm(state: CounterFormState) -> Element {
             if let Some(e) = error() {
                 p { class: "form-error", "{e}" }
             }
+        }
+    }
+}
+
+/// Name, goal, and step in a sheet, the same form the create sheet uses.
+///
+/// Lives here rather than on either screen because both reach it: the card
+/// on the list and the counter screen itself, so editing works wherever you
+/// happen to be looking at a counter.
+#[component]
+pub fn EditSheet(
+    open: Signal<bool>,
+    id: CounterId,
+    current_name: String,
+    current_goal: Option<Goal>,
+    current_step: u32,
+    on_saved: EventHandler<()>,
+) -> Element {
+    let mut open = open;
+    let store = use_store();
+    let toast = use_toast();
+    let mut form = use_hook(CounterFormState::default);
+
+    let seed_name = current_name.clone();
+    use_effect(move || {
+        if open() {
+            form.load(&seed_name, current_goal, current_step);
+        }
+    });
+
+    let save = move |_| {
+        let Some((name, goal, step)) = form.validate() else {
+            return;
+        };
+        match store.update_counter(id, &name, goal, step) {
+            Ok(()) => {
+                toast.success(
+                    format!("Saved {name}"),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
+                bump_store_version();
+                on_saved.call(());
+                open.set(false);
+            }
+            Err(e) => form.error.set(Some(e.to_string())),
+        }
+    };
+
+    rsx! {
+        BottomSheet {
+            open,
+            title: "Edit counter",
+            footer: rsx! {
+                Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
+                Button { variant: ButtonVariant::Util, onclick: save, "Save" }
+            },
+            CounterForm { state: form }
         }
     }
 }

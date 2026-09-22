@@ -14,8 +14,7 @@ use crate::{
         bump_store_version,
         components::{
             alert_dialog::ConfirmDialog,
-            bottom_sheet::BottomSheet,
-            counter_form::{CounterForm, CounterFormState},
+            counter_form::EditSheet,
             line_chart::{LineChart, Point},
             tile::{Tile, TileGrid, rate},
         },
@@ -567,59 +566,6 @@ fn HabitCard(summary: Summary) -> Element {
                     Tile { label: "last logged", value: l }
                 }
             }
-        }
-    }
-}
-
-/// Name, goal, and step in a sheet, the same form the create sheet uses.
-#[component]
-fn EditSheet(
-    open: Signal<bool>,
-    id: CounterId,
-    current_name: String,
-    current_goal: Option<Goal>,
-    current_step: u32,
-    on_saved: EventHandler<()>,
-) -> Element {
-    let mut open = open;
-    let store = use_store();
-    let toast = use_toast();
-    let mut form = use_hook(CounterFormState::default);
-
-    let seed_name = current_name.clone();
-    use_effect(move || {
-        if open() {
-            form.load(&seed_name, current_goal, current_step);
-        }
-    });
-
-    let save = move |_| {
-        let Some((name, goal, step)) = form.validate() else {
-            return;
-        };
-        match store.update_counter(id, &name, goal, step) {
-            Ok(()) => {
-                toast.success(
-                    format!("Saved {name}"),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
-                );
-                bump_store_version();
-                on_saved.call(());
-                open.set(false);
-            }
-            Err(e) => form.error.set(Some(e.to_string())),
-        }
-    };
-
-    rsx! {
-        BottomSheet {
-            open,
-            title: "Edit counter",
-            footer: rsx! {
-                Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
-                Button { variant: ButtonVariant::Util, onclick: save, "Save" }
-            },
-            CounterForm { state: form }
         }
     }
 }
