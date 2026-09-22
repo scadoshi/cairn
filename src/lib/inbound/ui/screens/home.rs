@@ -13,7 +13,8 @@ use chrono::Datelike;
 use dioxus::prelude::*;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 
-const LOGO: &str = include_str!("../../../../../assets/crow.txt");
+/// The S mark, the same letterform the app icon is cut from.
+const LOGO: &str = include_str!("../../../../../assets/s.txt");
 
 /// The landing screen.
 #[component]
