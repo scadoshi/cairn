@@ -14,7 +14,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::ToastProvider;
 use router::Route;
 use std::sync::Arc;
-use zwipe_components::{COMPONENTS_CSS, THEMES_CSS, ThemeConfig};
+use zwipe_components::{Button, ButtonVariant, COMPONENTS_CSS, THEMES_CSS, ThemeConfig};
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TOAST_CSS: Asset = asset!("/assets/toast.css");
@@ -100,6 +100,8 @@ pub fn App() -> Element {
     use_context_provider(|| overlays);
     let dialogs = components::dialog_host::DialogHost(use_signal(|| None));
     use_context_provider(|| dialogs);
+    let screen_hint = components::hint::ScreenHint(use_signal(|| None));
+    use_context_provider(|| screen_hint);
 
     // Persist every theme change. Runs once at mount too, which is harmless:
     // it writes back whatever was just loaded.
@@ -167,10 +169,22 @@ pub fn Shell() -> Element {
             .map_or_else(|| "Counter".to_string(), |c| c.name.to_string()),
     };
 
+    // Only screens that registered one get a "?", so the corner stays empty
+    // rather than offering a dialog with nothing in it.
+    let hint = use_context::<components::hint::ScreenHint>().0;
+
     rsx! {
         div { class: "screen theme-wrapper {css_class}",
             header { class: "page-header",
                 h2 { "{title}" }
+                if let Some(open) = hint() {
+                    Button {
+                        variant: ButtonVariant::Util,
+                        class: "page-header-corner",
+                        onclick: move |_| open.call(()),
+                        "?"
+                    }
+                }
             }
             Outlet::<Route> {}
         }

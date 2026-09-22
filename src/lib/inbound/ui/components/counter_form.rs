@@ -11,7 +11,12 @@ use std::time::Duration;
 use zwipe_components::{Button, ButtonVariant, Chip};
 
 use crate::inbound::ui::{
-    bump_store_version, components::bottom_sheet::BottomSheet, today, use_store,
+    bump_store_version,
+    components::{
+        bottom_sheet::BottomSheet,
+        hint::{HintBullet, HintBullets, HintChip, HintDialog, HintLine},
+    },
+    today, use_store,
 };
 
 /// Which period a typed goal amount is for.
@@ -218,6 +223,7 @@ pub fn EditSheet(
     let store = use_store();
     let toast = use_toast();
     let mut form = use_hook(CounterFormState::default);
+    let hint_open = use_signal(|| false);
 
     let seed_name = current_name.clone();
     use_effect(move || {
@@ -245,9 +251,18 @@ pub fn EditSheet(
     };
 
     rsx! {
+        HintDialog { open: hint_open, title: "Edit counter",
+            HintLine { "Changing these does not touch anything already logged." }
+            HintBullets {
+                HintBullet { "Goal is optional. Clear it and the counter just totals up." }
+                HintBullet { "A yearly goal still shows a daily share, so " HintChip { class: "stat-chip-goal", "1,000/year" } " asks for 3 a day." }
+                HintBullet { "Step is how much one tap adds, on this screen and on the list." }
+            }
+        }
         BottomSheet {
             open,
             title: "Edit counter",
+            hint: hint_open,
             footer: rsx! {
                 Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
                 Button { variant: ButtonVariant::Util, onclick: save, "Save" }

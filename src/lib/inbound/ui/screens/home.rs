@@ -16,6 +16,9 @@ use crate::{
             bottom_sheet::BottomSheet,
             counter_form::{CounterForm, CounterFormState, EditSheet},
             counter_list::CounterList,
+            hint::{
+                HintBullet, HintBullets, HintChip, HintDialog, HintKey, HintLine, use_screen_hint,
+            },
             quote_card::QuoteCard,
             tile::Tile,
         },
@@ -42,6 +45,8 @@ pub fn Home() -> Element {
     let mut create_open = use_signal(|| false);
     let mut edit_open = use_signal(|| false);
     let mut editing = use_signal(|| None::<Counter>);
+    let hint_open = use_signal(|| false);
+    use_screen_hint(hint_open);
 
     // Hooks, read once. `use_prefs` and friends are context hooks, so calling
     // them inside the loop below would run a different number of hooks on the
@@ -162,6 +167,20 @@ pub fn Home() -> Element {
                 "Config"
             }
         }
+        HintDialog { open: hint_open, title: "Counters",
+            HintLine { "Tap a counter's name or numbers to open it." }
+            HintBullets {
+                HintBullet { HintKey { color: "--accent-primary", "+" } " and " HintKey { color: "--accent-primary", "-" } " log today. Each tap moves by that counter's step." }
+                HintBullet { HintKey { color: "--accent-primary", "Edit" } " renames a counter or changes its goal and step." }
+                HintBullet {
+                    HintChip { class: "stat-chip-short", "40 to go" }
+                    " is what today still owes. It becomes "
+                    HintChip { class: "stat-chip-met", "goal met" }
+                    " when you get there."
+                }
+                HintBullet { "Up top is every counter added together." }
+            }
+        }
         CreateSheet { open: create_open, on_created: move |()| reload.call(()) }
         if let Some(c) = editing() {
             EditSheet {
@@ -184,6 +203,7 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
     let store = use_store();
     let toast = use_toast();
     let mut form = use_hook(CounterFormState::default);
+    let hint_open = use_signal(|| false);
 
     // Every open starts blank.
     use_effect(move || {
@@ -211,9 +231,18 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
     };
 
     rsx! {
+        HintDialog { open: hint_open, title: "New counter",
+            HintLine { "Name it after the thing you do, like pushups." }
+            HintBullets {
+                HintBullet { "Goal is optional. Pick a number and whether it is per day, week, or year." }
+                HintBullet { "A yearly goal still shows a daily share, so " HintChip { class: "stat-chip-goal", "1,000/year" } " asks for 3 a day." }
+                HintBullet { "Step is how much one tap adds. Set it to 10 and " HintKey { color: "--accent-primary", "+10" } " logs ten at a time." }
+            }
+        }
         BottomSheet {
             open,
             title: "Create counter",
+            hint: hint_open,
             footer: rsx! {
                 Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
                 Button { variant: ButtonVariant::Util, onclick: save, "Save" }

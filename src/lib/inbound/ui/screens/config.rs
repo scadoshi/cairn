@@ -6,7 +6,9 @@ use crate::{
     inbound::ui::{
         components::{
             bottom_sheet::BottomSheet,
-            hint::{HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton},
+            hint::{
+                HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton, use_screen_hint,
+            },
         },
         router::Route,
         use_date_format, use_prefs, use_store,
@@ -60,6 +62,8 @@ pub fn Config() -> Element {
     let mut rest_open = use_signal(|| false);
     let mut hint = use_signal(|| None::<ConfigHint>);
     let mut hint_open = use_signal(|| false);
+    let screen_hint_open = use_signal(|| false);
+    use_screen_hint(screen_hint_open);
     let rest_count = (0..7).filter(|i| prefs().rest_days & (1 << i) != 0).count();
     let rest_label = if rest_count == 0 {
         "None".to_string()
@@ -305,6 +309,14 @@ pub fn Config() -> Element {
         PreferencesSheet { open: preferences_open }
         RestDaysSheet { open: rest_open }
         ConfigHintDialog { open: hint_open, which: hint() }
+        HintDialog { open: screen_hint_open, title: "Config",
+            HintLine { "Settings only. Nothing here edits your counts." }
+            HintBullets {
+                HintBullet { "Tap any row's " HintKey { color: "--accent-primary", "?" } " to learn what it does." }
+                HintBullet { "When to count decides which day a late tap lands on." }
+                HintBullet { HintKey { color: "--accent-primary", "CSV" } " saves one file per counter, ready to share." }
+            }
+        }
     }
 }
 

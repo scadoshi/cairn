@@ -17,6 +17,9 @@ pub fn BottomSheet(
     children: Element,
     footer: Option<Element>,
     on_dismiss: Option<EventHandler<()>>,
+    /// A hint's open signal. Given one, the sheet's header carries the same
+    /// "?" the screen headers do; without one, the corner stays empty.
+    hint: Option<Signal<bool>>,
 ) -> Element {
     // The OS back gesture closes the sheet the way a backdrop tap does:
     // `on_dismiss` first (the theme sheet relies on it to revert), then close.
@@ -59,6 +62,14 @@ pub fn BottomSheet(
             },
             div { class: "modal-header",
                 span { class: "modal-title", "{title}" }
+                if let Some(mut hint) = hint {
+                    Button {
+                        variant: ButtonVariant::Util,
+                        class: "page-header-corner",
+                        onclick: move |_| hint.set(true),
+                        "?"
+                    }
+                }
             }
             div { class: "modal-content",
                 div { class: "flex-col", style: "gap: 0.5rem;",

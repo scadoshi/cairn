@@ -82,6 +82,26 @@ input {
     padding-bottom: 1rem;
 }
 
+/* zwiper's header "?": the shared util button keeps its squircle outline,
+   this only parks it in the corner and quiets it. Absolute so the title
+   stays centered on the header rather than being pushed off by its width. */
+.page-header-corner {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.7rem;
+    opacity: 0.55;
+    padding: 0.2rem 0.6rem;
+}
+
+.page-header-corner:active {
+    opacity: 1;
+}
+
 .page-header > h2 {
     font-size: 1rem;
     font-weight: 400;
@@ -672,6 +692,9 @@ input {
 }
 
 .modal-header {
+    /* Relative so the corner "?" parks inside the header rather than
+       against the sheet. */
+    position: relative;
     padding: 1.5rem;
     border-bottom: 1px solid var(--border-secondary);
     display: flex;
@@ -826,14 +849,26 @@ input {
     margin-bottom: 0.4rem;
 }
 
+/* Tokens inside hint prose carry more weight than the sentence around
+   them, so the eye lands on the thing being named. */
 .hint-key {
     border: 1px solid var(--accent-tertiary);
     color: var(--accent-tertiary);
     border-radius: 0.5rem;
     padding: 0.05rem 0.45rem;
     font-size: 0.8rem;
+    font-weight: 700;
     white-space: nowrap;
     pointer-events: none;
+}
+
+/* A real .stat-chip shown as an example mid-sentence. */
+.hint-chip {
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    pointer-events: none;
+    vertical-align: baseline;
 }
 
 /* ==================

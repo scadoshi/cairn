@@ -15,6 +15,7 @@ use crate::{
         components::{
             alert_dialog::ConfirmDialog,
             counter_form::EditSheet,
+            hint::{HintBullet, HintBullets, HintDialog, HintKey, HintLine, use_screen_hint},
             line_chart::{LineChart, Point},
             tile::{Tile, TileGrid, rate},
         },
@@ -145,6 +146,8 @@ pub fn CounterScreen(id: i64) -> Element {
     let mut confirm_delete = use_signal(|| false);
     let mut confirm_minus = use_signal(|| false);
     let mut rename_open = use_signal(|| false);
+    let hint_open = use_signal(|| false);
+    use_screen_hint(hint_open);
     let delete_name = c.name.to_string();
     let delete_store = store.clone();
     let delete = move |()| match delete_store.delete_counter(id) {
@@ -232,6 +235,15 @@ pub fn CounterScreen(id: i64) -> Element {
                 danger: true,
                 onclick: move |_| confirm_delete.set(true),
                 "Delete"
+            }
+        }
+        HintDialog { open: hint_open, title: "One counter",
+            HintLine { "The big number is everything you have ever logged here." }
+            HintBullets {
+                HintBullet { "The chips under Trends and Bests change what you are looking at." }
+                HintBullet { HintKey { color: "--accent-primary", "Edit" } " changes the name, the goal, and the step." }
+                HintBullet { HintKey { color: "--color-error", "Delete" } " removes the counter and its whole history." }
+                HintBullet { "Subtracting stops at zero. It never runs a day negative." }
             }
         }
         EditSheet {
