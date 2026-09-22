@@ -16,12 +16,10 @@ Read [`CLAUDE.md`](CLAUDE.md) first for the rules.
 
 ## Current focus
 
-**2026-09-21: the app is Count, the repo stays Crow.** Crow said nothing to a stranger reading a store listing, so everything that reaches a device now says count: the bundle id `com.scadoshi.count`, the home-screen label Count, the data folder `scadoshi-count/count.db`, the CSV names. The repo, crate and internal event names keep the bird. `architecture/decisions.md` entry 11 has the reasoning.
+**2026-09-22: it is on the phone and in daily use.** Count is installed on scotland-mobile with the imported counts, signed with a development profile good until September 2027. The daily loop is `scripts/ios/deploy.sh`: back up the phone's database, build, install. A reinstall keeps the data container, so deploying does not touch the counts, and the backup runs first anyway because the phone holds taps that exist nowhere else. `operations/ios/dev_deploy.md` has the whole thing.
 
-The phone route is one command, `scripts/ios/install_device.sh --db ~/Developer/crow-data/count.db`: build, icon catalog, signing, install, then the existing database pushed into the app container and read back to check it landed. It stops with a clear message until the portal paperwork exists.
+The app on a device says Count; the repo stays crow. Everything that reaches a phone uses the new name: bundle id `com.scadoshi.count`, home-screen label Count, data folder `scadoshi-count/count.db`, CSV names. The repo, crate and internal event names keep the bird. `architecture/decisions.md` entry 11 has the reasoning.
 
-**Next:** one profile stands between the repo and the phone. The device is already registered from zwipe and the certificate runs to 2027, so it is just an App ID plus an iOS App Development profile for `com.scadoshi.count`. Then `dx build --platform ios --device true && ios-deploy --bundle ...`, spelled out in [`operations/ios/dev_deploy.md`](operations/ios/dev_deploy.md).
-
-For the store-signed build, in the developer portal register the App ID `com.scadoshi.count`, the phone's UDID, and the two profiles, saved as `~/certs/Count_Development.mobileprovision` and `Count_App_Store`. Then run the install script. Every step is in [`operations/ios/first_device.md`](operations/ios/first_device.md). Then TestFlight and review via [`operations/ios/submission.md`](operations/ios/submission.md).
+**Next:** the wordmark and icon artwork, then TestFlight and review via [`operations/ios/submission.md`](operations/ios/submission.md). Note that the database push does not work on a TestFlight build, which is signed without `get-task-allow`; moving data there needs the in-app import on the backlog.
 
 See [`progress/todo.md`](progress/todo.md) for the ordered list.

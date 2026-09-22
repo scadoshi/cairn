@@ -2,13 +2,15 @@
 
 Build and install Count on a connected iPhone. Same shape as zwipe's `operations/ios/dev_deploy.md`, because it is the same Mac, the same team, and the same already-registered phone.
 
-**Prerequisite:** a development provisioning profile for `com.scadoshi.count`. Without it `dx build` stops at "No provisioning profile found matching bundle identifier". Make it once, below.
+Done on 22 September 2026: App ID, profile, and the first install with the imported counts. The one-time section below is kept for the next machine or the next time a profile expires.
 
 ---
 
 ## One-time: the App ID and the profile
 
-The phone is already registered. zwipe's development profile lists UDID `00008140-00166D6C3482801C`, and the Apple Development certificate on this Mac is good until August 2027, so Devices and Certificates both need nothing.
+Already done, and `Count_Development.mobileprovision` is installed in both `~/Library/Developer/Xcode/UserData/Provisioning Profiles/` and `~/certs/`. It expires 22 September 2027.
+
+The phone was already registered from zwipe, UDID `00008140-00166D6C3482801C`, and the Apple Development certificate on this Mac is good until August 2027, so Devices and Certificates needed nothing. Do not create a second certificate: the profile carries both of the team's development certificates, and only one has its private key on this Mac.
 
 1. developer.apple.com, Certificates, Identifiers & Profiles, Identifiers, **+**. Explicit App ID, description "Count", bundle id `com.scadoshi.count`. No capabilities. iCloud comes later if CloudKit sync happens.
 2. Profiles, **+**, under Development pick **iOS App Development**. App ID `com.scadoshi.count`, the Apple Development certificate, the phone. Name it "Count Dev" and download it.
@@ -24,19 +26,25 @@ Keep a copy at `~/certs/Count_Development.mobileprovision` alongside zwipe's, wh
 
 ## Build and deploy
 
-One line. Paste it as one line: zsh mangles `\` continuations on paste and splits the arguments into their own commands.
+```bash
+scripts/ios/deploy.sh
+```
+
+That backs up the phone's database, builds, and installs. A failed backup stops the deploy, because a reinstall going wrong is exactly when the copy is wanted. Add `--release` for the store-parity build, or `--no-backup` to skip the copy, which is rarely what you want.
+
+Reinstalling over an existing app keeps its data container, so an ordinary deploy does not touch the counts. Verified: a deploy on 22 September left 53,900 push-ups, 27,400 pull-ups and 16,110 squats exactly where they were.
+
+The long way, if you want to see the pieces, pasted as one line because zsh mangles `\` continuations on paste:
 
 ```bash
 cd ~/Developer/crow && dx build --platform ios --device true && ios-deploy --bundle ~/Developer/crow/target/dx/crow/debug/ios/Crow.app
 ```
 
-dx signs the bundle itself from the profile in the directory above. There is no manual `codesign` step for dev builds.
+dx signs the bundle itself from `~/Library/Developer/Xcode/UserData/Provisioning Profiles/Count_Development.mobileprovision`. There is no manual `codesign` step for dev builds.
 
 The bundle folder is `Crow.app` after the crate. The app's own label is Count, which is what shows on the home screen.
 
-For the store-parity build instead, `scripts/ios/install_device.sh` does a release build with the icon catalog and explicit signing. Use that before a TestFlight upload, not for daily work.
-
----
+For a release build with the icon catalog and explicit signing, `scripts/ios/install_device.sh`. Use that before a TestFlight upload, not for daily work.
 
 ## First launch
 
@@ -46,32 +54,27 @@ If iOS says "Untrusted Developer": Settings, VPN & Device Management, your Apple
 
 ---
 
-## Bringing the real counts over
+## Backups
 
-The phone starts empty. The database with nine months of imported taps sits outside the repo at `~/Developer/crow-data/count.db`, since the repo gitignores `*.db`.
+Count is in daily use while it is also being developed, so the phone holds taps that exist nowhere else. `scripts/ios/backup_db.sh` pulls the live database off and keeps it at `~/Developer/crow-data/backups/count-YYYYMMDD-HHMMSS.db`, outside the repo, which gitignores `*.db` anyway.
 
-```bash
-scripts/ios/install_device.sh --db-only ~/Developer/crow-data/count.db
-```
-
-That opens Count once so it creates its data directory, stops it again, pushes the file into the app container, and reads it back to check the checksums match. Stopping it first matters: a live app holds the old file open and would write its stale copy back over the restore. Force-quit and reopen Count afterwards. It works because a development-signed build carries `get-task-allow`, which is what lets `devicectl` reach the container at all. A TestFlight build is signed differently and this will not work there.
-
-The push replaces the database wholesale. Anything logged on the phone since the last push is gone, so treat it as a one-time seed rather than a sync. To refresh the staged copy from the simulator first:
+`deploy.sh` runs it on every deploy. Run it on its own any time:
 
 ```bash
-SIM=$(xcrun simctl get_app_container booted com.scadoshi.count data)
-cp "$SIM/Library/Application Support/scadoshi-count/count.db" ~/Developer/crow-data/count.db
+scripts/ios/backup_db.sh
 ```
 
----
+It stops the app first so SQLite has closed the file, runs `pragma integrity_check` on what came off the phone, and refuses to keep a copy that fails. A pull matching the newest backup byte for byte is dropped rather than stored twice, so running it repeatedly costs nothing. It keeps the last 30 and prunes older ones, `--keep N` to change that.
 
-## Why `--device true`
-
-Without it, `dx build --platform ios` targets the simulator, and a simulator binary dies on real hardware with "wrong platform to load into process". Check the metadata if a build behaves oddly:
+## Restoring
 
 ```bash
-vtool -show ~/Developer/crow/target/dx/crow/debug/ios/Crow.app/crow
-# want LC_VERSION_MIN_IPHONEOS, not platform 7 or MACOS
+scripts/ios/install_device.sh --db-only ~/Developer/crow-data/backups/<file>
 ```
 
-A release build lands in `release/ios/`, not `debug/ios/`. Deploying the debug path after a release build installs the stale bundle and fails with `Error 0xe8008014: The executable contains an invalid signature`.
+This replaces the phone's database wholesale, so anything logged since that backup is gone. It takes its own backup first, before overwriting. Force-quit and reopen Count afterwards.
+
+It works because a development-signed build carries `get-task-allow`, which is what lets `devicectl` reach the app container. A TestFlight build is signed differently and this will not work there.
+
+`~/Developer/crow-data/original-import-20260921.db` is the one-time seed from the tap-log import, kept for the record. Restore from a backup instead, since the seed is older than the phone by whatever has been logged since.
+

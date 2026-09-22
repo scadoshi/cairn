@@ -19,12 +19,12 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-BUNDLE_ID="com.scadoshi.count"
+# shellcheck source=device.sh
+. "$REPO_ROOT/scripts/ios/device.sh"
+
 APP="$REPO_ROOT/target/dx/crow/release/ios/Crow.app"
 PROFILE="$HOME/certs/Count_Development.mobileprovision"
 IDENTITY="Apple Development: SCOTTY RAY FERMO (NVSWB62C54)"
-# Inside the app's data container, matching outbound/paths.rs.
-DB_DEST="Library/Application Support/scadoshi-count/count.db"
 
 DB=""
 BUILD=1
@@ -36,32 +36,8 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# A physical phone, not the simulator: devicectl reports hardware "reality"
-# as physical or simulated, the same thing the plain `list devices` table
-# shows in its Reality column.
-DEVICES="$(xcrun devicectl list devices --quiet --json-output /dev/stdout 2>/dev/null \
-  | python3 -c '
-import json, sys
-found = json.load(sys.stdin)["result"]["devices"]
-for d in found:
-    hw = d.get("hardwareProperties", {})
-    if hw.get("reality") == "physical":
-        print(hw.get("udid", ""), d.get("deviceProperties", {}).get("name", "?"))
-')"
-COUNT="$(printf '%s' "$DEVICES" | grep -c . || true)"
-if [ "$COUNT" -eq 0 ]; then
-  echo "No physical device found. Plug the phone in, unlock it, trust the Mac," >&2
-  echo "and turn on Settings > Privacy & Security > Developer Mode. Then:" >&2
-  echo "  xcrun devicectl list devices" >&2
-  exit 1
-fi
-if [ "$COUNT" -gt 1 ]; then
-  echo "More than one device attached; unplug the others:" >&2
-  echo "$DEVICES" >&2
-  exit 1
-fi
-UDID="$(printf '%s' "$DEVICES" | awk '{print $1}')"
-echo "device: $(printf '%s' "$DEVICES" | cut -d' ' -f2-) ($UDID)"
+find_device
+echo "device: $DEVICE_NAME ($UDID)"
 
 if [ "$BUILD" -eq 1 ]; then
   [ -f "$PROFILE" ] || { echo "missing $PROFILE (see first_device.md)" >&2; exit 1; }
@@ -88,37 +64,23 @@ if [ -n "$DB" ]; then
   # Fail on a file that is not a usable database before it reaches the phone.
   sqlite3 "$DB" 'select count(*) from counters' >/dev/null
 
+  # This overwrites whatever is on the phone, so keep a copy of that first.
+  # Skipped when restoring a backup onto a phone that has nothing yet.
+  "$REPO_ROOT/scripts/ios/backup_db.sh"
+
   # The app creates Library/Application Support/scadoshi-count on first run,
-  # and the copy needs that directory to exist. Launch it once and stop it by
-  # the pid the launch reports: overwriting the database under a live
-  # connection is the one way to lose the data being restored.
-  echo "opening Count once so it creates its data directory"
-  LAUNCH="$(mktemp)"
-  xcrun devicectl device process launch --device "$UDID" \
-    --terminate-existing --json-output "$LAUNCH" "$BUNDLE_ID" > /dev/null
-  PID="$(python3 -c '
-import json, sys
-print(json.load(open(sys.argv[1]))["result"]["process"]["processIdentifier"])
-' "$LAUNCH" 2>/dev/null || true)"
-  rm -f "$LAUNCH"
-  sleep 4
-  if [ -n "$PID" ]; then
-    xcrun devicectl device process terminate --device "$UDID" --pid "$PID" \
-      > /dev/null 2>&1 || true
-    sleep 2
-  else
-    echo "could not read the app's pid; close Count by hand, then press return"
-    read -r _
-  fi
+  # and the copy needs that directory to exist. Stopping it also closes its
+  # SQLite connection: a live app holds the old file open and would write
+  # its stale copy back over the restore.
+  stop_app
 
   echo "pushing $(basename "$DB")"
   xcrun devicectl device copy to --device "$UDID" \
     --domain-type appDataContainer --domain-identifier "$BUNDLE_ID" \
     --source "$DB" --destination "$DB_DEST"
-  # Read it back and compare: a copy that silently lands somewhere else, or
-  # not at all, is the failure worth catching before trusting the phone.
-  # Both copy directions want a full file path as the destination; handing
-  # copy-from a directory fails with "Is a directory".
+
+  # Read it back and compare. Both copy directions want a full file path as
+  # the destination; handing copy-from a directory fails with "Is a directory".
   BACK="$(mktemp -d)"
   if xcrun devicectl device copy from --device "$UDID" \
       --domain-type appDataContainer --domain-identifier "$BUNDLE_ID" \
@@ -134,6 +96,5 @@ print(json.load(open(sys.argv[1]))["result"]["process"]["processIdentifier"])
   rm -rf "$BACK"
 
   echo
-  echo "Force-quit Count from the app switcher and reopen it. A suspended app"
-  echo "holds the old file open and would write its stale copy back."
+  echo "Force-quit Count from the app switcher and reopen it."
 fi
