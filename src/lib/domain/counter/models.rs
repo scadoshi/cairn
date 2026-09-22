@@ -145,6 +145,25 @@ impl Goal {
         }
     }
 
+    /// What a single day has to clear for the goal to stay on track, rounded
+    /// up.
+    ///
+    /// Integer arithmetic rather than [`Self::daily`] rounded, because this
+    /// decides whether a day counts as done and a float there would make the
+    /// answer depend on the rounding mode. Rounding up rather than to nearest:
+    /// a year of days that each fell a fraction short would miss the goal.
+    pub fn daily_target(self, days_in_year: u32) -> u32 {
+        let ceil_div = |n: u32, d: u32| {
+            let d = d.max(1);
+            n / d + u32::from(!n.is_multiple_of(d))
+        };
+        match self {
+            Self::PerDay(n) => n,
+            Self::PerWeek(n) => ceil_div(n, 7),
+            Self::PerYear(n) => ceil_div(n, days_in_year),
+        }
+    }
+
     /// Both figures as separate strings, the one entered first: `15/day` then
     /// `5,475/year`, or `10,000/year` then `27.4/day`.
     pub fn parts(self, days_in_year: u32) -> [String; 2] {

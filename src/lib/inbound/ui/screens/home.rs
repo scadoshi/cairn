@@ -1,80 +1,158 @@
-//! The landing screen: the wordmark fading in, a line on today, and the bar
-//! to the counters and the profile. Same shape as zwiper's home.
+//! The one screen you land on: the mark and today's date together at the
+//! top, a quote, then the counters.
+//!
+//! This used to be two screens, a landing page and a list. Tapping through to
+//! reach the counters cost a tap on the thing the app exists for, and the
+//! landing page had nothing on it you could act on.
+//!
+//! Both sheets hang off the screen rather than off a card, because a fixed
+//! overlay inside a card is clipped by the card's rounded corners.
 
 use crate::{
-    domain::counter::{format::compact, stats},
+    domain::counter::{Counter, format::compact, stats},
     inbound::ui::{
-        components::tile::{Tile, TileGrid},
+        bump_store_version,
+        components::{
+            bottom_sheet::BottomSheet,
+            counter_form::{CounterForm, CounterFormState, EditSheet},
+            counter_list::CounterList,
+            quote_card::QuoteCard,
+            tile::Tile,
+        },
         router::Route,
         today, use_date_format, use_prefs, use_store,
     },
 };
 use chrono::Datelike;
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{ToastOptions, use_toast};
+use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 
 /// The S mark, the same letterform the app icon is cut from.
 const LOGO: &str = include_str!("../../../../../assets/s.txt");
 
-/// The landing screen.
+/// The landing screen, which is also the counter list.
 #[component]
 pub fn Home() -> Element {
     let store = use_store();
     let nav = use_navigator();
+    let mut counters = use_signal(Vec::<Counter>::new);
+    let mut error = use_signal(|| None::<String>);
+    let mut create_open = use_signal(|| false);
+    let mut edit_open = use_signal(|| false);
+    let mut editing = use_signal(|| None::<Counter>);
 
-    // The day at a glance across every counter: reps logged today, how many
-    // counters were touched, and the longest live streak.
-    let (counters, today_total, active, streak) =
-        store.list_counters().map_or((0, 0, 0, 0), |list| {
-            let mut total = 0u32;
-            let mut active = 0usize;
-            let mut streak = 0u32;
-            for c in &list {
-                let entries = store.entries(c.id).unwrap_or_default();
-                let s = stats::summarize_with(&entries, c.goal, today(), &use_prefs()());
-                total = total.saturating_add(s.today);
-                if s.today > 0 {
-                    active += 1;
-                }
-                streak = streak.max(s.streak);
-            }
-            (list.len(), total, active, streak)
-        });
+    // Hooks, read once. `use_prefs` and friends are context hooks, so calling
+    // them inside the loop below would run a different number of hooks on the
+    // render before the counters load than on the one after, which Dioxus
+    // treats as a fatal hook-order change.
+    let prefs = use_prefs();
+    let date_format = use_date_format();
+
+    let load_store = store.clone();
+    let reload = use_callback(move |()| match load_store.list_counters() {
+        Ok(list) => counters.set(list),
+        Err(e) => error.set(Some(e.to_string())),
+    });
+    use_effect(move || reload.call(()));
 
     let now = today();
-    let date = format!("{} {}", now.format("%a"), use_date_format()().date(now));
+    let days = stats::days_in_year(now.year());
+
+    // The day across every counter at once. The streak is deliberately not
+    // the best of the per-counter streaks: it counts days you logged anything
+    // at all, which is the run that is actually hard to break.
+    let (today_total, lifetime, goals_met, with_goals, streak) = {
+        let mut today_total = 0u32;
+        let mut lifetime = 0u32;
+        let mut goals_met = 0usize;
+        let mut with_goals = 0usize;
+        let mut per_counter = Vec::new();
+        for c in &counters() {
+            let entries = store.entries(c.id).unwrap_or_default();
+            let s = stats::summarize_with(&entries, c.goal, now, &prefs());
+            today_total = today_total.saturating_add(s.today);
+            lifetime = lifetime.saturating_add(s.lifetime);
+            if let Some(g) = c.goal {
+                with_goals += 1;
+                if stats::remaining_today(g, s.today, days) == 0 {
+                    goals_met += 1;
+                }
+            }
+            per_counter.push(entries);
+        }
+        let merged = stats::merge_days(per_counter.iter().map(Vec::as_slice));
+        let streak = stats::summarize_with(&merged, None, now, &prefs()).streak;
+        (today_total, lifetime, goals_met, with_goals, streak)
+    };
+
+    let date = format!("{} {}", now.format("%a"), date_format().date(now));
     let day = now.ordinal();
-    let week = use_prefs()().week_number(now);
+    let week = prefs().week_number(now);
 
     rsx! {
-        div { class: "screen-content centered",
-            pre { class: "logo", "aria-label": "scadoshi", "{LOGO}" }
-            div { class: "container-sm home-hero content-enter-delayed",
-                div { class: "card-header home-hero-head",
-                    span { class: "card-title", "{date}" }
-                    div { class: "chip-tags",
-                        span { class: "stat-chip stat-chip-goal", "day {day}" }
-                        span { class: "stat-chip", "week {week}" }
+        div { class: "screen-content",
+            div { class: "profile-sections content-enter",
+                div { class: "home-hero",
+                    div { class: "card-header home-hero-head",
+                        pre { class: "logo", "aria-label": "scadoshi", "{LOGO}" }
+                        div { class: "home-hero-when",
+                            span { class: "card-title", "{date}" }
+                            div { class: "chip-tags",
+                                span { class: "stat-chip stat-chip-goal", "day {day}" }
+                                span { class: "stat-chip", "week {week}" }
+                            }
+                        }
+                    }
+                    if counters().is_empty() {
+                        p { class: "pref-note", style: "padding: 1rem;",
+                            "No counters yet. Create starts one."
+                        }
+                    } else {
+                        div { class: "tile-grid tile-grid-2",
+                            Tile { label: "logged today", value: compact(today_total) }
+                            Tile {
+                                label: "goals met",
+                                value: "{goals_met}",
+                                hint: if with_goals == 0 { "no goals set".to_string() } else { format!("of {with_goals}") },
+                            }
+                            Tile { label: "lifetime", value: compact(lifetime) }
+                            Tile { label: "streak", value: compact(streak), hint: "days".to_string() }
+                        }
                     }
                 }
-                if counters == 0 {
-                    p { class: "pref-note", style: "padding: 1rem;", "No counters yet. Counters, then New, starts one." }
-                } else {
-                    TileGrid {
-                        Tile { label: "logged today", value: compact(today_total) }
-                        Tile { label: "touched today", value: compact(u32::try_from(active).unwrap_or(u32::MAX)), hint: format!("of {counters} counters") }
-                        Tile { label: "best streak", value: compact(streak), hint: "days".to_string() }
-                    }
+                QuoteCard {}
+                if let Some(e) = error() {
+                    p { class: "form-error", "{e}" }
+                }
+                CounterList {
+                    counters: counters(),
+                    on_bump: move |()| reload.call(()),
+                    on_open: move |id: i64| {
+                        nav.push(Route::CounterScreen { id });
+                    },
+                    on_edit: move |c: Counter| {
+                        // Mount the sheet closed, then open it a beat later.
+                        // One that mounts already open has no off-screen state
+                        // to slide up from, so it appears in place instead of
+                        // rising. The wait has to outlast BottomSheet's own
+                        // premount guard, which drops `transition: none` after
+                        // WebKit's first post-insert paint.
+                        editing.set(Some(c));
+                        spawn(async move {
+                            tokio::time::sleep(Duration::from_millis(70)).await;
+                            edit_open.set(true);
+                        });
+                    },
                 }
             }
         }
         ActionBar {
             Button {
                 variant: ButtonVariant::Util,
-                onclick: move |_| {
-                    nav.push(Route::Counters {});
-                },
-                "Counters"
+                onclick: move |_| create_open.set(true),
+                "Create"
             }
             Button {
                 variant: ButtonVariant::Util,
@@ -83,6 +161,64 @@ pub fn Home() -> Element {
                 },
                 "Config"
             }
+        }
+        CreateSheet { open: create_open, on_created: move |()| reload.call(()) }
+        if let Some(c) = editing() {
+            EditSheet {
+                key: "{c.id.0}",
+                open: edit_open,
+                id: c.id,
+                current_name: c.name.to_string(),
+                current_goal: c.goal,
+                current_step: c.step.get(),
+                on_saved: move |()| reload.call(()),
+            }
+        }
+    }
+}
+
+/// Create a counter in a sheet, the same form the edit sheet uses.
+#[component]
+fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
+    let mut open = open;
+    let store = use_store();
+    let toast = use_toast();
+    let mut form = use_hook(CounterFormState::default);
+
+    // Every open starts blank.
+    use_effect(move || {
+        if open() {
+            form.load("", None, 1);
+        }
+    });
+
+    let save = move |_| {
+        let Some((name, goal, step)) = form.validate() else {
+            return;
+        };
+        match store.create_counter(&name, goal, step, today()) {
+            Ok(c) => {
+                toast.success(
+                    format!("Saved {}", c.name),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
+                bump_store_version();
+                on_created.call(());
+                open.set(false);
+            }
+            Err(e) => form.error.set(Some(e.to_string())),
+        }
+    };
+
+    rsx! {
+        BottomSheet {
+            open,
+            title: "Create counter",
+            footer: rsx! {
+                Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
+                Button { variant: ButtonVariant::Util, onclick: save, "Save" }
+            },
+            CounterForm { state: form }
         }
     }
 }

@@ -7,6 +7,7 @@
 use super::{DayCount, Goal};
 use crate::domain::preferences::Preferences;
 use chrono::{Datelike, NaiveDate};
+use std::collections::BTreeMap;
 
 /// Standing against a yearly goal as of `today`.
 #[derive(Debug, Clone, PartialEq)]
@@ -323,6 +324,52 @@ pub fn summarize_with(
     }
 }
 
+/// One day's total across several counters, newest last.
+///
+/// The home screen's figures are about the day rather than any one counter,
+/// so they run over this instead of over each counter in turn. Days that only
+/// some counters logged still appear, carrying the counters that did.
+///
+/// Every list is assumed sorted by day, which is how the store returns them.
+pub fn merge_days<'a>(per_counter: impl IntoIterator<Item = &'a [DayCount]>) -> Vec<DayCount> {
+    let mut totals: BTreeMap<NaiveDate, u32> = BTreeMap::new();
+    for entries in per_counter {
+        for e in entries {
+            let slot = totals.entry(e.day).or_insert(0);
+            *slot = slot.saturating_add(e.count);
+        }
+    }
+    totals
+        .into_iter()
+        .map(|(day, count)| DayCount { day, count })
+        .collect()
+}
+
+/// What today still needs to hit `goal`, and whether it is already there.
+///
+/// Weekly and yearly goals are spread evenly across their period, so this is
+/// the daily share rounded up: finishing the year needs every day to clear the
+/// average, and rounding down would quietly let a goal slip.
+pub fn remaining_today(goal: Goal, today_count: u32, days_in_year: u32) -> u32 {
+    goal.daily_target(days_in_year).saturating_sub(today_count)
+}
+
+/// How much of `delta` a day holding `today_count` can actually take.
+///
+/// A day never goes below zero, so subtracting more than is there only takes
+/// what is there, and subtracting from an empty day changes nothing. Callers
+/// use this for both the store write and the message they show, so the two
+/// always agree.
+pub fn applied_delta(today_count: u32, delta: i64) -> i64 {
+    if delta >= 0 {
+        return delta;
+    }
+    // Negate first, then clamp, then negate back. Doing it in one step reads
+    // as `-(delta.min(n))`, which turns a subtraction into an addition.
+    let wanted = delta.saturating_neg();
+    -wanted.min(i64::from(today_count))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -490,5 +537,73 @@ mod tests {
         let entries = [e(2026, 1, 1, 50), e(2026, 1, 2, 50), e(2026, 1, 3, 10)];
         let s = summarize(&entries, None, d(2026, 1, 3));
         assert_eq!(s.best_day, Some(e(2026, 1, 1, 50)));
+    }
+
+    #[test]
+    fn subtracting_never_takes_more_than_the_day_holds() {
+        assert_eq!(applied_delta(25, -10), -10);
+        assert_eq!(applied_delta(4, -10), -4);
+        assert_eq!(applied_delta(0, -10), 0);
+    }
+
+    #[test]
+    fn adding_is_never_clamped() {
+        assert_eq!(applied_delta(0, 10), 10);
+        assert_eq!(applied_delta(999, 1), 1);
+    }
+
+    #[test]
+    fn subtracting_stays_negative() {
+        // The bug this guards: `-delta.min(n)` negates the whole min, so a
+        // subtraction came back positive and the minus button added.
+        for today in [0u32, 1, 5, 100] {
+            for step in [1i64, 10, 1000] {
+                assert!(applied_delta(today, -step) <= 0, "{today} {step}");
+            }
+        }
+    }
+
+    #[test]
+    fn merging_sums_shared_days_and_keeps_lone_ones() {
+        let a = [e(2026, 1, 1, 10), e(2026, 1, 3, 5)];
+        let b = [e(2026, 1, 1, 7), e(2026, 1, 2, 1)];
+        let merged = merge_days([a.as_slice(), b.as_slice()]);
+        assert_eq!(
+            merged,
+            vec![e(2026, 1, 1, 17), e(2026, 1, 2, 1), e(2026, 1, 3, 5)]
+        );
+    }
+
+    #[test]
+    fn merging_nothing_is_empty() {
+        assert!(merge_days(std::iter::empty()).is_empty());
+    }
+
+    #[test]
+    fn a_merged_streak_counts_any_counter_logging() {
+        // Neither counter alone ran three days; together they did.
+        let a = [e(2026, 1, 1, 1), e(2026, 1, 3, 1)];
+        let b = [e(2026, 1, 2, 1)];
+        let merged = merge_days([a.as_slice(), b.as_slice()]);
+        assert_eq!(summarize(&merged, None, d(2026, 1, 3)).streak, 3);
+    }
+
+    #[test]
+    fn remaining_counts_down_to_met() {
+        let goal = Goal::per_day(100).unwrap();
+        assert_eq!(remaining_today(goal, 0, 365), 100);
+        assert_eq!(remaining_today(goal, 40, 365), 60);
+        assert_eq!(remaining_today(goal, 100, 365), 0);
+        assert_eq!(remaining_today(goal, 250, 365), 0);
+    }
+
+    #[test]
+    fn a_yearly_goal_rounds_its_daily_share_up() {
+        // 1000/365 is 2.74 a day. Logging two would leave the year short, so
+        // the day is not done until three.
+        let goal = Goal::per_year(1000).unwrap();
+        assert_eq!(remaining_today(goal, 0, 365), 3);
+        assert_eq!(remaining_today(goal, 2, 365), 1);
+        assert_eq!(remaining_today(goal, 3, 365), 0);
     }
 }

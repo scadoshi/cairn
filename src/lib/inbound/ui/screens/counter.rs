@@ -54,6 +54,7 @@ pub fn CounterScreen(id: i64) -> Element {
     let mut notice = use_signal(|| None::<String>);
     let trend = use_signal(|| Trend::ThisWeek);
     let best = use_signal(|| Best::Day);
+    let date_format = use_date_format();
 
     let load_store = store.clone();
     let reload = use_callback(move |()| {
@@ -74,14 +75,30 @@ pub fn CounterScreen(id: i64) -> Element {
 
     let adjust_store = store.clone();
     let adjust = use_callback(move |delta: i64| {
-        let name = counter().map(|c| c.name.to_string()).unwrap_or_default();
-        match adjust_store.adjust(id, now(), today(), delta) {
+        let today_count = entries()
+            .iter()
+            .find(|e| e.day == today())
+            .map_or(0, |e| e.count);
+        // Report what actually happened rather than what was asked for: a
+        // day cannot go below zero, so this makes an empty day read "-0"
+        // without needing a case of its own.
+        let applied = stats::applied_delta(today_count, delta);
+        if applied == 0 {
+            toast.info(
+                "-0".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(900)),
+            );
+            return;
+        }
+        match adjust_store.adjust(id, now(), today(), applied) {
             Ok(_) => {
+                // No counter name: you are already looking at the counter,
+                // and a long one pushed the toast off the screen edge.
                 toast.info(
-                    if delta >= 0 {
-                        format!("+{} to {name}", thousands_i64(delta))
+                    if applied >= 0 {
+                        format!("+{}", thousands_i64(applied))
                     } else {
-                        format!("-{} from {name}", thousands_i64(-delta))
+                        format!("-{}", thousands_i64(-applied))
                     },
                     ToastOptions::default().duration(Duration::from_millis(900)),
                 );
@@ -137,7 +154,7 @@ pub fn CounterScreen(id: i64) -> Element {
                 ToastOptions::default().duration(Duration::from_millis(1500)),
             );
             bump_store_version();
-            nav.push(Route::Counters {});
+            nav.push(Route::Home {});
         }
         Err(e) => toast.error(e.to_string(), ToastOptions::default()),
     };
@@ -154,7 +171,7 @@ pub fn CounterScreen(id: i64) -> Element {
                             class: if summary.lifetime >= 10_000_000 { "odometer-value odometer-value-xl" } else if summary.lifetime >= 100_000 { "odometer-value odometer-value-l" } else { "odometer-value" },
                             "{thousands(summary.lifetime)}"
                         }
-                        span { class: "odometer-label", "lifetime since {use_date_format()().date(c.created_on)}" }
+                        span { class: "odometer-label", "lifetime since {date_format().date(c.created_on)}" }
                     }
                     TileGrid {
                         Tile { label: "today", value: compact(summary.today) }
@@ -204,7 +221,7 @@ pub fn CounterScreen(id: i64) -> Element {
                     if nav.can_go_back() {
                         nav.go_back();
                     } else {
-                        nav.push(Route::Counters {});
+                        nav.push(Route::Home {});
                     }
                 },
                 "Back"
@@ -475,6 +492,9 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
     let mut best = best;
     let now = today();
     let df = use_date_format()();
+    // Read before the match: a hook inside one arm runs only for that chip,
+    // and a hook count that changes between renders is fatal.
+    let prefs = use_prefs()();
     let months = [
         "January",
         "February",
@@ -493,7 +513,7 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
         Best::Day => summary
             .best_day
             .map(|b| (thousands(b.count), None, df.date(b.day))),
-        Best::Week => series::weekly_totals(&entries, now.year(), &use_prefs()())
+        Best::Week => series::weekly_totals(&entries, now.year(), &prefs)
             .into_iter()
             .max_by_key(|(_, t)| *t)
             .map(|(monday, total)| {

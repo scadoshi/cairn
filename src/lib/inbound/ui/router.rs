@@ -1,9 +1,10 @@
-//! Routes: the landing, the counter list, one counter, and config.
+//! Routes: the home list, one counter, and config. The list used to be a
+//! screen of its own; it is the landing screen now.
 
 use super::{
     Shell,
     components::navigation::back_handler::BackHandlerLayout,
-    screens::{config::Config, counter::CounterScreen, counters::Counters, home::Home},
+    screens::{config::Config, counter::CounterScreen, home::Home},
 };
 use dioxus::prelude::*;
 
@@ -13,12 +14,9 @@ use dioxus::prelude::*;
 pub enum Route {
     #[layout(BackHandlerLayout)]
     #[layout(Shell)]
-        /// The landing screen.
+        /// The landing screen: today, the counters, and a quote.
         #[route("/")]
         Home {},
-        /// The counter list.
-        #[route("/counters")]
-        Counters {},
         /// One counter, by store id.
         #[route("/counters/:id")]
         CounterScreen {

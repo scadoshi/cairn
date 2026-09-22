@@ -185,6 +185,20 @@ input {
     border-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
 }
 
+/* The day's goal, as a traffic light. Error red while something is still
+   owed, success green once it is not. */
+.stat-chip-short {
+    color: var(--color-error);
+    background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-error) 35%, transparent);
+}
+
+.stat-chip-met {
+    color: var(--color-success);
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
 .stat-chip-goal {
     color: var(--accent-tertiary);
     background-color: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
@@ -192,6 +206,9 @@ input {
 }
 
 .home-hero {
+    /* Full width of .profile-sections, which already holds the page gutter.
+       Setting the gutter again here inset the hero from its own siblings. */
+    width: 100%;
     display: flex;
     flex-direction: column;
     background-color: var(--bg-primary);
@@ -200,10 +217,30 @@ input {
     box-shadow: var(--shadow-md);
 }
 
+/* The mark and the date share a row: the S on the left, today's line and its
+   tags filling the rest. */
 .card-header.home-hero-head {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.home-hero-when {
+    display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.2rem;
+    flex: 1;
+    min-width: 0;
+}
+
+/* In the hero the mark is a sibling, not a banner: no page padding, and it
+   must not stretch the row. */
+.card-header.home-hero-head .logo {
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+    animation: none;
 }
 
 /* Hero rows: plain case, no tracking, unlike the profile's label style. */
@@ -316,6 +353,53 @@ input {
 }
 
 /* A bar inside a card is tighter than the screen bar. */
+/* The quote sits in the same card as everything else, but reads as prose
+   rather than data: no tiles, no numbers, just the words and who said them. */
+.quote-card {
+    padding: 1rem;
+}
+
+.quote-text {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+.quote-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+}
+
+.quote-author {
+    font-size: 0.8rem;
+    color: var(--accent-primary);
+}
+
+.quote-source {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.quote-tick {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--border-secondary);
+}
+
+/* Inside the tag, so it inherits the tag's size; tabular digits keep the
+   tag from twitching wider as the seconds tick. */
+.quote-tick-value {
+    font-variant-numeric: tabular-nums;
+}
+
 /* The readable half of a counter card opens it. Only the press state says
    so: a whole-card hover or border would fight the card's own edges, and on
    a phone there is no hover anyway. */
