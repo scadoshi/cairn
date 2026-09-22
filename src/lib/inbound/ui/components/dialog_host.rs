@@ -37,11 +37,20 @@ pub fn DialogHostView() -> Element {
         return rsx! {};
     };
     let close = spec.close;
+    let mut slot = host.0;
+    // Clearing here as well as through the owner's `open` signal: a confirm
+    // that navigates away unmounts the owner before its effect can run, and
+    // the dialog would otherwise stay on screen holding a callback into a
+    // scope that no longer exists.
+    let dismiss = use_callback(move |()| {
+        slot.set(None);
+        close.call(());
+    });
     rsx! {
         div {
             class: "alert-dialog-overlay",
             "data-state": "open",
-            onclick: move |_| close.call(()),
+            onclick: move |_| dismiss.call(()),
         }
         div { class: "alert-dialog", role: "dialog", aria_modal: "true",
             h2 { class: "alert-dialog-title", "{spec.title}" }
@@ -51,14 +60,14 @@ pub fn DialogHostView() -> Element {
             div { class: "alert-dialog-actions",
                 button {
                     class: "alert-dialog-cancel",
-                    onclick: move |_| close.call(()),
+                    onclick: move |_| dismiss.call(()),
                     if spec.confirm.is_some() { "Cancel" } else { "Got it" }
                 }
                 if let Some((label, confirm)) = spec.confirm {
                     button {
                         class: "alert-dialog-action-danger",
                         onclick: move |_| {
-                            close.call(());
+                            dismiss.call(());
                             confirm.call(());
                         },
                         "{label}"
@@ -79,6 +88,12 @@ pub fn use_hosted_dialog(open: Signal<bool>, build: impl Fn(Callback<()>) -> Dia
     let close = use_callback(move |()| {
         let mut open = open;
         open.set(false);
+    });
+    use_drop(move || {
+        let mut slot = host.0;
+        if slot.peek().as_ref().is_some_and(|s| s.owner == owner) {
+            slot.set(None);
+        }
     });
     use_effect(move || {
         let mut slot = host.0;
