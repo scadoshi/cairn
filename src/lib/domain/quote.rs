@@ -70,6 +70,26 @@ pub fn until_next<Tz: TimeZone>(at: &DateTime<Tz>) -> Duration {
 /// later should clear the same bar, because most of these people are alive.
 pub const QUOTES: &[Quote] = &[
     Quote {
+        text: "Procrastination is often not about indecision. It's a decision to live in theory rather than in practice.",
+        author: "Chris Williamson",
+        source: "Modern Wisdom, 23 Lessons",
+    },
+    Quote {
+        text: "You will be amazed at what you can complete when you have no other option.",
+        author: "Chris Williamson",
+        source: "Modern Wisdom, 23 Lessons",
+    },
+    Quote {
+        text: "If you measure inputs, you'll get good at trying. If you measure outcomes, you'll get good at winning.",
+        author: "Chris Williamson",
+        source: "Modern Wisdom, 23 Lessons",
+    },
+    Quote {
+        text: "Everybody has plans until they get hit for the first time.",
+        author: "Mike Tyson",
+        source: "on Tyrell Biggs, AP, 1987",
+    },
+    Quote {
         text: "You are in danger of living a life so comfortable and soft that you will die without ever realizing your true potential.",
         author: "David Goggins",
         source: "Can't Hurt Me",
@@ -120,24 +140,9 @@ pub const QUOTES: &[Quote] = &[
         source: "Extreme Ownership",
     },
     Quote {
-        text: "The best leaders are not driven by ego or personal agendas. They are simply focused on the mission and how best to accomplish it.",
-        author: "Jocko Willink",
-        source: "Extreme Ownership",
-    },
-    Quote {
-        text: "The leader must acknowledge mistakes and admit failures, take ownership of them, and develop a plan to win.",
-        author: "Jocko Willink",
-        source: "Extreme Ownership",
-    },
-    Quote {
         text: "Discipline can seem like your worst enemy. But in reality it is your best friend.",
         author: "Jocko Willink",
         source: "Discipline Equals Freedom",
-    },
-    Quote {
-        text: "I consider viewing morning sunlight in the top five of all actions that support mental health, physical health and performance.",
-        author: "Andrew Huberman",
-        source: "Huberman Lab newsletter",
     },
     Quote {
         text: "Pursuing too many goals simultaneously often leads to failure of all goals.",
@@ -146,16 +151,6 @@ pub const QUOTES: &[Quote] = &[
     },
     Quote {
         text: "Simple goals won't cause sufficient levels of neural arousal and stress to stimulate real growth and learning.",
-        author: "Andrew Huberman",
-        source: "Huberman Lab newsletter",
-    },
-    Quote {
-        text: "You can change (and lower) your own stress response by remembering the positive benefits of stress.",
-        author: "Andrew Huberman",
-        source: "Huberman Lab newsletter",
-    },
-    Quote {
-        text: "With practice, you will feel more comfortable under stress and build up your stress tolerance.",
         author: "Andrew Huberman",
         source: "Huberman Lab newsletter",
     },
@@ -175,22 +170,12 @@ pub const QUOTES: &[Quote] = &[
         source: "Tim Ferriss Show 561",
     },
     Quote {
-        text: "You cannot compel somebody to see themselves as they really are.",
-        author: "Rich Roll",
-        source: "Tim Ferriss Show 561",
-    },
-    Quote {
         text: "You have to play the long game to really reap the huge benefits of this type of training.",
         author: "Rich Roll",
         source: "Tim Ferriss Show 561",
     },
     Quote {
         text: "We were born to run; we were born because we run. We're all Running People, as the Tarahumara have always known.",
-        author: "Christopher McDougall",
-        source: "Born to Run",
-    },
-    Quote {
-        text: "The reason we race isn't so much to beat each other, he understood, but to be with each other.",
         author: "Christopher McDougall",
         source: "Born to Run",
     },
@@ -225,11 +210,6 @@ pub const QUOTES: &[Quote] = &[
         source: "Garmin interview",
     },
     Quote {
-        text: "I love the challenge of bowhunting. Becoming proficient with a bow is a challenge that has basically defined my life.",
-        author: "Cameron Hanes",
-        source: "Garmin interview",
-    },
-    Quote {
         text: "Consistently showing up every day and giving your best effort will never be something you regret.",
         author: "Truett Hanes",
         source: "Guinness World Records, 2025",
@@ -250,19 +230,9 @@ pub const QUOTES: &[Quote] = &[
         source: "Meditations 10.16",
     },
     Quote {
-        text: "The best way of avenging thyself is not to become like the wrong-doer.",
-        author: "Marcus Aurelius",
-        source: "Meditations 6.6",
-    },
-    Quote {
         text: "If it is not right, do not do it: if it is not true, do not say it.",
         author: "Marcus Aurelius",
         source: "Meditations 12.17",
-    },
-    Quote {
-        text: "Look within. Within is the fountain of good, and it will ever bubble up, if thou wilt ever dig.",
-        author: "Marcus Aurelius",
-        source: "Meditations 7.59",
     },
     Quote {
         text: "If thou art pained by any external thing, it is not this thing that disturbs thee, but thy own judgment about it.",
@@ -276,11 +246,6 @@ pub const QUOTES: &[Quote] = &[
     },
     Quote {
         text: "You do not rise to the level of your goals. You fall to the level of your systems.",
-        author: "James Clear",
-        source: "Atomic Habits",
-    },
-    Quote {
-        text: "The purpose of setting goals is to win the game. The purpose of building systems is to continue playing the game.",
         author: "James Clear",
         source: "Atomic Habits",
     },
@@ -305,32 +270,7 @@ pub const QUOTES: &[Quote] = &[
         source: "Atomic Habits",
     },
     Quote {
-        text: "No matter how mundane some action might appear, keep at it long enough and it becomes a contemplative, even meditative act.",
-        author: "Haruki Murakami",
-        source: "What I Talk About When I Talk About Running",
-    },
-    Quote {
-        text: "I just run. I run in a void. Or maybe I should put it the other way: I run in order to acquire a void.",
-        author: "Haruki Murakami",
-        source: "What I Talk About When I Talk About Running",
-    },
-    Quote {
-        text: "The most important thing we ever learn at school is the fact that the most important things can't be learned at school.",
-        author: "Haruki Murakami",
-        source: "What I Talk About When I Talk About Running",
-    },
-    Quote {
         text: "If I used being busy as an excuse not to run, I'd never run again.",
-        author: "Haruki Murakami",
-        source: "What I Talk About When I Talk About Running",
-    },
-    Quote {
-        text: "All I do is keep on running in my own cozy, homemade void, my own nostalgic silence.",
-        author: "Haruki Murakami",
-        source: "What I Talk About When I Talk About Running",
-    },
-    Quote {
-        text: "Emotional hurt is the price a person has to pay in order to be independent.",
         author: "Haruki Murakami",
         source: "What I Talk About When I Talk About Running",
     },
