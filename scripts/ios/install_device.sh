@@ -117,10 +117,12 @@ print(json.load(open(sys.argv[1]))["result"]["process"]["processIdentifier"])
     --source "$DB" --destination "$DB_DEST"
   # Read it back and compare: a copy that silently lands somewhere else, or
   # not at all, is the failure worth catching before trusting the phone.
+  # Both copy directions want a full file path as the destination; handing
+  # copy-from a directory fails with "Is a directory".
   BACK="$(mktemp -d)"
   if xcrun devicectl device copy from --device "$UDID" \
       --domain-type appDataContainer --domain-identifier "$BUNDLE_ID" \
-      --source "$DB_DEST" --destination "$BACK" > /dev/null 2>&1 \
+      --source "$DB_DEST" --destination "$BACK/count.db" > /dev/null 2>&1 \
      && [ -f "$BACK/count.db" ] \
      && [ "$(shasum -a 256 < "$DB" | cut -d' ' -f1)" \
         = "$(shasum -a 256 < "$BACK/count.db" | cut -d' ' -f1)" ]; then
