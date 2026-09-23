@@ -12,7 +12,7 @@
 
 ## CI: how your commits get checked (run these BEFORE you push)
 
-`.github/workflows/ci.yml` runs `test` and `lint` on every push to `main` and
+`.github/workflows/ci.yml` runs `test`, `lint` and `hooks` on every push to `main` and
 every pull request, on macOS runners (cairn ships to macOS and iOS, and the
 default feature pulls dioxus-desktop). Reproduce the gate locally first.
 
@@ -42,7 +42,7 @@ allows it inside them.
 dx check
 ```
 
-Not in CI, because it needs the Dioxus CLI installed on the runner. Run it locally before pushing UI changes. It catches the one class of bug neither clippy nor the tests can see: a hook called conditionally, in a loop, or outside a component body. Dioxus panics at runtime on a hook count that changes between renders, which takes the whole screen down with "Unable to retrieve the hook that was initialized at this index". That shipped to a phone once already.
+In CI as its own `hooks` job, so a CLI install that fails or drifts cannot mask a real lint or test failure. The job pins `dioxus-cli@0.7.10`, the version used locally; bump both together. Run it locally too before pushing UI changes. It catches the one class of bug neither clippy nor the tests can see: a hook called conditionally, in a loop, or outside a component body. Dioxus panics at runtime on a hook count that changes between renders, which takes the whole screen down with "Unable to retrieve the hook that was initialized at this index". That shipped to a phone once already.
 
 ### 4. Tests
 

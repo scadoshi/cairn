@@ -34,3 +34,22 @@ jobs:
         run: cargo +nightly fmt --check
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
+
+  # `dx check` catches the one class of bug neither clippy nor the tests see:
+  # a hook called conditionally, in a loop, or outside a component body.
+  # Dioxus panics at runtime when the hook count changes between renders,
+  # which takes the whole screen down. Its own job so a CLI install that
+  # fails or drifts cannot mask a real lint or test failure.
+  hooks:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: cargo-bins/cargo-binstall@main
+      # Pinned: dx is the same tool version used locally, and an 0.8 alpha
+      # arriving on its own would change what this gate means.
+      - name: Install the Dioxus CLI
+        run: cargo binstall dioxus-cli@0.7.10 --no-confirm --locked
+      - name: Hook order
+        run: dx check

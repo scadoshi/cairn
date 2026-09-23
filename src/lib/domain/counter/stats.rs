@@ -370,6 +370,64 @@ pub fn applied_delta(today_count: u32, delta: i64) -> i64 {
     -wanted.min(i64::from(today_count))
 }
 
+/// One counter's inputs for the figures that span all of them.
+#[derive(Debug, Clone, Copy)]
+pub struct CounterDays<'a> {
+    /// That counter's goal, if it has one.
+    pub goal: Option<Goal>,
+    /// Its whole history, sorted by day.
+    pub entries: &'a [DayCount],
+}
+
+/// Today across every counter at once.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Across {
+    /// Everything logged today, all counters summed.
+    pub logged_today: u32,
+    /// Every entry ever, all counters summed.
+    pub lifetime: u32,
+    /// Counters whose daily share is already met.
+    pub goals_met: usize,
+    /// Counters that have a goal at all, the denominator for `goals_met`.
+    pub with_goals: usize,
+    /// Consecutive days with something logged on any counter.
+    pub streak: u32,
+}
+
+/// The home screen's headline figures.
+///
+/// The streak here is deliberately not the best of the per-counter streaks.
+/// It merges every counter's history by day first, so it counts days you
+/// logged anything at all, which is the run that is actually hard to break
+/// and the one worth showing above a list.
+///
+/// Reading the entries is the caller's job; this only does the arithmetic,
+/// which is what makes it testable.
+pub fn across_counters(
+    counters: &[CounterDays<'_>],
+    today: NaiveDate,
+    prefs: &Preferences,
+) -> Across {
+    let days = days_in_year(today.year());
+    let mut out = Across::default();
+
+    for c in counters {
+        let s = summarize_with(c.entries, c.goal, today, prefs);
+        out.logged_today = out.logged_today.saturating_add(s.today);
+        out.lifetime = out.lifetime.saturating_add(s.lifetime);
+        if let Some(g) = c.goal {
+            out.with_goals += 1;
+            if remaining_today(g, s.today, days) == 0 {
+                out.goals_met += 1;
+            }
+        }
+    }
+
+    let merged = merge_days(counters.iter().map(|c| c.entries));
+    out.streak = summarize_with(&merged, None, today, prefs).streak;
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -561,6 +619,70 @@ mod tests {
                 assert!(applied_delta(today, -step) <= 0, "{today} {step}");
             }
         }
+    }
+
+    fn cd(goal: Option<Goal>, entries: &[DayCount]) -> CounterDays<'_> {
+        CounterDays { goal, entries }
+    }
+
+    #[test]
+    fn across_counters_sums_today_and_lifetime() {
+        let a = [e(2026, 1, 1, 10), e(2026, 1, 2, 5)];
+        let b = [e(2026, 1, 2, 7)];
+        let got = across_counters(
+            &[cd(None, &a), cd(None, &b)],
+            d(2026, 1, 2),
+            &Preferences::default(),
+        );
+        assert_eq!(got.logged_today, 12);
+        assert_eq!(got.lifetime, 22);
+    }
+
+    #[test]
+    fn only_counters_with_a_goal_count_toward_goals_met() {
+        let met = [e(2026, 1, 2, 100)];
+        let short = [e(2026, 1, 2, 3)];
+        let none = [e(2026, 1, 2, 999)];
+        let goal = Goal::per_day(100).unwrap();
+        let got = across_counters(
+            &[
+                cd(Some(goal), &met),
+                cd(Some(goal), &short),
+                cd(None, &none),
+            ],
+            d(2026, 1, 2),
+            &Preferences::default(),
+        );
+        assert_eq!(
+            got.with_goals, 2,
+            "the counter without a goal is not a denominator"
+        );
+        assert_eq!(got.goals_met, 1);
+    }
+
+    #[test]
+    fn the_streak_spans_counters_rather_than_taking_the_best_one() {
+        // Neither counter ran three days alone. Together they did.
+        let a = [e(2026, 1, 1, 1), e(2026, 1, 2, 1)];
+        let b = [e(2026, 1, 3, 1)];
+        let today = d(2026, 1, 3);
+        let got = across_counters(
+            &[cd(None, &a), cd(None, &b)],
+            today,
+            &Preferences::default(),
+        );
+        assert_eq!(got.streak, 3);
+        // The best single counter only reaches 2: a's run ends yesterday,
+        // which still counts because today is allowed to be empty, and b has
+        // just the one day.
+        assert_eq!(summarize(&a, None, today).streak, 2);
+        assert_eq!(summarize(&b, None, today).streak, 1);
+    }
+
+    #[test]
+    fn across_nothing_is_all_zero() {
+        let got = across_counters(&[], d(2026, 1, 2), &Preferences::default());
+        assert_eq!(got, Across::default());
     }
 
     #[test]

@@ -10,7 +10,7 @@
 
 use crate::{
     domain::{
-        counter::{Counter, format::compact, stats},
+        counter::{Counter, DayCount, Goal, format::compact, stats},
         preferences::Logo,
     },
     inbound::ui::{
@@ -74,34 +74,25 @@ pub fn Home() -> Element {
     };
 
     let now = today();
-    let days = stats::days_in_year(now.year());
 
-    // The day across every counter at once. The streak is deliberately not
-    // the best of the per-counter streaks: it counts days you logged anything
-    // at all, which is the run that is actually hard to break.
-    let (today_total, lifetime, goals_met, with_goals, streak) = {
-        let mut today_total = 0u32;
-        let mut lifetime = 0u32;
-        let mut goals_met = 0usize;
-        let mut with_goals = 0usize;
-        let mut per_counter = Vec::new();
-        for c in &counters() {
-            let entries = store.entries(c.id).unwrap_or_default();
-            let s = stats::summarize_with(&entries, c.goal, now, &prefs());
-            today_total = today_total.saturating_add(s.today);
-            lifetime = lifetime.saturating_add(s.lifetime);
-            if let Some(g) = c.goal {
-                with_goals += 1;
-                if stats::remaining_today(g, s.today, days) == 0 {
-                    goals_met += 1;
-                }
-            }
-            per_counter.push(entries);
-        }
-        let merged = stats::merge_days(per_counter.iter().map(Vec::as_slice));
-        let streak = stats::summarize_with(&merged, None, now, &prefs()).streak;
-        (today_total, lifetime, goals_met, with_goals, streak)
-    };
+    // Reading is this screen's job; the arithmetic is the domain's, where it
+    // can be tested. See stats::across_counters.
+    let list = counters();
+    let loaded: Vec<(Option<Goal>, Vec<DayCount>)> = list
+        .iter()
+        .map(|c| (c.goal, store.entries(c.id).unwrap_or_default()))
+        .collect();
+    let across = stats::across_counters(
+        &loaded
+            .iter()
+            .map(|(goal, entries)| stats::CounterDays {
+                goal: *goal,
+                entries,
+            })
+            .collect::<Vec<_>>(),
+        now,
+        &prefs(),
+    );
 
     let date = format!("{} {}", now.format("%a"), date_format().date(now));
     let day = now.ordinal();
@@ -127,14 +118,14 @@ pub fn Home() -> Element {
                         }
                     } else {
                         div { class: "tile-grid tile-grid-2",
-                            Tile { label: "logged today", value: compact(today_total) }
+                            Tile { label: "logged today", value: compact(across.logged_today) }
                             Tile {
                                 label: "goals met",
-                                value: "{goals_met}",
-                                hint: if with_goals == 0 { "no goals set".to_string() } else { format!("of {with_goals}") },
+                                value: "{across.goals_met}",
+                                hint: if across.with_goals == 0 { "no goals set".to_string() } else { format!("of {}", across.with_goals) },
                             }
-                            Tile { label: "lifetime", value: compact(lifetime) }
-                            Tile { label: "streak", value: compact(streak), hint: "days".to_string() }
+                            Tile { label: "lifetime", value: compact(across.lifetime) }
+                            Tile { label: "streak", value: compact(across.streak), hint: "days".to_string() }
                         }
                     }
                 }
