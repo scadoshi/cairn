@@ -598,6 +598,18 @@ mod tests {
     }
 
     #[test]
+    fn a_weekly_goal_spreads_over_seven_days() {
+        // 20,000 a week is 2,857.14 a day, so the day is not done until 2,858.
+        let goal = Goal::per_week(20_000).unwrap();
+        assert_eq!(goal.daily_target(365), 2_858);
+        assert_eq!(remaining_today(goal, 0, 365), 2_858);
+        assert_eq!(remaining_today(goal, 2_857, 365), 1);
+        assert_eq!(remaining_today(goal, 2_858, 365), 0);
+        // An exact multiple of seven must not round up a spurious extra rep.
+        assert_eq!(Goal::per_week(70).unwrap().daily_target(365), 10);
+    }
+
+    #[test]
     fn a_yearly_goal_rounds_its_daily_share_up() {
         // 1000/365 is 2.74 a day. Logging two would leave the year short, so
         // the day is not done until three.

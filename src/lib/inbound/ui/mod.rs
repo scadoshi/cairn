@@ -60,8 +60,11 @@ pub fn now() -> NaiveDateTime {
 pub struct StoreVersion(pub Signal<u32>);
 
 /// Marks the store as changed.
+///
+/// `consume_context`, not `use_context`: every caller is an event handler
+/// rather than a component body, and a hook there is what `dx check` flags.
 pub fn bump_store_version() {
-    let mut v = use_context::<StoreVersion>().0;
+    let mut v = consume_context::<StoreVersion>().0;
     v += 1;
 }
 

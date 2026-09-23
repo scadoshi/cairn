@@ -13,8 +13,8 @@ needs to be to stay on pace.
 - Single Rust crate, Dioxus 0.7 desktop app first, iOS later, Apple Watch
   eventually.
 - Data lives on the device in SQLite. There is no server and no account.
-- The UI is built from `zwipe-components` (Panel, NavBar, Button, ThemePicker
-  and the theme palettes) so it looks like zwipe, zite, and the portfolio.
+- The UI is built from `zwipe-components` (ActionBar, Button, Chip and the
+  theme palettes) so it looks like zwipe, zite, and the portfolio.
 - Exports are CSV with two columns, `day` and `count`, one file per counter.
 
 ## Layout

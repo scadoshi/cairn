@@ -36,7 +36,15 @@ Lint levels live in `Cargo.toml` `[lints.clippy]`. The panic family (`unwrap`,
 `expect`, `panic`, indexing, slicing) is denied outside tests; `clippy.toml`
 allows it inside them.
 
-### 3. Tests
+### 3. Hook order
+
+```bash
+dx check
+```
+
+Not in CI, because it needs the Dioxus CLI installed on the runner. Run it locally before pushing UI changes. It catches the one class of bug neither clippy nor the tests can see: a hook called conditionally, in a loop, or outside a component body. Dioxus panics at runtime on a hook count that changes between renders, which takes the whole screen down with "Unable to retrieve the hook that was initialized at this index". That shipped to a phone once already.
+
+### 4. Tests
 
 ```bash
 cargo test                # domain tests, offline, no env needed

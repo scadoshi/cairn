@@ -72,12 +72,13 @@ fn CounterCard(
 ) -> Element {
     let store = use_store();
     let entries = store.entries(counter.id).unwrap_or_default();
-    let summary = stats::summarize(&entries, counter.goal, today());
+    let prefs = use_prefs()();
+    let summary = stats::summarize_with(&entries, counter.goal, today(), &prefs);
     let id = counter.id;
     let bump_store = store.clone();
     let toast = use_toast();
     let step = i64::from(counter.step.get());
-    let confirm_minus = use_prefs()().confirm_minus;
+    let confirm_minus = prefs.confirm_minus;
     let days = days_in_year(today().year());
     // `None` once the day is done, so the tag has two states and no zero.
     let left_today = counter
@@ -188,6 +189,8 @@ fn ordered(counters: &[Counter], store: &SharedStore, order: CounterOrder) -> Ve
         CounterOrder::MostActive | CounterOrder::Lifetime => {
             let key = |c: &Counter| {
                 let entries = store.entries(c.id).unwrap_or_default();
+                // Preferences only reach streaks and consistency, and
+                // neither is a sort key, so the default is the whole truth.
                 let s = stats::summarize(&entries, c.goal, today());
                 if order == CounterOrder::Lifetime {
                     s.lifetime

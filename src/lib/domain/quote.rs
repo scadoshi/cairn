@@ -301,6 +301,24 @@ mod tests {
     }
 
     #[test]
+    fn consecutive_hours_are_not_neighbours_in_the_list() {
+        // The cycle-coverage test above cannot catch this: with a list whose
+        // length is prime, every stride visits everything, so STEP = 1 passes
+        // it while making the quotes march in written order.
+        let mut adjacent = 0;
+        for h in 0..i64::try_from(QUOTES.len()).unwrap() {
+            let a = at_hour(h).expect("non-empty");
+            let b = at_hour(h + 1).expect("non-empty");
+            let ia = QUOTES.iter().position(|q| q == a).unwrap();
+            let ib = QUOTES.iter().position(|q| q == b).unwrap();
+            if ia.abs_diff(ib) == 1 {
+                adjacent += 1;
+            }
+        }
+        assert_eq!(adjacent, 0, "{adjacent} hours land on a neighbouring quote");
+    }
+
+    #[test]
     fn the_list_is_not_empty() {
         assert!(!QUOTES.is_empty());
     }

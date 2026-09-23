@@ -630,6 +630,56 @@ mod tests {
         assert_eq!(entries[0].count, 5);
     }
 
+    /// Build a database at an older schema version, the way an installed app
+    /// would have left it, then open it and see whether the upgrade lands.
+    fn aged_db(dir: &std::path::Path, version: i64, steps: &[&str]) -> std::path::PathBuf {
+        let path = dir.join("aged.db");
+        let conn = Connection::open(&path).unwrap();
+        for s in steps {
+            conn.execute_batch(s).unwrap();
+        }
+        conn.execute(
+            "INSERT INTO counters (id, name, goal_per_year, created_on) \
+             VALUES (1, 'pushups', 3650, '2026-01-01')",
+            [],
+        )
+        .unwrap();
+        conn.pragma_update(None, "user_version", version).unwrap();
+        drop(conn);
+        path
+    }
+
+    /// Every other store test starts from `in_memory()`, which is version 0,
+    /// so all five rungs always run and the version guards are never
+    /// exercised. That leaves the path a real phone takes, an existing
+    /// database being upgraded, with no coverage at all: changing
+    /// `if version < 5` to `if version < 4` used to pass the whole suite
+    /// while breaking every install that already had data.
+    #[test]
+    fn opens_a_database_left_at_every_older_version() {
+        let ladder = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4, SCHEMA_V5];
+        for version in 1..=SCHEMA_VERSION {
+            let dir = std::env::temp_dir().join(format!("cairn-aged-{version}"));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).unwrap();
+            let steps: Vec<&str> = ladder
+                .iter()
+                .take(usize::try_from(version).unwrap())
+                .copied()
+                .collect();
+            let path = aged_db(&dir, version, &steps);
+
+            let s = SqliteStore::open(&path)
+                .unwrap_or_else(|e| panic!("v{version} database would not open: {e}"));
+            let list = s
+                .list_counters()
+                .unwrap_or_else(|e| panic!("v{version} database would not read: {e}"));
+            assert_eq!(list.len(), 1, "v{version} lost the existing counter");
+            assert_eq!(list[0].name.as_str(), "pushups");
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+    }
+
     #[test]
     fn migrate_is_idempotent() {
         let conn = Connection::open_in_memory().unwrap();
