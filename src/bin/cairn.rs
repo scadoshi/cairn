@@ -14,14 +14,14 @@ fn main() {
     let path = match paths::database() {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("crow: cannot locate data directory: {e}");
+            eprintln!("cairn: cannot locate data directory: {e}");
             return;
         }
     };
     let store = match SqliteStore::open(&path) {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("crow: cannot open {}: {e}", path.display());
+            eprintln!("cairn: cannot open {}: {e}", path.display());
             return;
         }
     };

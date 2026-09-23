@@ -1,4 +1,4 @@
-//! Where Crow's files live on this platform.
+//! Where Cairn's files live on this platform.
 
 use std::path::PathBuf;
 

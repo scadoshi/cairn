@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fill an Crow database with plausible test data across several years.
+"""Fill a Cairn database with plausible test data across several years.
 
     scripts/seed.py PATH_TO_odo.db
 
