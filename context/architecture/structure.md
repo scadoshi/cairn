@@ -5,6 +5,7 @@ cairn/
 ├── Cargo.toml              # single crate; lib + one bin
 ├── Dioxus.toml             # app name, bundle id, iOS plist
 ├── assets/                 # main.css, toast.css, fonts, the c and s marks
+├── docs/screenshots/       # what the README shows
 ├── scripts/                # icon.py, seed.py, import_taps.py, ios/, android/
 ├── context/                # this documentation
 └── src/
@@ -17,7 +18,7 @@ cairn/
         │   ├── quote.rs            # the hourly quote and its rotation
         │   └── counter/
         │       ├── models.rs       # Counter, CounterName, Goal, Step, DayCount, Event
-        │       ├── stats.rs        # summarize, pace, streaks, merge_days, applied_delta
+        │       ├── stats.rs        # summarize, pace, streaks, across_counters, applied_delta
         │       ├── series.rs       # daily, weekly, monthly, weekday, hourly
         │       ├── format.rs       # thousands, compact, rate
         │       ├── csv.rs          # entries -> "day,count"

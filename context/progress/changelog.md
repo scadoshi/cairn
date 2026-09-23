@@ -6,6 +6,22 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- Renamed to Cairn. The bundle id `com.scadoshi.count` and the data folder
+  `scadoshi-count/count.db` deliberately did not move: both are permanent once
+  real data exists.
+- One screen instead of two. Home and the counter list merged, with the mark
+  and the date sharing the hero's top row.
+- Cross-counter figures: logged today, goals met, lifetime across everything,
+  and a streak counting days anything at all was logged.
+- A goal tag on each card counting down to the day's share, green once met.
+- Goals per week, alongside per day and per year.
+- A quote that turns over on the clock hour, 41 of them, each sourced.
+- A "?" in every screen and sheet header, explaining what that screen does.
+- A Mark setting, switching the home logo between the C and the owner's S.
+- Tapping a counter's name or numbers opens it; the Open button is gone.
+- Toasts report what a tap actually did, so an empty day reads "-0".
+- Shipped to a real phone, with backup and restore tooling around it.
+
 - Counters with per-day entries, a lifetime odometer, and per-year breakdown.
 - Goals per day or per year, with pace: target today, ahead or behind, needed
   per day, projected year end.

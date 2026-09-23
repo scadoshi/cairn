@@ -22,6 +22,8 @@ Two things deliberately did not change, because both are permanent once real dat
 
 It is installed on scotland-mobile and in daily use, signed with a development profile good until September 2027. The daily loop is `scripts/ios/deploy.sh`: back up the phone's database, build, install. A reinstall keeps the data container, so deploying never touches the counts, and the backup runs first regardless because the phone holds taps that exist nowhere else. `operations/ios/dev_deploy.md` has the whole thing.
 
+There is a write-up at [scottyfermo.com/side-quests/cairn](https://scottyfermo.com/side-quests/cairn) with a demo and screenshots.
+
 **Next:** draw the Cairn mark properly, then TestFlight and review via [`operations/ios/submission.md`](operations/ios/submission.md). The database push does not work on a TestFlight build, which is signed without `get-task-allow`; moving data there needs the in-app import on the backlog.
 
 See [`progress/todo.md`](progress/todo.md) for the ordered list.
