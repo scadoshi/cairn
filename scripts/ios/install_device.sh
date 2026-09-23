@@ -7,11 +7,6 @@
 # portal paperwork (App ID, the phone's UDID, the development profile) has to
 # exist first; this script checks for the profile and stops if it is missing.
 #
-# The bundle folder is named after the crate (Cairn.app) while the app's own
-# label is Count. dx writes the name keys twice, once from the crate and once
-# from Dioxus.toml's [ios.plist]; re-serializing the plist keeps the last of
-# each, which is the Count one. See operations/ios/submission.md step 2.
-#
 # Usage:
 #   scripts/ios/install_device.sh                  # build, sign, install
 #   scripts/ios/install_device.sh --db path/to.db  # ... then push a database
@@ -47,9 +42,8 @@ if [ "$BUILD" -eq 1 ]; then
   dx build --release --platform ios --device true
   [ -d "$APP" ] || { echo "no app bundle at $APP" >&2; exit 1; }
 
-  plutil -convert xml1 "$APP/Info.plist"
   NAME="$(plutil -extract CFBundleDisplayName raw "$APP/Info.plist")"
-  [ "$NAME" = "Count" ] || { echo "display name is '$NAME', expected Count" >&2; exit 1; }
+  [ "$NAME" = "Cairn" ] || { echo "display name is '$NAME', expected Cairn" >&2; exit 1; }
 
   "$REPO_ROOT/scripts/ios/icons.sh" "$APP"
 
@@ -98,5 +92,5 @@ if [ -n "$DB" ]; then
   rm -rf "$BACK"
 
   echo
-  echo "Force-quit Count from the app switcher and reopen it."
+  echo "Force-quit Cairn from the app switcher and reopen it."
 fi

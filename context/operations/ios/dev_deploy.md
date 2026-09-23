@@ -1,6 +1,6 @@
 # Deploy a Build to Phone
 
-Build and install Count on a connected iPhone. Same shape as zwipe's `operations/ios/dev_deploy.md`, because it is the same Mac, the same team, and the same already-registered phone.
+Build and install Cairn on a connected iPhone. Same shape as zwipe's `operations/ios/dev_deploy.md`, because it is the same Mac, the same team, and the same already-registered phone.
 
 Done on 22 September 2026: App ID, profile, and the first install with the imported counts. The one-time section below is kept for the next machine or the next time a profile expires.
 
@@ -42,7 +42,7 @@ cd ~/Developer/cairn && dx build --platform ios --device true && ios-deploy --bu
 
 dx signs the bundle itself from `~/Library/Developer/Xcode/UserData/Provisioning Profiles/Count_Development.mobileprovision`. There is no manual `codesign` step for dev builds.
 
-The bundle folder is `Cairn.app` after the crate. The app's own label is Count, which is what shows on the home screen.
+The bundle folder, the crate and the home-screen label are all Cairn. They used to differ, which is why older notes mention re-serializing the plist to drop duplicate name keys; that is no longer needed.
 
 For a release build with the icon catalog and explicit signing, `scripts/ios/install_device.sh`. Use that before a TestFlight upload, not for daily work.
 
@@ -60,7 +60,7 @@ If iOS says "Untrusted Developer": Settings, VPN & Device Management, your Apple
 
 ## Backups
 
-Count is in daily use while it is also being developed, so the phone holds taps that exist nowhere else. `scripts/ios/backup_db.sh` pulls the live database off and keeps it at `~/Developer/cairn-data/backups/count-YYYYMMDD-HHMMSS.db`, outside the repo, which gitignores `*.db` anyway.
+Cairn is in daily use while it is also being developed, so the phone holds taps that exist nowhere else. `scripts/ios/backup_db.sh` pulls the live database off and keeps it at `~/Developer/cairn-data/backups/count-YYYYMMDD-HHMMSS.db`, outside the repo, which gitignores `*.db` anyway.
 
 `deploy.sh` runs it on every deploy. Run it on its own any time:
 
@@ -76,7 +76,7 @@ It stops the app first so SQLite has closed the file, runs `pragma integrity_che
 scripts/ios/install_device.sh --db-only ~/Developer/cairn-data/backups/<file>
 ```
 
-This replaces the phone's database wholesale, so anything logged since that backup is gone. It takes its own backup first, before overwriting. Force-quit and reopen Count afterwards.
+This replaces the phone's database wholesale, so anything logged since that backup is gone. It takes its own backup first, before overwriting. Force-quit and reopen Cairn afterwards.
 
 It works because a development-signed build carries `get-task-allow`, which is what lets `devicectl` reach the app container. A TestFlight build is signed differently and this will not work there.
 

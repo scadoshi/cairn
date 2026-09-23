@@ -26,13 +26,6 @@ APP=target/dx/cairn/release/ios/Cairn.app
 Dioxus writes these from a stale template.
 
 ```bash
-# dx names the bundle after the crate (Cairn), so Dioxus.toml's [ios.plist]
-# adds CFBundleDisplayName and CFBundleName = "Count" a second time. iOS
-# takes the last value, but the store bundle should not carry duplicate
-# keys: re-serializing through plutil keeps one copy of each, the "Count" one.
-plutil -convert xml1 $APP/Info.plist
-plutil -extract CFBundleDisplayName raw $APP/Info.plist   # must print Count
-
 # iPhone only: Apple wants exactly one platform and cairn has no iPad layout.
 /usr/libexec/PlistBuddy \
   -c "Delete :CFBundleSupportedPlatforms" \

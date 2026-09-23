@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Pull the live database off the phone into a timestamped backup.
 #
-# Count is in daily use while it is also being developed, so the phone holds
+# Cairn is in daily use while it is also being developed, so the phone holds
 # the only copy of the newest taps. Every deploy runs this first.
 #
 # Backups land in ~/Developer/cairn-data/backups/<phone>/count-YYYYMMDD-HHMMSS.db,
@@ -49,7 +49,7 @@ fi
 # like one. Make SQLite read the whole file before it is kept.
 if ! sqlite3 "$TMP/count.db" 'pragma integrity_check' | grep -q '^ok$'; then
   echo "The database pulled off the phone did not pass integrity_check." >&2
-  echo "Nothing was saved. Close Count on the phone and try again." >&2
+  echo "Nothing was saved. Close Cairn on the phone and try again." >&2
   exit 1
 fi
 

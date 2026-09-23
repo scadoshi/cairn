@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The daily loop: back up the phone's database, build, install.
 #
-# Count is a live app being iterated on, so the phone holds taps that exist
+# Cairn is a live app being iterated on, so the phone holds taps that exist
 # nowhere else. The backup runs first and a failed backup stops the deploy,
 # because a reinstall that goes wrong is exactly when the copy is wanted.
 #

@@ -1,4 +1,4 @@
-# Getting Count onto someone else's phone
+# Getting Cairn onto someone else's phone
 
 Two routes. Which one depends on whether the person is standing next to you.
 
@@ -12,12 +12,12 @@ What has to exist first, none of which does yet:
 
 1. An **Apple Distribution certificate**. Already on this Mac, `Apple Distribution: SCOTTY RAY FERMO (VV74WQ89GD)`.
 2. An **App Store provisioning profile** for `com.scadoshi.count`. Profiles, +, Distribution, App Store Connect. Save it as `~/certs/Count_App_Store.mobileprovision`.
-3. An **app record** in App Store Connect. Apps, +, iOS. Name "Scadoshi Count", primary language, the bundle id, any SKU. The name is reserved once this exists.
+3. An **app record** in App Store Connect. Apps, +, iOS. Name "Cairn", primary language, the bundle id, any SKU. The name is reserved once this exists.
 4. An **app icon**. Apple rejects uploads without one. `scripts/ios/icons.sh` handles the mechanics and the placeholder mark passes; the artwork can change later.
 
 Then follow [`submission.md`](submission.md) end to end: build, patch the plist, compile the icon catalog, sign with the distribution identity and `Entitlements-Release.plist`, package the `.ipa`, upload with Transporter.
 
-In App Store Connect, TestFlight tab, external group, add their email. They get a link, install Apple's TestFlight app, and Count appears in it.
+In App Store Connect, TestFlight tab, external group, add their email. They get a link, install Apple's TestFlight app, and Cairn appears in it.
 
 Their phone starts empty, which is what you want from someone looking for rough edges with fresh eyes. The database push in [`dev_deploy.md`](dev_deploy.md) will not work for them: a TestFlight build is signed without `get-task-allow`, so `devicectl` cannot reach its container. Moving data onto a TestFlight build needs the in-app import on the backlog.
 
