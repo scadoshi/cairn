@@ -16,7 +16,7 @@ owns this?" If the answer is two places, the design is wrong.
 | SQL, schema, migrations | `outbound/sqlite/` and nowhere else |
 | Where files live on this platform | `outbound/paths.rs` |
 | Screens, routing, theme signal | `inbound/ui/` |
-| Wiring the store to the UI | `src/bin/crow.rs`, and only wiring |
+| Wiring the store to the UI | `src/bin/cairn.rs`, and only wiring |
 
 ## The rules behind the table
 

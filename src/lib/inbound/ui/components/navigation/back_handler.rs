@@ -11,7 +11,7 @@
 //! `history.pushState` trap works but takes seconds to settle.)
 //!
 //! **Android.** The generated `MainActivity` is patched post-bundle
-//! (`scripts/android/back_handler.sh`) to dispatch an `crow:back` DOM event
+//! (`scripts/android/back_handler.sh`) to dispatch a `cairn:back` DOM event
 //! for the OS back intent; this layout listens for it, and finishes the
 //! Activity from a root screen.
 //!
@@ -47,7 +47,7 @@ pub fn BackHandlerLayout() -> Element {
         let mut overlays: super::overlay_stack::OverlayBackStack = use_context();
         use_future(move || async move {
             let mut eval =
-                document::eval("window.addEventListener('crow:back', () => dioxus.send(1));");
+                document::eval("window.addEventListener('cairn:back', () => dioxus.send(1));");
             while eval.recv::<i32>().await.is_ok() {
                 if !overlays.close_top() {
                     if nav.can_go_back() {

@@ -1,17 +1,17 @@
 [package]
-name = "crow"
+name = "cairn"
 version = "0.1.0"
 authors = ["Scotty Fermo <scottyfermo@hotmail.com>"]
 edition = "2024"
 publish = false
 
 [lib]
-name = "crow"
+name = "cairn"
 path = "src/lib/lib.rs"
 
 [[bin]]
-name = "crow"
-path = "src/bin/crow.rs"
+name = "cairn"
+path = "src/bin/cairn.rs"
 
 [dependencies]
 dioxus = { version = "0.7.10", features = ["router"] }

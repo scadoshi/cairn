@@ -41,7 +41,7 @@ cp ~/Downloads/Count_Development.mobileprovision ~/certs/
 scripts/ios/deploy.sh --device matthew --no-backup
 ```
 
-The selector matches any part of the phone's name or its UDID. Both phones can stay plugged in; without `--device` the script refuses rather than guessing. Use `--no-backup` for someone else's phone unless you actually want a copy of their counts, and note that backups are filed per phone under `~/Developer/crow-data/backups/<phone>/` so a tester's data can never be restored over yours.
+The selector matches any part of the phone's name or its UDID. Both phones can stay plugged in; without `--device` the script refuses rather than guessing. Use `--no-backup` for someone else's phone unless you actually want a copy of their counts, and note that backups are filed per phone under `~/Developer/cairn-data/backups/<phone>/` so a tester's data can never be restored over yours.
 
 6. On their phone: Settings, Privacy & Security, Developer Mode, on, then restart. If iOS says "Untrusted Developer", Settings, VPN & Device Management, the Apple ID, Trust.
 

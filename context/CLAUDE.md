@@ -4,8 +4,8 @@ Guidance for Claude Code and any other AI assistant working in this repository.
 
 ## Project Overview
 
-Crow is a lifetime counter, named for the bird that can count. You name a thing you do (pull-ups,
-push-ups, pages read), log how many you did each day, and Crow keeps the running
+Cairn is a lifetime counter, named for the pile of stones where every passer-by adds one. You name a thing you do (pull-ups,
+push-ups, pages read), log how many you did each day, and Cairn keeps the running
 total plus the rates and averages that make a total mean something: this year's
 total, average per day, where you stand against a yearly goal, and what today
 needs to be to stay on pace.
@@ -23,7 +23,7 @@ Hexagonal, the same shape as zwipe and zynergy, sized for one crate:
 
 ```
 src/
-├── bin/crow.rs            # entrypoint: opens the store, launches the app
+├── bin/cairn.rs            # entrypoint: opens the store, launches the app
 └── lib/
     ├── domain/counter/   # pure: models, stats, goals, csv, ports (no dioxus, no sqlite)
     ├── inbound/ui/       # Dioxus: router, screens/, components/

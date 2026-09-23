@@ -7,7 +7,7 @@
 #
 # Reinstalling over an existing app keeps its data container, so an ordinary
 # deploy does not touch the counts. Restoring is a separate, deliberate step:
-#   scripts/ios/install_device.sh --db-only ~/Developer/crow-data/backups/<file>
+#   scripts/ios/install_device.sh --db-only ~/Developer/cairn-data/backups/<file>
 #
 # Usage:
 #   scripts/ios/deploy.sh              # backup, debug build, install
@@ -45,7 +45,7 @@ else
   dx build --platform ios --device true
 fi
 
-APP="$REPO_ROOT/target/dx/crow/$PROFILE/ios/Crow.app"
+APP="$REPO_ROOT/target/dx/cairn/$PROFILE/ios/Cairn.app"
 [ -d "$APP" ] || { echo "no app bundle at $APP" >&2; exit 1; }
 
 # --id matters: with two phones attached ios-deploy otherwise picks one

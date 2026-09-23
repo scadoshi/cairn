@@ -4,7 +4,7 @@
 # Count is in daily use while it is also being developed, so the phone holds
 # the only copy of the newest taps. Every deploy runs this first.
 #
-# Backups land in ~/Developer/crow-data/backups/<phone>/count-YYYYMMDD-HHMMSS.db,
+# Backups land in ~/Developer/cairn-data/backups/<phone>/count-YYYYMMDD-HHMMSS.db,
 # outside the repo, which gitignores *.db anyway. One directory per phone,
 # because a tester's counts are not yours and must never be restored over
 # them. A pull that matches the newest backup byte for byte is dropped
@@ -31,7 +31,7 @@ while [ $# -gt 0 ]; do
 done
 
 find_device "$WANT"
-DIR="$HOME/Developer/crow-data/backups/$(device_slug)"
+DIR="$HOME/Developer/cairn-data/backups/$(device_slug)"
 mkdir -p "$DIR"
 
 stop_app

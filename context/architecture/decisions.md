@@ -49,3 +49,11 @@ The sync unit is the events table. Every tap is an append-only record with a tim
 ## 11. Crow stays the repo name; the app is Count
 
 2026-09-21. Crow is a fine repo name (bird repos, like chickadee and steller) but it says nothing to a stranger reading an App Store listing. So the split: the repo, crate, and internal event names stay `crow`; everything that lands on a device (bundle id, data folder `scadoshi-count/count.db`, CSV names) says count. The product is "Scadoshi Count" on the store, "Count" under the home-screen icon (the label truncates past about twelve characters), and the wordmark on the home screen says "scadoshi", the dev name. The bundle id is `com.scadoshi.count`, name-agnostic on purpose: it is the one thing App Store Connect never lets you change, so the display name can move again without it.
+
+## 12. Cairn
+
+2026-09-23. Crow said nothing to a stranger and Count said nothing at all. A cairn is the pile of stones on a mountain path where everyone who passes adds one: the act is identical every time, small and unglamorous, and the pile is the whole point. It is Sisyphus with the boulder staying put, which is exactly what a lifetime counter is. It also marks the way for whoever comes next.
+
+Sisyphus itself was considered and rejected: his defining trait is that the work accumulates nothing, which is the opposite of the app. Notch was rejected because two apps on the store are already called Notch and both are tally counters, and because the word belongs to Markus Persson and to the iPhone screen cutout. Groove was rejected because it names a training protocol (Pavel Tsatsouline's grease the groove) that this app does not implement, and six apps already sit under that banner.
+
+The bundle id stays `com.scadoshi.count`, since App Store Connect never lets it change and it was always meant to be name-agnostic. The data folder stays `scadoshi-count/count.db` for the same reason: it holds real counts on a real phone. The crate, the repo and the header are Cairn. The home-screen mark is the C in `assets/c.txt`, with the owner's S available behind the Mark setting, because this started as a personal app.

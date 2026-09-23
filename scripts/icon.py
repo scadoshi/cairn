@@ -3,8 +3,7 @@
 
     scripts/icon.py
 
-Reads assets/crow.txt, cuts the first letter out (8 cells wide, leaning one
-column per row), writes it to assets/c.txt, and renders it with JetBrains
+Reads the mark in assets/c.txt and renders it with JetBrains
 Mono at line-height 0.9 (the wordmark's own spacing, so rows overlap into
 solid strokes the way zwipe's Z icon does) onto gruvbox dark, cream on
 #282828. Writes every size iOS, the web, and Android need into
@@ -32,7 +31,7 @@ def mark_from_wordmark() -> list[str]:
 def ttf_path() -> str:
     font = TTFont(ROOT / "assets/fonts/jetbrains-mono-400.woff2")
     font.flavor = None
-    out = pathlib.Path(tempfile.gettempdir()) / "crow-jbm-400.ttf"
+    out = pathlib.Path(tempfile.gettempdir()) / "cairn-jbm-400.ttf"
     font.save(out)
     return str(out)
 

@@ -12,7 +12,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-APP="${1:-$REPO_ROOT/target/dx/crow/release/ios/Crow.app}"
+APP="${1:-$REPO_ROOT/target/dx/cairn/release/ios/Cairn.app}"
 ICONS="$REPO_ROOT/assets/favicon"
 [ -d "$APP" ] || { echo "no app bundle at $APP" >&2; exit 1; }
 

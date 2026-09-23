@@ -160,7 +160,7 @@ pub fn Shell() -> Element {
     // The counter screen is named after its counter, so the title needs a
     // lookup. The rest are static.
     let title = match &route {
-        Route::Home {} => "Counters".to_string(),
+        Route::Home {} => "Cairn".to_string(),
         Route::Config {} => "Config".to_string(),
         Route::CounterScreen { id } => store
             .get_counter(CounterId(*id))

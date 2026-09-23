@@ -1,6 +1,6 @@
 # iOS: build, sign, upload
 
-Crow's version of zwipe's runbook, with the parts a local-only app never needs cut out. One-time setup (Apple Developer account, the App ID for `com.scadoshi.count`, an Apple Distribution certificate, an App Store provisioning profile saved as `~/certs/Count_App_Store.mobileprovision`) is the same as zwipe's `context/operations/ios/setup.md`; do that once and don't repeat it here.
+Cairn's version of zwipe's runbook, with the parts a local-only app never needs cut out. One-time setup (Apple Developer account, the App ID for `com.scadoshi.count`, an Apple Distribution certificate, an App Store provisioning profile saved as `~/certs/Count_App_Store.mobileprovision`) is the same as zwipe's `context/operations/ios/setup.md`; do that once and don't repeat it here.
 
 Entitlements are checked in: `Entitlements.plist` for debug and `Entitlements-Release.plist` for the store, identical except `get-task-allow`. The team prefix is zwipe's.
 
@@ -9,7 +9,7 @@ Entitlements are checked in: `Entitlements.plist` for debug and `Entitlements-Re
 Apple's submission allowlist rejects binaries linked against anything but the current Xcode and SDK, with a misleading "beta Xcode" message. Before a release build, update Xcode from the App Store, check `xcodebuild -version`, then wipe the cached iOS objects so cargo relinks:
 
 ```bash
-rm -rf target/aarch64-apple-ios target/dx/crow/release/ios
+rm -rf target/aarch64-apple-ios target/dx/cairn/release/ios
 ```
 
 The plist keys in `Dioxus.toml` are re-patched below anyway.
@@ -18,7 +18,7 @@ The plist keys in `Dioxus.toml` are re-patched below anyway.
 
 ```bash
 dx build --release --platform ios --device true
-APP=target/dx/crow/release/ios/Crow.app
+APP=target/dx/cairn/release/ios/Cairn.app
 ```
 
 ## 2. Patch Info.plist
@@ -26,14 +26,14 @@ APP=target/dx/crow/release/ios/Crow.app
 Dioxus writes these from a stale template.
 
 ```bash
-# dx names the bundle after the crate (Crow), so Dioxus.toml's [ios.plist]
+# dx names the bundle after the crate (Cairn), so Dioxus.toml's [ios.plist]
 # adds CFBundleDisplayName and CFBundleName = "Count" a second time. iOS
 # takes the last value, but the store bundle should not carry duplicate
 # keys: re-serializing through plutil keeps one copy of each, the "Count" one.
 plutil -convert xml1 $APP/Info.plist
 plutil -extract CFBundleDisplayName raw $APP/Info.plist   # must print Count
 
-# iPhone only: Apple wants exactly one platform and crow has no iPad layout.
+# iPhone only: Apple wants exactly one platform and cairn has no iPad layout.
 /usr/libexec/PlistBuddy \
   -c "Delete :CFBundleSupportedPlatforms" \
   -c "Add :CFBundleSupportedPlatforms array" \
@@ -94,12 +94,12 @@ codesign --force --sign "<HASH-OR-NAME>" --entitlements Entitlements-Release.pli
 ## 5. Package
 
 ```bash
-rm -f Crow.ipa && mkdir -p Payload && cp -r $APP Payload/ && zip -r Crow.ipa Payload && rm -rf Payload
+rm -f Cairn.ipa && mkdir -p Payload && cp -r $APP Payload/ && zip -r Cairn.ipa Payload && rm -rf Payload
 ```
 
 ## 6. Upload and submit
 
-Use Transporter from the Mac App Store: sign in, drag `Crow.ipa` in, Deliver. Not `xcrun altool` (deprecated, and its metadata errors trigger false "beta Xcode" rejections) and not `iTMSTransporter` (wants `.itmsp`, not `.ipa`).
+Use Transporter from the Mac App Store: sign in, drag `Cairn.ipa` in, Deliver. Not `xcrun altool` (deprecated, and its metadata errors trigger false "beta Xcode" rejections) and not `iTMSTransporter` (wants `.itmsp`, not `.ipa`).
 
 The build appears in App Store Connect after five to ten minutes. Create the version if needed, select the build, answer No to export compliance (no encryption beyond the OS), submit. TestFlight first for anything you want on your own phone before review.
 

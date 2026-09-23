@@ -310,6 +310,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "cairn"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "dioxus",
+ "dioxus-primitives",
+ "dirs",
+ "jni 0.21.1",
+ "ndk-context",
+ "objc2",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+ "tokio",
+ "zwipe-components",
+]
+
+[[package]]
 name = "cairo-rs"
 version = "0.18.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -656,25 +675,6 @@ name = "crossbeam-utils"
 version = "0.8.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a31eee39dddec8330830986fcd7625edb5a24ec90ea038215273bbc3adb08ac6"
-
-[[package]]
-name = "crow"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "dioxus",
- "dioxus-primitives",
- "dirs",
- "jni 0.21.1",
- "ndk-context",
- "objc2",
- "rusqlite",
- "serde",
- "serde_json",
- "thiserror 2.0.20",
- "tokio",
- "zwipe-components",
-]
 
 [[package]]
 name = "crunchy"

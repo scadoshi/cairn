@@ -16,10 +16,12 @@ Read [`CLAUDE.md`](CLAUDE.md) first for the rules.
 
 ## Current focus
 
-**2026-09-22: it is on the phone and in daily use.** Count is installed on scotland-mobile with the imported counts, signed with a development profile good until September 2027. The daily loop is `scripts/ios/deploy.sh`: back up the phone's database, build, install. A reinstall keeps the data container, so deploying does not touch the counts, and the backup runs first anyway because the phone holds taps that exist nowhere else. `operations/ios/dev_deploy.md` has the whole thing.
+**2026-09-23: the app is Cairn.** A cairn is the pile of stones where everyone who passes adds one, which is what a lifetime counter is. The crate, the repo and the home-screen header are Cairn. The mark is the C in `assets/c.txt`, with the owner's S behind the Mark setting in Config. `architecture/decisions.md` entry 12 covers the reasoning and the names that lost.
 
-The app on a device says Count; the repo stays crow. Everything that reaches a phone uses the new name: bundle id `com.scadoshi.count`, home-screen label Count, data folder `scadoshi-count/count.db`, CSV names. The repo, crate and internal event names keep the bird. `architecture/decisions.md` entry 11 has the reasoning.
+Two things deliberately did not change, because both are permanent once real data exists: the bundle id `com.scadoshi.count`, which App Store Connect never lets you edit, and the on-device data folder `scadoshi-count/count.db`, which holds nine months of real counts.
 
-**Next:** the wordmark and icon artwork, then TestFlight and review via [`operations/ios/submission.md`](operations/ios/submission.md). Note that the database push does not work on a TestFlight build, which is signed without `get-task-allow`; moving data there needs the in-app import on the backlog.
+It is installed on scotland-mobile and in daily use, signed with a development profile good until September 2027. The daily loop is `scripts/ios/deploy.sh`: back up the phone's database, build, install. A reinstall keeps the data container, so deploying never touches the counts, and the backup runs first regardless because the phone holds taps that exist nowhere else. `operations/ios/dev_deploy.md` has the whole thing.
+
+**Next:** draw the Cairn mark properly, then TestFlight and review via [`operations/ios/submission.md`](operations/ios/submission.md). The database push does not work on a TestFlight build, which is signed without `get-task-allow`; moving data there needs the in-app import on the backlog.
 
 See [`progress/todo.md`](progress/todo.md) for the ordered list.

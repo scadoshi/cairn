@@ -9,7 +9,10 @@
 //! overlay inside a card is clipped by the card's rounded corners.
 
 use crate::{
-    domain::counter::{Counter, format::compact, stats},
+    domain::{
+        counter::{Counter, format::compact, stats},
+        preferences::Logo,
+    },
     inbound::ui::{
         bump_store_version,
         components::{
@@ -32,8 +35,11 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 
-/// The S mark, the same letterform the app icon is cut from.
-const LOGO: &str = include_str!("../../../../../assets/s.txt");
+/// The C, the app's own mark.
+const LOGO_CAIRN: &str = include_str!("../../../../../assets/c.txt");
+/// The S, the owner's dev mark. This started as a personal app and the
+/// wordmark is his name, so it stays available behind a setting.
+const LOGO_SCADOSHI: &str = include_str!("../../../../../assets/s.txt");
 
 /// The landing screen, which is also the counter list.
 #[component]
@@ -61,6 +67,11 @@ pub fn Home() -> Element {
         Err(e) => error.set(Some(e.to_string())),
     });
     use_effect(move || reload.call(()));
+
+    let (logo, logo_label) = match prefs().logo {
+        Logo::Cairn => (LOGO_CAIRN, "Cairn"),
+        Logo::Scadoshi => (LOGO_SCADOSHI, "scadoshi"),
+    };
 
     let now = today();
     let days = stats::days_in_year(now.year());
@@ -101,7 +112,7 @@ pub fn Home() -> Element {
             div { class: "profile-sections content-enter",
                 div { class: "home-hero",
                     div { class: "card-header home-hero-head",
-                        pre { class: "logo", "aria-label": "scadoshi", "{LOGO}" }
+                        pre { class: "logo", "aria-label": "{logo_label}", "{logo}" }
                         div { class: "home-hero-when",
                             span { class: "card-title", "{date}" }
                             div { class: "chip-tags",

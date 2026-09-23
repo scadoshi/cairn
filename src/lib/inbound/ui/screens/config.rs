@@ -164,6 +164,19 @@ pub fn Config() -> Element {
                 }
                 div { class: "profile-row",
                     span { class: "row-label-with-hint",
+                        span { class: "profile-row-label", "Mark" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Mark)); hint_open.set(true); } }
+                    }
+                    div { class: "profile-row-value",
+                        Button {
+                            variant: ButtonVariant::Util,
+                            onclick: move |_| prefs.with_mut(|q| q.logo = q.logo.next()),
+                            "{prefs().logo.label()}"
+                        }
+                    }
+                }
+                div { class: "profile-row",
+                    span { class: "row-label-with-hint",
                         span { class: "profile-row-label", "Dark mode" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::DarkMode)); hint_open.set(true); } }
                     }
@@ -324,6 +337,7 @@ pub fn Config() -> Element {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ConfigHint {
     Theme,
+    Mark,
     DarkMode,
     Dates,
     DayStarts,
@@ -346,6 +360,16 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
                 HintLine { "The app's palette. " HintKey { "Change" } " opens the picker and previews as you tap." }
                 HintLine { HintKey { color: "--accent-primary", "Save" } " keeps it. " HintKey { color: "--accent-primary", "Back" } " or a tap outside reverts." }
                 HintLine { "The last four suit color vision deficiency." }
+            }
+        },
+        ConfigHint::Mark => rsx! {
+            HintDialog { open, title: "Mark",
+                HintLine { "Which letter sits at the top of the home screen." }
+                HintBullets {
+                    HintBullet { HintKey { color: "--accent-primary", "Cairn" } " is the app's own mark, a C." }
+                    HintBullet { HintKey { color: "--accent-primary", "scadoshi" } " is the dev mark this app was built under, an S." }
+                    HintBullet { "It changes nothing but the drawing." }
+                }
             }
         },
         ConfigHint::DarkMode => rsx! {

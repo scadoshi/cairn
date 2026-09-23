@@ -25,12 +25,12 @@ For the everyday build-and-run loop once the profile exists, use [`dev_deploy.md
 Fastest way to start using it daily. Plug the phone in, trust the Mac, then one command does build, icons, signing and install:
 
 ```bash
-scripts/ios/install_device.sh --db ~/Developer/crow-data/count.db
+scripts/ios/install_device.sh --db ~/Developer/cairn-data/count.db
 ```
 
 It stops with a clear message if the phone is not tethered or the development profile is missing. What it does, in order:
 
-1. `dx build --release --platform ios --device true`, an arm64 binary in `target/dx/crow/release/ios/Crow.app` (the folder keeps the crate name; the label inside is Count).
+1. `dx build --release --platform ios --device true`, an arm64 binary in `target/dx/cairn/release/ios/Cairn.app` (the folder keeps the crate name; the label inside is Count).
 2. `plutil -convert xml1` on Info.plist. dx writes the bundle name from the crate and Dioxus.toml writes it again as Count, so the plist holds each name key twice; re-serializing keeps the last, which is Count.
 3. `scripts/ios/icons.sh`, which runs `actool` over the PNGs in `assets/favicon` and adds the `CFBundleIcons` keys. dx never does this, and without it the phone shows a blank icon.
 4. Embeds the profile, signs with the development identity and `Entitlements.plist`, verifies the signature.
@@ -45,12 +45,12 @@ Follow `submission.md` through packaging, upload with Transporter, then in App S
 
 ## Data
 
-The phone starts empty unless a database is pushed to it. The real one, the simulator's after the tap-log import, is kept outside the repo at `~/Developer/crow-data/count.db` (the repo gitignores `*.db`). Refresh that copy from the simulator with:
+The phone starts empty unless a database is pushed to it. The real one, the simulator's after the tap-log import, is kept outside the repo at `~/Developer/cairn-data/count.db` (the repo gitignores `*.db`). Refresh that copy from the simulator with:
 
 ```bash
 SIM=$(xcrun simctl get_app_container booted com.scadoshi.count data)
 cp "$SIM/Library/Application Support/scadoshi-count/count.db" \
-   ~/Developer/crow-data/count.db
+   ~/Developer/cairn-data/count.db
 ```
 
 `install_device.sh --db <path>` pushes it with `devicectl device copy to` into `Library/Application Support/scadoshi-count/count.db` inside the app container. That works because a development-signed build carries `get-task-allow`, which is what lets devicectl reach the container at all. Push it while the app is not running, then open Count.

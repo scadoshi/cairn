@@ -37,12 +37,12 @@ Reinstalling over an existing app keeps its data container, so an ordinary deplo
 The long way, if you want to see the pieces, pasted as one line because zsh mangles `\` continuations on paste:
 
 ```bash
-cd ~/Developer/crow && dx build --platform ios --device true && ios-deploy --bundle ~/Developer/crow/target/dx/crow/debug/ios/Crow.app
+cd ~/Developer/cairn && dx build --platform ios --device true && ios-deploy --bundle ~/Developer/cairn/target/dx/cairn/debug/ios/Cairn.app
 ```
 
 dx signs the bundle itself from `~/Library/Developer/Xcode/UserData/Provisioning Profiles/Count_Development.mobileprovision`. There is no manual `codesign` step for dev builds.
 
-The bundle folder is `Crow.app` after the crate. The app's own label is Count, which is what shows on the home screen.
+The bundle folder is `Cairn.app` after the crate. The app's own label is Count, which is what shows on the home screen.
 
 For a release build with the icon catalog and explicit signing, `scripts/ios/install_device.sh`. Use that before a TestFlight upload, not for daily work.
 
@@ -60,7 +60,7 @@ If iOS says "Untrusted Developer": Settings, VPN & Device Management, your Apple
 
 ## Backups
 
-Count is in daily use while it is also being developed, so the phone holds taps that exist nowhere else. `scripts/ios/backup_db.sh` pulls the live database off and keeps it at `~/Developer/crow-data/backups/count-YYYYMMDD-HHMMSS.db`, outside the repo, which gitignores `*.db` anyway.
+Count is in daily use while it is also being developed, so the phone holds taps that exist nowhere else. `scripts/ios/backup_db.sh` pulls the live database off and keeps it at `~/Developer/cairn-data/backups/count-YYYYMMDD-HHMMSS.db`, outside the repo, which gitignores `*.db` anyway.
 
 `deploy.sh` runs it on every deploy. Run it on its own any time:
 
@@ -73,12 +73,12 @@ It stops the app first so SQLite has closed the file, runs `pragma integrity_che
 ## Restoring
 
 ```bash
-scripts/ios/install_device.sh --db-only ~/Developer/crow-data/backups/<file>
+scripts/ios/install_device.sh --db-only ~/Developer/cairn-data/backups/<file>
 ```
 
 This replaces the phone's database wholesale, so anything logged since that backup is gone. It takes its own backup first, before overwriting. Force-quit and reopen Count afterwards.
 
 It works because a development-signed build carries `get-task-allow`, which is what lets `devicectl` reach the app container. A TestFlight build is signed differently and this will not work there.
 
-`~/Developer/crow-data/original-import-20260921.db` is the one-time seed from the tap-log import, kept for the record. Restore from a backup instead, since the seed is older than the phone by whatever has been logged since.
+`~/Developer/cairn-data/original-import-20260921.db` is the one-time seed from the tap-log import, kept for the record. Restore from a backup instead, since the seed is older than the phone by whatever has been logged since.
 

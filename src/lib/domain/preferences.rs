@@ -43,6 +43,40 @@ impl CounterOrder {
     }
 }
 
+/// Which mark the home screen shows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum Logo {
+    /// The app's own mark.
+    #[default]
+    Cairn,
+    /// The owner's dev mark, kept because this started as a personal app
+    /// and the wordmark is his name.
+    Scadoshi,
+}
+
+impl Logo {
+    /// Every option, for cycling.
+    pub const ALL: [Self; 2] = [Self::Cairn, Self::Scadoshi];
+
+    /// Short label.
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Cairn => "Cairn",
+            Self::Scadoshi => "scadoshi",
+        }
+    }
+
+    /// The next option round.
+    #[must_use]
+    pub fn next(self) -> Self {
+        let i = Self::ALL.iter().position(|o| *o == self).unwrap_or(0);
+        Self::ALL
+            .get((i + 1) % Self::ALL.len())
+            .copied()
+            .unwrap_or_default()
+    }
+}
+
 /// The settings that shape the statistics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -61,6 +95,8 @@ pub struct Preferences {
     pub counter_order: CounterOrder,
     /// Minus buttons ask before subtracting.
     pub confirm_minus: bool,
+    /// Which mark the home screen shows.
+    pub logo: Logo,
 }
 
 impl Default for Preferences {
@@ -72,6 +108,7 @@ impl Default for Preferences {
             hourly_all_days: false,
             counter_order: CounterOrder::Created,
             confirm_minus: false,
+            logo: Logo::Cairn,
         }
     }
 }
@@ -133,6 +170,39 @@ mod tests {
 
     fn d(y: i32, m: u32, day: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    }
+
+    #[test]
+    fn preferences_stored_before_a_field_existed_still_load() {
+        // What a phone that last wrote settings before the logo option would
+        // have in its settings row. Every field added later must fall back to
+        // its default rather than failing the whole parse.
+        let older = r#"{"week_start":"Mon","rollover_hour":4,"rest_days":6,
+            "hourly_all_days":true,"counter_order":"Lifetime","confirm_minus":true}"#;
+        let p: Preferences = serde_json::from_str(older).expect("old settings must still parse");
+        assert_eq!(p.rollover_hour, 4);
+        assert_eq!(p.rest_days, 6);
+        assert_eq!(p.counter_order, CounterOrder::Lifetime);
+        assert!(p.confirm_minus);
+        assert_eq!(p.logo, Logo::Cairn, "a missing field takes its default");
+    }
+
+    #[test]
+    fn the_logo_option_cycles_through_every_choice() {
+        let mut seen = Vec::new();
+        let mut l = Logo::default();
+        for _ in 0..Logo::ALL.len() {
+            seen.push(l);
+            l = l.next();
+        }
+        assert_eq!(
+            l,
+            Logo::default(),
+            "cycling must return to where it started"
+        );
+        for option in Logo::ALL {
+            assert!(seen.contains(&option), "{option:?} is never reachable");
+        }
     }
 
     #[test]

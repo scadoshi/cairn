@@ -7,7 +7,7 @@
 # portal paperwork (App ID, the phone's UDID, the development profile) has to
 # exist first; this script checks for the profile and stops if it is missing.
 #
-# The bundle folder is named after the crate (Crow.app) while the app's own
+# The bundle folder is named after the crate (Cairn.app) while the app's own
 # label is Count. dx writes the name keys twice, once from the crate and once
 # from Dioxus.toml's [ios.plist]; re-serializing the plist keeps the last of
 # each, which is the Count one. See operations/ios/submission.md step 2.
@@ -22,7 +22,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=device.sh
 . "$REPO_ROOT/scripts/ios/device.sh"
 
-APP="$REPO_ROOT/target/dx/crow/release/ios/Crow.app"
+APP="$REPO_ROOT/target/dx/cairn/release/ios/Cairn.app"
 PROFILE="$HOME/certs/Count_Development.mobileprovision"
 IDENTITY="Apple Development: SCOTTY RAY FERMO (NVSWB62C54)"
 

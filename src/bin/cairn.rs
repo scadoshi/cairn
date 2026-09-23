@@ -1,4 +1,4 @@
-use crow::{
+use cairn::{
     inbound::ui::{App, SharedStore},
     outbound::{paths, sqlite::SqliteStore},
 };
