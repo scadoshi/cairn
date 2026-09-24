@@ -1063,6 +1063,27 @@ input {
     animation-delay: 0.15s;
 }
 
+/* The average and the spread around it, drawn behind the data. Muted on
+   purpose: they are background for the line, not a second line. */
+.chart-band {
+    fill: var(--text-muted);
+    opacity: 0.1;
+}
+
+.chart-mean {
+    stroke: var(--text-muted);
+    stroke-width: 1;
+    stroke-dasharray: 1 4;
+    opacity: 0.7;
+}
+
+.chart-trend {
+    stroke: var(--accent-secondary);
+    stroke-width: 1.4;
+    stroke-dasharray: 5 4;
+    opacity: 0.9;
+}
+
 @keyframes chart-draw {
     to {
         stroke-dashoffset: 0;
@@ -1099,6 +1120,30 @@ input {
 
 .legend-line {
     background: var(--accent-primary);
+}
+
+.legend-trend {
+    margin-left: 0.6rem;
+    background: repeating-linear-gradient(
+        to right,
+        var(--accent-secondary) 0 4px,
+        transparent 4px 7px
+    );
+}
+
+.legend-band {
+    margin-left: 0.6rem;
+    height: 0.6rem;
+    border-radius: 2px;
+    background: var(--text-muted);
+    opacity: 0.25;
+}
+
+/* The average and spread sit on the note line, after a dot, so the numbers
+   stay with the sentence that says what the chart is. */
+.chart-note-spread::before {
+    content: " · ";
+    opacity: 0.6;
 }
 
 .chart-note {

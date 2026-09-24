@@ -172,6 +172,78 @@ pub fn monthly_average(entries: &[DayCount], year: i32) -> [Option<f64>; 12] {
     out
 }
 
+/// What a series looks like as a whole: the straight line through it and
+/// how far the points scatter around their own average.
+///
+/// Both are in the chart's own units, over point index, so the UI can draw
+/// them without knowing what the points mean.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Shape {
+    /// Change per point of the least-squares line.
+    pub slope: f64,
+    /// That line's value at the first point.
+    pub intercept: f64,
+    /// Average of the points that have a value.
+    pub mean: f64,
+    /// Population standard deviation around that mean.
+    pub sd: f64,
+}
+
+impl Shape {
+    /// The fitted line at point `i`, never below zero, since none of these
+    /// series can be negative and a falling line would otherwise run off
+    /// the bottom of the chart.
+    #[must_use]
+    pub fn at(&self, i: usize) -> f64 {
+        #[allow(clippy::cast_precision_loss)]
+        let x = i as f64;
+        (self.intercept + self.slope * x).max(0.0)
+    }
+}
+
+/// Fits a line and measures the scatter. Gaps are skipped, not read as zero:
+/// a day with nothing logged is a day, but a weekday with no data at all is
+/// not a weekday averaging zero.
+///
+/// `None` when fewer than two points have values, where a line through them
+/// would be a line through one point.
+#[must_use]
+pub fn shape(values: &[Option<f64>]) -> Option<Shape> {
+    let points: Vec<(f64, f64)> = values
+        .iter()
+        .enumerate()
+        .filter_map(|(i, v)| {
+            #[allow(clippy::cast_precision_loss)]
+            let x = i as f64;
+            v.map(|y| (x, y))
+        })
+        .collect();
+    if points.len() < 2 {
+        return None;
+    }
+    #[allow(clippy::cast_precision_loss)]
+    let n = points.len() as f64;
+    let mean_x = points.iter().map(|(x, _)| x).sum::<f64>() / n;
+    let mean = points.iter().map(|(_, y)| y).sum::<f64>() / n;
+    let mut cov = 0.0;
+    let mut var_x = 0.0;
+    let mut var_y = 0.0;
+    for (x, y) in &points {
+        cov += (x - mean_x) * (y - mean);
+        var_x += (x - mean_x) * (x - mean_x);
+        var_y += (y - mean) * (y - mean);
+    }
+    // Every x is distinct, so var_x is only zero when there is one point,
+    // which the length check already ruled out.
+    let slope = if var_x == 0.0 { 0.0 } else { cov / var_x };
+    Some(Shape {
+        slope,
+        intercept: mean - slope * mean_x,
+        mean,
+        sd: (var_y / n).sqrt(),
+    })
+}
+
 /// What an hourly average is divided by.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HourlyBasis {
@@ -349,5 +421,67 @@ mod tests {
         assert!((h[7] - 15.0).abs() < f64::EPSILON);
         assert!((h[18] - 2.0).abs() < f64::EPSILON);
         assert!(h[0].abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn shape_finds_a_rising_line() {
+        let v = [Some(10.0), Some(20.0), Some(30.0), Some(40.0)];
+        let f = shape(&v).expect("four points fit");
+        assert!((f.slope - 10.0).abs() < 1e-9);
+        assert!((f.intercept - 10.0).abs() < 1e-9);
+        assert!((f.at(3) - 40.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn shape_holds_flat_when_nothing_moves() {
+        let v = [Some(7.0); 5];
+        let f = shape(&v).expect("five points fit");
+        assert!(f.slope.abs() < 1e-9);
+        assert!(f.sd.abs() < 1e-9);
+        assert!((f.mean - 7.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn shape_measures_scatter_around_the_mean() {
+        let v = [
+            Some(2.0),
+            Some(4.0),
+            Some(4.0),
+            Some(4.0),
+            Some(5.0),
+            Some(5.0),
+            Some(7.0),
+            Some(9.0),
+        ];
+        let f = shape(&v).expect("eight points fit");
+        assert!((f.mean - 5.0).abs() < 1e-9);
+        assert!((f.sd - 2.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn shape_skips_gaps_rather_than_reading_them_as_zero() {
+        let with_gap = [Some(10.0), None, Some(30.0)];
+        let without = [Some(10.0), Some(30.0)];
+        let a = shape(&with_gap).expect("two values fit");
+        let b = shape(&without).expect("two values fit");
+        // The gap keeps its x position, so the line is half as steep, but
+        // the mean is the mean of what is there either way.
+        assert!((a.mean - b.mean).abs() < 1e-9);
+        assert!((a.slope - 10.0).abs() < 1e-9);
+        assert!((b.slope - 20.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn shape_needs_two_points() {
+        assert!(shape(&[]).is_none());
+        assert!(shape(&[Some(5.0)]).is_none());
+        assert!(shape(&[Some(5.0), None, None]).is_none());
+    }
+
+    #[test]
+    fn a_falling_line_stops_at_zero() {
+        let v = [Some(10.0), Some(5.0), Some(0.0)];
+        let f = shape(&v).expect("three points fit");
+        assert!(f.at(9).abs() < f64::EPSILON);
     }
 }

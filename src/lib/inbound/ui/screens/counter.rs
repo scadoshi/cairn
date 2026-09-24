@@ -16,7 +16,9 @@ use crate::{
             alert_dialog::ConfirmDialog,
             celebration::{CelebrationHost, celebrate},
             counter_form::EditSheet,
-            hint::{HintBullet, HintBullets, HintDialog, HintKey, HintLine, use_screen_hint},
+            hint::{
+                HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton, use_screen_hint,
+            },
             line_chart::{LineChart, Point},
             tile::{Tile, TileGrid, rate},
         },
@@ -41,6 +43,90 @@ enum Trend {
     Hourly,
 }
 
+/// Which card's hint is showing, and whether a hint is open at all.
+///
+/// Provided by the screen and read by the "?" in each card header, so a card
+/// does not have to take two signals as props just to offer one.
+#[derive(Clone, Copy)]
+struct CardHints {
+    which: Signal<Option<CounterHint>>,
+    open: Signal<bool>,
+}
+
+/// Which card's hint.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CounterHint {
+    Year,
+    Goal,
+    Trends,
+    Bests,
+    Habit,
+    ByYear,
+}
+
+/// The "?" in a card header.
+#[component]
+fn CardHint(which: CounterHint) -> Element {
+    let slot = use_context::<CardHints>();
+    rsx! {
+        InfoButton {
+            onclick: move |_| {
+                let mut hints = slot;
+                hints.which.set(Some(which));
+                hints.open.set(true);
+            },
+        }
+    }
+}
+
+/// One dialog for the screen, its content picked by `which`.
+#[component]
+fn CounterHintDialog(open: Signal<bool>, which: Option<CounterHint>) -> Element {
+    let Some(which) = which else {
+        return rsx! {};
+    };
+    match which {
+        CounterHint::Year => rsx! {
+            HintDialog { open, title: "This year",
+                HintLine { "Totals for the calendar year, and where the current pace lands by December" }
+            }
+        },
+        CounterHint::Goal => rsx! {
+            HintDialog { open, title: "Goal",
+                HintLine { "Where you stand against the target, and what today has to clear" }
+                HintLine { "Behind means the days left have to carry more than the original pace" }
+            }
+        },
+        CounterHint::Trends => rsx! {
+            HintDialog { open, title: "Trends",
+                HintLine { "The chips pick what the line counts" }
+                HintBullets {
+                    HintBullet { "The dashed line is the direction over the whole series" }
+                    HintBullet { "The band is one standard deviation either side of the average, so a narrow band is a steady habit" }
+                    HintBullet { "Weekday and Hour have no direction, only a shape" }
+                }
+            }
+        },
+        CounterHint::Bests => rsx! {
+            HintDialog { open, title: "Bests",
+                HintLine { "The biggest day, week and month you have logged, all time" }
+            }
+        },
+        CounterHint::Habit => rsx! {
+            HintDialog { open, title: "Habit",
+                HintLine { "How often you show up rather than how much" }
+                HintLine { "Rest days set in Config are stepped over, not counted against you" }
+            }
+        },
+        CounterHint::ByYear => rsx! {
+            HintDialog { open, title: "By year",
+                HintLine { "Every year since the first tap" }
+                HintLine { HintKey { "Active" } " is days logged out of days elapsed" }
+            }
+        },
+    }
+}
+
 /// One counter's detail screen.
 #[component]
 pub fn CounterScreen(id: i64) -> Element {
@@ -55,6 +141,10 @@ pub fn CounterScreen(id: i64) -> Element {
     let mut notice = use_signal(|| None::<String>);
     let trend = use_signal(|| Trend::ThisWeek);
     let best = use_signal(|| Best::Day);
+    let hints = use_context_provider(|| CardHints {
+        which: Signal::new(None),
+        open: Signal::new(false),
+    });
     let date_format = use_date_format();
 
     let load_store = store.clone();
@@ -236,7 +326,10 @@ pub fn CounterScreen(id: i64) -> Element {
                 HabitCard { summary: summary.clone() }
                 div { class: "profile-list",
                     div { class: "card-header",
-                        span { class: "card-title", "By year" }
+                        span { class: "row-label-with-hint",
+                            span { class: "card-title", "By year" }
+                            CardHint { which: CounterHint::ByYear }
+                        }
                     }
                     table { class: "year-table",
                         thead { tr { th { "Year" } th { "Total" } th { "Per day" } th { "Active" } } }
@@ -274,9 +367,11 @@ pub fn CounterScreen(id: i64) -> Element {
                 "Delete"
             }
         }
+        CounterHintDialog { open: hints.open, which: (hints.which)() }
         HintDialog { open: hint_open, title: "One counter",
             HintLine { "The big number is everything you have ever logged here" }
             HintBullets {
+                HintBullet { "Tap a card's " HintKey { color: "--accent-primary", "?" } " for what it shows" }
                 HintBullet { "Subtracting stops at zero" }
                 HintBullet { HintKey { color: "--color-error", "Delete" } " takes the whole history with it" }
             }
@@ -331,7 +426,16 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
     let p = prefs();
     let labels = p.weekday_labels();
 
-    let (points, overlay, unit, note) = match trend() {
+    // The last field says whether x is time, which is what makes a fitted
+    // line mean anything. Across weekdays or hours it would only describe
+    // the order the buckets sit in.
+    let (points, overlay, unit, note, over_time): (
+        Vec<Point>,
+        Vec<Option<f64>>,
+        String,
+        &str,
+        bool,
+    ) = match trend() {
         Trend::ThisWeek => {
             let week = series::this_week(&entries, now, &p);
             let points = week
@@ -347,6 +451,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 Vec::new(),
                 String::new(),
                 "this week, Monday to today",
+                true,
             )
         }
         Trend::Weekday => {
@@ -369,6 +474,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 Vec::new(),
                 String::new(),
                 "average per active day, by weekday, all time",
+                false,
             )
         }
         Trend::Daily => {
@@ -388,6 +494,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 overlay,
                 String::new(),
                 "last 60 days, with the 7-day average",
+                true,
             )
         }
         Trend::Weekly => {
@@ -404,6 +511,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 Vec::new(),
                 String::new(),
                 "total per week this year",
+                true,
             )
         }
         Trend::Monthly => {
@@ -424,6 +532,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 Vec::new(),
                 String::new(),
                 "average per active day, by month",
+                true,
             )
         }
         Trend::Hourly => {
@@ -448,14 +557,21 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
             } else {
                 "average reps per hour, over days with taps"
             };
-            (points, Vec::new(), String::new(), note)
+            (points, Vec::new(), String::new(), note, false)
         }
     };
+
+    let values: Vec<Option<f64>> = points.iter().map(|p| p.value).collect();
+    let shape = series::shape(&values);
+    let spread = shape.map(|f| format!("avg {:.0}, sd {:.0}", f.mean, f.sd));
 
     rsx! {
         div { class: "profile-list",
             div { class: "card-header",
-                span { class: "card-title", "Trends" }
+                span { class: "row-label-with-hint",
+                    span { class: "card-title", "Trends" }
+                    CardHint { which: CounterHint::Trends }
+                }
                 div { class: "chip-row chip-row-tight",
                     Chip { selected: trend() == Trend::ThisWeek, onclick: move |_| trend.set(Trend::ThisWeek), "This week" }
                     Chip { selected: trend() == Trend::Daily, onclick: move |_| trend.set(Trend::Daily), "60 days" }
@@ -472,16 +588,29 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                         Chip { selected: p.hourly_all_days, onclick: move |_| prefs.with_mut(|q| q.hourly_all_days = true), "All days" }
                     }
                 }
-                LineChart { points, overlay, unit }
-                if trend() == Trend::Daily {
-                    p { class: "chart-legend",
+                LineChart { points, overlay, unit, shape, trend: over_time }
+                p { class: "chart-legend",
+                    if trend() == Trend::Daily {
                         span { class: "legend-swatch legend-line" }
                         "each day"
                         span { class: "legend-swatch legend-overlay" }
                         "7-day average"
                     }
+                    if shape.is_some() {
+                        if over_time {
+                            span { class: "legend-swatch legend-trend" }
+                            "trend"
+                        }
+                        span { class: "legend-swatch legend-band" }
+                        "1 sd"
+                    }
                 }
-                p { class: "chart-note", "{note}" }
+                p { class: "chart-note",
+                    "{note}"
+                    if let Some(spread) = spread {
+                        span { class: "chart-note-spread", "{spread}" }
+                    }
+                }
             }
         }
     }
@@ -502,7 +631,10 @@ fn YearCard(summary: Summary) -> Element {
     rsx! {
         div { class: "profile-list",
             div { class: "card-header",
-                span { class: "card-title", "{y.year}, day {y.days_elapsed}" }
+                span { class: "row-label-with-hint",
+                    span { class: "card-title", "{y.year}, day {y.days_elapsed}" }
+                    CardHint { which: CounterHint::Year }
+                }
             }
             TileGrid {
                 Tile { label: "total", value: compact(y.total) }
@@ -528,7 +660,10 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
     rsx! {
         div { class: "profile-list",
             div { class: "card-header",
-                span { class: "card-title", "Goal" }
+                span { class: "row-label-with-hint",
+                    span { class: "card-title", "Goal" }
+                    CardHint { which: CounterHint::Goal }
+                }
                 div { class: "chip-tags",
                     for part in goal.parts(year_len) {
                         span { class: "stat-chip stat-chip-goal", "{part}" }
@@ -597,7 +732,10 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
     rsx! {
         div { class: "profile-list",
             div { class: "card-header",
-                span { class: "card-title", "Bests" }
+                span { class: "row-label-with-hint",
+                    span { class: "card-title", "Bests" }
+                    CardHint { which: CounterHint::Bests }
+                }
                 div { class: "chip-row chip-row-tight",
                     Chip { selected: best() == Best::Day, onclick: move |_| best.set(Best::Day), "Day" }
                     Chip { selected: best() == Best::Week, onclick: move |_| best.set(Best::Week), "Week" }
@@ -630,7 +768,10 @@ fn HabitCard(summary: Summary) -> Element {
     rsx! {
         div { class: "profile-list",
             div { class: "card-header",
-                span { class: "card-title", "Habit" }
+                span { class: "row-label-with-hint",
+                    span { class: "card-title", "Habit" }
+                    CardHint { which: CounterHint::Habit }
+                }
             }
             div { class: "tile-grid tile-grid-2",
                 Tile { label: "streak", value: compact(summary.streak), hint: "days".to_string() }

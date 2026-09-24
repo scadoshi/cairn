@@ -7,6 +7,7 @@
 //! so a change remounts it and replays the draw, which is what makes a +1 on
 //! the counter visibly move the trend.
 
+use crate::domain::counter::series::Shape;
 use dioxus::prelude::*;
 use std::{
     fmt::Write,
@@ -32,6 +33,15 @@ pub fn LineChart(
     /// Unit shown after the axis numbers.
     #[props(default)]
     unit: String,
+    /// The series' overall shape. Given one, the chart draws a band one
+    /// standard deviation either side of the average.
+    #[props(default)]
+    shape: Option<Shape>,
+    /// Also draw the fitted line. Only for series where x is time; across
+    /// weekdays or hours of the day a slope would be an artifact of the
+    /// order the buckets happen to sit in.
+    #[props(default)]
+    trend: bool,
 ) -> Element {
     const W: f64 = 320.0;
     const H: f64 = 140.0;
@@ -91,6 +101,10 @@ pub fn LineChart(
     for v in &overlay {
         v.map(f64::to_bits).hash(&mut hasher);
     }
+    if let Some(f) = shape {
+        (f.slope.to_bits(), f.intercept.to_bits(), f.sd.to_bits()).hash(&mut hasher);
+    }
+    trend.hash(&mut hasher);
     let key = hasher.finish();
 
     let last_label = points.last().map(|p| p.label.clone()).unwrap_or_default();
@@ -101,6 +115,17 @@ pub fn LineChart(
         .unwrap_or_default();
     let baseline = y_of(0.0);
     let top = y_of(max);
+    // Both are clamped into the plot: a band an average sits near the top of
+    // would otherwise reach above the axis, and a falling trend below zero.
+    let clamp = |v: f64| v.clamp(0.0, max);
+    let band = shape.map(|f| {
+        let hi = y_of(clamp(f.mean + f.sd));
+        let lo = y_of(clamp(f.mean - f.sd));
+        (hi, (lo - hi).max(0.6), y_of(clamp(f.mean)))
+    });
+    let trend_line = shape
+        .filter(|_| trend)
+        .map(|f| (y_of(clamp(f.at(0))), y_of(clamp(f.at(n.saturating_sub(1))))));
 
     rsx! {
         svg {
@@ -117,6 +142,20 @@ pub fn LineChart(
             text { class: "chart-tick", x: "{PAD_L}", y: "{H - 6.0}", text_anchor: "start", "{first_label}" }
             text { class: "chart-tick", x: "{(PAD_L + W - PAD_R) / 2.0}", y: "{H - 6.0}", text_anchor: "middle", "{mid_label}" }
             text { class: "chart-tick", x: "{W - PAD_R}", y: "{H - 6.0}", text_anchor: "end", "{last_label}" }
+            // Drawn first so the data reads over the top of them.
+            if let Some((y, height, mean_y)) = band {
+                rect {
+                    class: "chart-band",
+                    x: "{PAD_L}",
+                    y: "{y}",
+                    width: "{W - PAD_L - PAD_R}",
+                    height: "{height}",
+                }
+                line { class: "chart-mean", x1: "{PAD_L}", y1: "{mean_y}", x2: "{W - PAD_R}", y2: "{mean_y}" }
+            }
+            if let Some((y1, y2)) = trend_line {
+                line { class: "chart-trend", x1: "{PAD_L}", y1: "{y1}", x2: "{W - PAD_R}", y2: "{y2}" }
+            }
             for seg in line_segments.iter() {
                 path { class: "chart-line", d: "{seg}", path_length: "1000" }
             }
