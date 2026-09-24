@@ -19,7 +19,7 @@ use crate::{
         preferences::CounterOrder,
     },
     inbound::ui::{
-        SharedStore,
+        SharedStore, TOAST_NORMAL, TOAST_QUICK,
         components::{
             alert_dialog::ConfirmDialog,
             celebration::{CelebrationHost, celebrate},
@@ -31,7 +31,6 @@ use crate::{
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 
 /// Every counter as a card, in the preferred order.
@@ -100,7 +99,7 @@ fn CounterCard(
         if applied == 0 {
             toast.info(
                 "-0".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(900)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
             return;
         }
@@ -120,7 +119,7 @@ fn CounterCard(
                     if let Some(line) = celebrate(host, how) {
                         toast.success(
                             line.to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(1800)),
+                            ToastOptions::default().duration(TOAST_NORMAL),
                         );
                     }
                 } else {
@@ -132,7 +131,7 @@ fn CounterCard(
                         } else {
                             format!("-{}", thousands_i64(-applied))
                         },
-                        ToastOptions::default().duration(Duration::from_millis(900)),
+                        ToastOptions::default().duration(TOAST_QUICK),
                     );
                 }
                 on_bump.call(());

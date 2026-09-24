@@ -4,6 +4,7 @@
 use crate::{
     domain::{counter::csv, preferences::Preferences},
     inbound::ui::{
+        TOAST_NORMAL,
         components::{
             bottom_sheet::BottomSheet,
             hint::{
@@ -18,7 +19,7 @@ use crate::{
 use chrono::Weekday;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::{fmt::Write as _, path::PathBuf, time::Duration};
+use std::{fmt::Write as _, path::PathBuf};
 use zwipe_components::{ALLOWED_THEMES, ActionBar, Button, ButtonVariant, Chip, ThemeConfig};
 
 /// Themes with adjusted palettes for color-vision deficiency, grouped at the
@@ -121,7 +122,7 @@ pub fn Config() -> Element {
             Ok((n, dir)) => {
                 toast.success(
                     format!("Exported {n} files"),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_NORMAL),
                 );
                 notice.set(Some(format!("Written to {}", dir.display())));
             }
@@ -201,7 +202,7 @@ pub fn Config() -> Element {
                                 date_format.set(next);
                                 toast.success(
                                     format!("Dates as {}", next.label()),
-                                    ToastOptions::default().duration(Duration::from_millis(1200)),
+                                    ToastOptions::default().duration(TOAST_NORMAL),
                                 );
                             },
                             "{date_format().label()}"
@@ -586,7 +587,7 @@ fn PreferencesSheet(mut open: Signal<bool>) -> Element {
                         open.set(false);
                         toast.success(
                             "Theme saved".to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                            ToastOptions::default().duration(TOAST_NORMAL),
                         );
                     },
                     "Save"

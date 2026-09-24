@@ -11,7 +11,7 @@ use crate::{
         stats::Summary,
     },
     inbound::ui::{
-        bump_store_version,
+        TOAST_NORMAL, TOAST_QUICK, bump_store_version,
         components::{
             alert_dialog::ConfirmDialog,
             celebration::{CelebrationHost, celebrate},
@@ -28,7 +28,6 @@ use crate::{
 use chrono::{Datelike, Duration as ChronoDuration};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant, Chip};
 
 /// Which series the trends card draws.
@@ -90,7 +89,7 @@ pub fn CounterScreen(id: i64) -> Element {
         if applied == 0 {
             toast.info(
                 "-0".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(900)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
             return;
         }
@@ -109,7 +108,7 @@ pub fn CounterScreen(id: i64) -> Element {
                     if let Some(line) = celebrate(host, how) {
                         toast.success(
                             line.to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(1800)),
+                            ToastOptions::default().duration(TOAST_NORMAL),
                         );
                     }
                 } else {
@@ -121,7 +120,7 @@ pub fn CounterScreen(id: i64) -> Element {
                         } else {
                             format!("-{}", thousands_i64(-applied))
                         },
-                        ToastOptions::default().duration(Duration::from_millis(900)),
+                        ToastOptions::default().duration(TOAST_QUICK),
                     );
                 }
                 reload.call(());
@@ -177,7 +176,7 @@ pub fn CounterScreen(id: i64) -> Element {
         Ok(()) => {
             toast.success(
                 format!("Deleted {delete_name}"),
-                ToastOptions::default().duration(Duration::from_millis(1500)),
+                ToastOptions::default().duration(TOAST_NORMAL),
             );
             bump_store_version();
             nav.push(Route::Home {});

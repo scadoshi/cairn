@@ -9,13 +9,12 @@ use crate::domain::counter::{
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use zwipe_components::{Button, ButtonVariant, Chip};
 
 use crate::{
     domain::preferences::Celebration,
     inbound::ui::{
-        bump_store_version,
+        TOAST_NORMAL, bump_store_version,
         components::{
             bottom_sheet::BottomSheet,
             hint::{HintBullet, HintBullets, HintChip, HintDialog, HintLine},
@@ -342,7 +341,7 @@ pub fn EditSheet(
             Ok(()) => {
                 toast.success(
                     format!("Saved {}", v.name),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_NORMAL),
                 );
                 bump_store_version();
                 on_saved.call(());

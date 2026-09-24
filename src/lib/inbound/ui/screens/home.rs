@@ -14,7 +14,7 @@ use crate::{
         preferences::Logo,
     },
     inbound::ui::{
-        bump_store_version,
+        TOAST_NORMAL, bump_store_version,
         components::{
             bottom_sheet::BottomSheet,
             counter_form::{CounterForm, CounterFormState, EditSheet},
@@ -224,7 +224,7 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
             Ok(c) => {
                 toast.success(
                     format!("Saved {}", c.name),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_NORMAL),
                 );
                 bump_store_version();
                 on_created.call(());

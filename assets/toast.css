@@ -54,20 +54,49 @@
     transition:
         opacity 0.2s ease,
         transform 0.2s ease;
-    animation: toast-slide-in 0.2s ease-out;
 }
 
-@keyframes toast-slide-in {
-    from {
+/* Toasts are removed from the DOM outright, with no closing state to hook,
+   so the fade out has to happen before removal. That means the stylesheet
+   has to know how long each toast lives, which it reads off data-type. The
+   durations below pair with TOAST_QUICK and TOAST_NORMAL in inbound/ui:
+   change one and change the other, or a toast will pop out while still
+   opaque, or sit invisible waiting its turn. Errors use the library's own
+   five second default. */
+@keyframes toast-life {
+    0% {
         opacity: 0;
         /* Drops in from above, matching the direction the stack grows. */
-        transform: translateY(-1rem);
+        transform: translateY(-0.6rem);
     }
 
-    to {
+    14% {
         opacity: 1;
         transform: translateY(0);
     }
+
+    80% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-0.3rem);
+    }
+}
+
+.toast-container [data-type="info"] {
+    animation: toast-life 900ms ease both;
+}
+
+.toast-container [data-type="success"],
+.toast-container [data-type="warning"] {
+    animation: toast-life 1500ms ease both;
+}
+
+.toast-container [data-type="error"] {
+    animation: toast-life 5000ms ease both;
 }
 
 /* Toast Types — data-type is documented stable contract per ToastProvider docs */

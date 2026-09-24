@@ -13,7 +13,7 @@ use chrono::{Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::ToastProvider;
 use router::Route;
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 use zwipe_components::{Button, ButtonVariant, COMPONENTS_CSS, THEMES_CSS, ThemeConfig};
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -58,6 +58,17 @@ pub fn now() -> NaiveDateTime {
 /// state (the shell's title, the home list) re-render. Provided by [`App`].
 #[derive(Clone, Copy)]
 pub struct StoreVersion(pub Signal<u32>);
+
+/// How long a quick acknowledgement stays up, the "+10" kind.
+///
+/// These are paired with `assets/toast.css`, which fades each toast in and
+/// out across its own lifetime. The stylesheet keys off `data-type`, so a
+/// duration changed here has to change there too, or a toast will either
+/// vanish while still opaque or sit invisible waiting to be removed.
+pub const TOAST_QUICK: Duration = Duration::from_millis(900);
+
+/// How long anything worth reading stays up.
+pub const TOAST_NORMAL: Duration = Duration::from_millis(1500);
 
 /// Marks the store as changed.
 ///
