@@ -80,17 +80,15 @@ impl Logo {
 /// What happens when a counter's daily goal is met.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum Celebration {
-    /// A sheen running up the screen.
+    /// A level-up: the words, a beam up the screen, and sparks with it.
     #[default]
-    Sheen,
+    LevelUp,
     /// Confetti falling from the top, in the theme's colors.
     Confetti,
     /// Two party poppers going off from the bottom corners.
     Poppers,
     /// The success line typed out in monospace with a cursor.
     Typewriter,
-    /// A bright line sweeping down the screen, CRT style.
-    Scanline,
     /// The screen edge flashing the success color. The quiet one.
     Pulse,
     /// The success line slamming in oversized and settling.
@@ -103,12 +101,11 @@ pub enum Celebration {
 
 impl Celebration {
     /// Every option, for cycling.
-    pub const ALL: [Self; 9] = [
-        Self::Sheen,
+    pub const ALL: [Self; 8] = [
+        Self::LevelUp,
         Self::Confetti,
         Self::Poppers,
         Self::Typewriter,
-        Self::Scanline,
         Self::Pulse,
         Self::Stamp,
         Self::Random,
@@ -118,24 +115,23 @@ impl Celebration {
     /// The ones that actually draw something, which is what [`Self::Random`]
     /// chooses between. Off is not a surprise worth having, and Random
     /// picking itself would not terminate.
-    pub const ANIMATIONS: [Self; 6] = [
-        Self::Sheen,
+    pub const ANIMATIONS: [Self; 5] = [
+        Self::LevelUp,
         Self::Confetti,
         Self::Poppers,
         Self::Typewriter,
-        Self::Scanline,
         Self::Stamp,
     ];
 
-    /// Stride through [`Self::ANIMATIONS`]; 5 is coprime with 6.
-    const RANDOM_STRIDE: usize = 5;
+    /// Stride through [`Self::ANIMATIONS`]; 3 is coprime with 5.
+    const RANDOM_STRIDE: usize = 3;
 
     /// The animation to actually play, resolving [`Self::Random`] against a
     /// counter that the caller bumps.
     ///
     /// Rotation rather than chance: real randomness repeats, and the same
     /// animation twice running is exactly what picking Random is meant to
-    /// avoid. Pulse is left out because it reads as a near-miss for Sheen
+    /// avoid. Pulse is left out because it reads as a near-miss for Level up
     /// when the two land back to back.
     #[must_use]
     pub fn resolve(self, nth: u64) -> Self {
@@ -147,7 +143,7 @@ impl Celebration {
         Self::ANIMATIONS
             .get(i.wrapping_mul(Self::RANDOM_STRIDE) % len)
             .copied()
-            .unwrap_or(Self::Sheen)
+            .unwrap_or(Self::LevelUp)
     }
 
     /// Whether the animation shows the success line itself, in which case
@@ -159,11 +155,10 @@ impl Celebration {
     /// Short label.
     pub fn label(self) -> &'static str {
         match self {
-            Self::Sheen => "Sheen",
+            Self::LevelUp => "Level up",
             Self::Confetti => "Confetti",
             Self::Poppers => "Poppers",
             Self::Typewriter => "Typewriter",
-            Self::Scanline => "Scanline",
             Self::Pulse => "Pulse",
             Self::Stamp => "Stamp",
             Self::Random => "Random",
@@ -174,11 +169,13 @@ impl Celebration {
     /// Stable key for storage, independent of the variant's name.
     pub fn key(self) -> &'static str {
         match self {
-            Self::Sheen => "sheen",
+            // Still "sheen": this was the sheen before it became a level
+            // up, and phones have the old key in their settings and in
+            // every counter that picked it.
+            Self::LevelUp => "sheen",
             Self::Confetti => "confetti",
             Self::Poppers => "poppers",
             Self::Typewriter => "typewriter",
-            Self::Scanline => "scanline",
             Self::Pulse => "pulse",
             Self::Stamp => "stamp",
             Self::Random => "random",
@@ -256,7 +253,30 @@ pub struct Preferences {
     /// Which mark the home screen shows.
     pub logo: Logo,
     /// What happens when a daily goal is met.
+    #[serde(deserialize_with = "celebration_or_default")]
     pub celebration: Celebration,
+}
+
+/// Reads the stored celebration, falling back to the default for anything
+/// this build does not know.
+///
+/// Settings are one JSON blob, so a variant that no longer exists would
+/// otherwise fail the whole struct and quietly reset the theme, the rest
+/// days and the rollover hour along with it. Scanline was removed on
+/// 2026-09-24 while it was selectable, so at least one phone has it stored.
+fn celebration_or_default<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Celebration, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Stored {
+        Known(Celebration),
+        /// The name of something this build dropped. Kept as a payload so
+        /// serde has a shape to match; nothing reads it.
+        Gone(#[allow(dead_code)] String),
+    }
+    Ok(match Stored::deserialize(d)? {
+        Stored::Known(c) => c,
+        Stored::Gone(_) => Celebration::default(),
+    })
 }
 
 impl Default for Preferences {
@@ -269,7 +289,7 @@ impl Default for Preferences {
             counter_order: CounterOrder::Created,
             confirm_minus: false,
             logo: Logo::Cairn,
-            celebration: Celebration::Sheen,
+            celebration: Celebration::LevelUp,
         }
     }
 }
@@ -409,10 +429,9 @@ mod tests {
         assert!(Celebration::Typewriter.shows_line());
         assert!(Celebration::Stamp.shows_line());
         for c in [
-            Celebration::Sheen,
+            Celebration::LevelUp,
             Celebration::Confetti,
             Celebration::Poppers,
-            Celebration::Scanline,
             Celebration::Pulse,
         ] {
             assert!(
@@ -420,6 +439,30 @@ mod tests {
                 "{c:?} would suppress the toast for nothing"
             );
         }
+    }
+
+    #[test]
+    fn settings_holding_a_removed_animation_still_load() {
+        let stored = r#"{"week_start":"Sun","rest_days":5,"celebration":"Scanline"}"#;
+        let p: Preferences =
+            serde_json::from_str(stored).expect("stored settings must still parse");
+        assert_eq!(p.celebration, Celebration::default());
+        // The point of the fallback: everything else survives.
+        assert_eq!(p.week_start, Weekday::Sun);
+        assert_eq!(p.rest_days, 5);
+    }
+
+    #[test]
+    fn a_removed_animation_key_is_not_recognised() {
+        // A counter that picked it falls back to the app-wide setting.
+        assert_eq!(Celebration::from_key("scanline"), None);
+    }
+
+    #[test]
+    fn the_old_sheen_key_still_reads_as_level_up() {
+        // Phones in use have "sheen" stored, both in preferences and in
+        // counters that picked it, from before it became a level up.
+        assert_eq!(Celebration::from_key("sheen"), Some(Celebration::LevelUp));
     }
 
     #[test]

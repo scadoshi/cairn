@@ -16,13 +16,13 @@ use std::{
     time::Duration,
 };
 
-/// How long the overlay stays mounted, per kind. The sheen is a single fast
+/// How long the overlay stays mounted, per kind. The level up is one fast
 /// pass; the confetti has to wait for the last piece to land.
 const fn linger(how: Celebration) -> Duration {
     match how {
-        Celebration::Sheen => Duration::from_millis(700),
-        Celebration::Scanline => Duration::from_millis(850),
-        Celebration::Pulse => Duration::from_millis(900),
+        Celebration::LevelUp => Duration::from_millis(1100),
+        // Three rings, the last starting 340ms in and running 700ms.
+        Celebration::Pulse => Duration::from_millis(1150),
         Celebration::Stamp => Duration::from_millis(1400),
         Celebration::Typewriter => Duration::from_millis(1900),
         Celebration::Poppers => Duration::from_millis(2400),
@@ -80,6 +80,23 @@ const POPS: [(i32, i32, i32, u32, u8); 14] = [
     (22, 28, 700, 40, 3),
     (52, 54, 400, 30, 1),
     (28, 50, 580, 48, 0),
+];
+
+/// Level-up sparks: how far across the screen, start delay and rise time in
+/// ms, and how far the spark drifts sideways on the way up.
+const SPARKS: [(u32, u32, u32, i32); 12] = [
+    (12, 0, 620, -3),
+    (24, 90, 700, 2),
+    (35, 40, 560, -1),
+    (46, 160, 680, 3),
+    (54, 60, 640, -2),
+    (63, 210, 720, 1),
+    (72, 30, 600, -4),
+    (81, 130, 660, 2),
+    (89, 180, 580, -1),
+    (18, 240, 700, 4),
+    (58, 280, 620, -3),
+    (77, 300, 680, 1),
 ];
 
 /// What is currently playing: the resolved animation and the line that goes
@@ -191,14 +208,29 @@ pub fn CelebrationHostView() -> Element {
                 span { class: "stamp-line", "{line}" }
             }
         },
-        Celebration::Scanline => rsx! {
-            div { key: "{id}", class: "celebrate-scanline tint-{tint}", aria_hidden: "true" }
-        },
         Celebration::Pulse => rsx! {
-            div { key: "{id}", class: "celebrate-pulse tint-{tint}", aria_hidden: "true" }
+            div { key: "{id}", class: "celebrate-pulse tint-{tint}", aria_hidden: "true",
+                // Staggered so they read as one wave moving in, not three
+                // rings blinking together.
+                for (i, delay) in [0, 170, 340].into_iter().enumerate() {
+                    div { key: "{i}", class: "pulse-ring", style: "animation-delay: {delay}ms;" }
+                }
+            }
         },
-        Celebration::Sheen => rsx! {
-            div { key: "{id}", class: "celebrate-sheen", aria_hidden: "true" }
+        Celebration::LevelUp => rsx! {
+            div { key: "{id}", class: "celebrate-levelup tint-{tint}", aria_hidden: "true",
+                div { class: "levelup-beam" }
+                // Sparks rising with the beam. Same idea as the confetti
+                // table: fixed positions, uneven on purpose.
+                for (i, (x, delay, dur, drift)) in SPARKS.iter().enumerate() {
+                    div {
+                        key: "{i}",
+                        class: "levelup-spark",
+                        style: "left: {x}%; animation-delay: {delay}ms; animation-duration: {dur}ms; --drift: {drift}vw;",
+                    }
+                }
+                div { class: "levelup-word", "LEVEL UP" }
+            }
         },
         Celebration::Poppers => rsx! {
             div { key: "{id}", class: "celebrate-poppers", aria_hidden: "true",

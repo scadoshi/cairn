@@ -1160,7 +1160,7 @@ input {
 /* Both mount at the app root, beside the router, so nothing clips them.
    transform and opacity only: anything that triggers layout janks in the
    WebView. pointer-events: none so a celebration never eats a tap. */
-.celebrate-sheen,
+.celebrate-levelup,
 .celebrate-confetti {
     position: fixed;
     inset: 0;
@@ -1169,35 +1169,71 @@ input {
     overflow: hidden;
 }
 
-/* A blade's sheen: a narrow white band running up fast, with the whole
-   screen lifting a fraction as it passes. White rather than a theme color,
-   because light on steel has no hue of its own. */
-.celebrate-sheen::before {
+/* A level up: the screen lifts, a band of light runs up it, sparks go with
+   it, and the words land. Tinted with the theme accent rather than white,
+   which is what separates it from the plain flash it used to be. */
+.celebrate-levelup::before {
     content: "";
     position: absolute;
     inset: 0;
-    background: #fff;
-    animation: sheen-lift 420ms ease-out forwards;
+    background: var(--tint);
+    animation: levelup-lift 700ms ease-out forwards;
 }
 
-.celebrate-sheen::after {
-    content: "";
+.levelup-beam {
     position: absolute;
     left: 0;
     right: 0;
-    height: 28vh;
+    height: 30vh;
     background: linear-gradient(
         to top,
         transparent,
-        rgba(255, 255, 255, 0.1),
-        rgba(255, 255, 255, 0.55),
-        rgba(255, 255, 255, 0.1),
+        color-mix(in srgb, var(--tint) 20%, transparent),
+        color-mix(in srgb, var(--tint) 75%, white),
+        color-mix(in srgb, var(--tint) 20%, transparent),
         transparent
     );
-    animation: sheen-rise 420ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    animation: levelup-rise 620ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
-@keyframes sheen-rise {
+/* Small sparks carried up with the beam, drifting sideways as they go so
+   they do not read as a grid. */
+.levelup-spark {
+    position: absolute;
+    bottom: -2vh;
+    width: 0.3rem;
+    height: 0.3rem;
+    border-radius: 50%;
+    background: var(--tint);
+    box-shadow: 0 0 0.4rem var(--tint);
+    opacity: 0;
+    animation-name: levelup-spark;
+    animation-timing-function: ease-out;
+    animation-fill-mode: forwards;
+}
+
+/* The words themselves: overshoot, settle, hold, gone. Letter spacing and
+   the hard shadow are the arcade part. */
+.levelup-word {
+    position: absolute;
+    top: 38%;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    /* The spacing is between characters, so the last one pushes the line
+       off centre by one gap without this. */
+    text-indent: 0.35em;
+    color: var(--tint);
+    text-shadow: 0 0 1.2rem var(--tint);
+    opacity: 0;
+    animation: levelup-word 1000ms cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+
+@keyframes levelup-rise {
     from {
         transform: translateY(100vh);
         opacity: 0;
@@ -1209,22 +1245,57 @@ input {
         opacity: 1;
     }
     to {
-        transform: translateY(-30vh);
+        transform: translateY(-32vh);
         opacity: 0;
     }
 }
 
 /* Peaks while the band is mid-screen, so the lift reads as the band's own
    glow rather than a separate flash. */
-@keyframes sheen-lift {
+@keyframes levelup-lift {
     from {
         opacity: 0;
     }
     45% {
-        opacity: 0.07;
+        opacity: 0.1;
     }
     to {
         opacity: 0;
+    }
+}
+
+@keyframes levelup-spark {
+    from {
+        transform: translate(0, 0) scale(0.6);
+        opacity: 0;
+    }
+    20% {
+        opacity: 1;
+    }
+    to {
+        transform: translate(var(--drift), -95vh) scale(1);
+        opacity: 0;
+    }
+}
+
+@keyframes levelup-word {
+    from {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+    35% {
+        opacity: 1;
+        transform: scale(1.06);
+    }
+    50% {
+        transform: scale(1);
+    }
+    75% {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+        transform: scale(1);
     }
 }
 
@@ -1348,7 +1419,7 @@ input {
 
 /* One of the theme's three accents per celebration, so repeated goals do
    not all look like the same effect. Confetti and poppers already spread
-   across all four colors; the sheen stays white on purpose. */
+   across all four colors of their own. */
 .tint-0 {
     --tint: var(--accent-primary);
 }
@@ -1459,54 +1530,6 @@ input {
     }
 }
 
-/* A CRT refresh: a bright line down the screen with phosphor behind it. */
-.celebrate-scanline {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    pointer-events: none;
-    overflow: hidden;
-}
-
-.celebrate-scanline::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 34vh;
-    /* Soft the whole way down, with the brightest part inset from the
-       bottom rather than sitting on it. The hard leading edge was what made
-       it read as a bar rather than a glow. */
-    background: linear-gradient(
-        to bottom,
-        transparent,
-        color-mix(in srgb, var(--tint) 6%, transparent) 35%,
-        color-mix(in srgb, var(--tint) 26%, transparent) 72%,
-        color-mix(in srgb, var(--tint) 45%, transparent) 88%,
-        color-mix(in srgb, var(--tint) 10%, transparent) 97%,
-        transparent
-    );
-    filter: blur(10px);
-    animation: scan-down 640ms linear forwards;
-}
-
-@keyframes scan-down {
-    from {
-        transform: translateY(-34vh);
-        opacity: 0;
-    }
-    12% {
-        opacity: 1;
-    }
-    78% {
-        opacity: 1;
-    }
-    to {
-        transform: translateY(100vh);
-        opacity: 0;
-    }
-}
-
 /* The quiet one: the screen edge lights up and lets go. */
 .celebrate-pulse {
     position: fixed;
@@ -1515,30 +1538,42 @@ input {
     inset: 0.45rem;
     z-index: 60;
     pointer-events: none;
+}
+
+/* Rings travel inward one after another, each starting a little wider than
+   the last ended. One ring read as a flash at the edge; three read as
+   something arriving. Scale rather than inset: inset animates layout, and on
+   a phone that judders. */
+.pulse-ring {
+    position: absolute;
+    inset: 0;
     border: 0.35rem solid var(--tint);
     border-radius: 2.6rem;
     opacity: 0;
-    animation: pulse-edge 800ms ease-out forwards;
+    animation: pulse-ring 700ms ease-out forwards;
 }
 
-@keyframes pulse-edge {
+@keyframes pulse-ring {
     from {
         opacity: 0;
+        transform: scale(1.04);
     }
-    22% {
+
+    30% {
         opacity: 0.85;
     }
+
     to {
         opacity: 0;
+        transform: scale(0.88);
     }
 }
 
 /* Someone who has asked the OS for less motion gets none of this. */
 @media (prefers-reduced-motion: reduce) {
-    .celebrate-sheen,
+    .celebrate-levelup,
     .celebrate-confetti,
     .celebrate-poppers,
-    .celebrate-scanline,
     .celebrate-pulse,
     .celebrate-text {
         display: none;

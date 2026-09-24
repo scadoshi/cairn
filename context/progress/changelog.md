@@ -6,10 +6,11 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
-- Something happens when a counter's daily goal is met. Seven of them: a
-  sheen, falling confetti, party poppers from the bottom corners, the success
-  line typed out behind a block cursor, the line stamped on, a scanline
-  sweeping down, or the screen edge pulsing. Random rotates through them.
+- Something happens when a counter's daily goal is met. Six of them: a level
+  up, with the words, a beam of light and sparks rising with it; falling
+  confetti; party poppers from the bottom corners; the success line typed out
+  behind a block cursor; the line stamped on; or rings pulsing inward from the
+  screen edge. Random rotates through them.
   It fires from the tap that crosses, so reopening the app on a finished day
   celebrates nothing. Set app-wide under Goal animation, and per counter in
   its Edit sheet, where Default follows the app-wide choice. Schema v7.
