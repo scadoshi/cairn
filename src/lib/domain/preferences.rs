@@ -202,25 +202,68 @@ impl Celebration {
 
 /// Lines shown when a goal is met, one picked per crossing.
 ///
+/// Alphabetical, which is only for finding one while editing. What order
+/// they appear in is the stride's business, and it lands nowhere near here.
+///
 /// Stepped through with a stride coprime with the length, the way the quotes
 /// rotate, so the same one does not come up twice running and nothing has to
 /// be stored to remember which was last.
-const DONE_LINES: [&str; 11] = [
-    "Day done",
-    "Goal met",
-    "That's the day",
-    "Signed off",
+const DONE_LINES: [&str; 51] = [
+    "Amor fati",
+    "Another day of proof",
     "Another stone on the pile",
-    "Logged and done",
-    "Today is paid",
-    "Nothing owed",
-    "Squared away",
-    "That's the work",
+    "Callused",
+    "Chop wood, carry water",
+    "Crossed the finish line",
+    "Day done",
+    "Debt cleared",
+    "Did the work of a human",
+    "Discipline paid",
+    "Do nothing that is of no use",
     "Done and dusted",
+    "Future you noticed",
+    "Get after it",
+    "Goal met",
+    "Good",
+    "Into the cookie jar",
+    "Just keep livin",
+    "Keep hammering",
+    "Let's freaking go",
+    "Logged and done",
+    "Mood follows action",
+    "No one got strong watching",
+    "No one was coming",
+    "Nobody cares, work harder",
+    "Not a highlight, a habit",
+    "Nothing owed",
+    "Objective completed",
+    "One more than yesterday",
+    "Out of the pain cave",
+    "Reps in the bank",
+    "Signed off",
+    "Small and unsexy",
+    "Squared away",
+    "Standard met",
+    "Stay hard",
+    "That's the day",
+    "That's the work",
+    "The excuse lost",
+    "The miles were the point",
+    "The obstacle became the way",
+    "The way is in training",
+    "The work nobody saw",
+    "Today is paid",
+    "Today, victory over yourself",
+    "Took a soul",
+    "Went in anyway",
+    "You carried the boats",
+    "You didn't quit",
+    "You just got 1% better",
+    "You just got after it",
 ];
 
-/// Stride through [`DONE_LINES`]; 4 is coprime with 11.
-const DONE_STRIDE: usize = 4;
+/// Stride through [`DONE_LINES`]; 8 is coprime with 51.
+const DONE_STRIDE: usize = 8;
 
 /// A success line, varied by `nth` so consecutive crossings differ.
 pub fn done_line(nth: u64) -> &'static str {
