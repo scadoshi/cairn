@@ -355,7 +355,7 @@ pub fn EditSheet(
         HintDialog { open: hint_open, title: "Edit counter",
             HintLine { "Changing these does not touch anything already logged" }
             HintBullets {
-                HintBullet { "Clear the goal and the counter just totals up" }
+                HintBullet { "Goal is optional" }
                 HintBullet { "Big step is an outer pair for bigger sets. It has to beat the step" }
                 HintBullet { HintKey { color: "--accent-primary", "Default" } " follows the animation set in Config" }
             }
