@@ -278,7 +278,7 @@ pub fn CounterScreen(id: i64) -> Element {
             HintLine { "The big number is everything you have ever logged here." }
             HintBullets {
                 HintBullet { "The chips under Trends and Bests change what you are looking at." }
-                HintBullet { HintKey { color: "--accent-primary", "Edit" } " changes the name, the goal, and the step." }
+                HintBullet { HintKey { color: "--accent-primary", "Edit" } " changes the name, the goal, the steps, and what plays when this counter's day is done." }
                 HintBullet { HintKey { color: "--color-error", "Delete" } " removes the counter and its whole history." }
                 HintBullet { "Subtracting stops at zero. It never runs a day negative." }
             }

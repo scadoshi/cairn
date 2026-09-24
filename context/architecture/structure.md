@@ -4,7 +4,7 @@
 cairn/
 ├── Cargo.toml              # single crate; lib + one bin
 ├── Dioxus.toml             # app name, bundle id, iOS plist
-├── assets/                 # main.css, toast.css, fonts, the c and s marks
+├── assets/                 # main.css, toast.css (see below), fonts, the c and s marks
 ├── docs/screenshots/       # what the README shows
 ├── scripts/                # icon.py, seed.py, import_taps.py, ios/, android/
 ├── context/                # this documentation
@@ -54,3 +54,9 @@ bin ──> inbound/ui ──> domain <── outbound/sqlite
 ```
 
 Nothing points into `inbound/` or `outbound/` from `domain/`.
+
+## One coupling to know about
+
+`assets/toast.css` fades each toast in and out across its own lifetime, and it reads that lifetime off `data-type`. The toast library removes the node outright with no closing state to hook, so the fade has to finish before removal, which means the stylesheet has to know how long a toast lives.
+
+Those durations are `TOAST_QUICK` and `TOAST_NORMAL` in `inbound/ui/mod.rs`. Change one without the other and a toast either pops out while still opaque, or sits invisible waiting to be removed. Nothing catches it.

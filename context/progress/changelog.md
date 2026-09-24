@@ -6,11 +6,16 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
-- A celebration when a counter's daily goal is met: a sheen up the screen,
-  falling confetti, or party poppers from the bottom corners, with a rotating
-  success line. It fires from the tap that crosses, so reopening the app on a
-  finished day celebrates nothing. Set app-wide under Goal animation, and per
-  counter in its Edit sheet, where Default follows the app-wide choice.
+- Something happens when a counter's daily goal is met. Seven of them: a
+  sheen, falling confetti, party poppers from the bottom corners, the success
+  line typed out behind a block cursor, the line stamped on, a scanline
+  sweeping down, or the screen edge pulsing. Random rotates through them.
+  It fires from the tap that crosses, so reopening the app on a finished day
+  celebrates nothing. Set app-wide under Goal animation, and per counter in
+  its Edit sheet, where Default follows the app-wide choice. Schema v7.
+- Toasts moved to the top left and stack downwards, fading in and out. They
+  used to sit above the bottom bar, over the buttons of the last counter in
+  the list.
 - Step now offers 20, 30 and 40 alongside the sizes it had.
 - An optional big step per counter, giving a bar of `-20 -10 +10 +20 Edit`.
   Schema v6; counters without one keep three buttons.

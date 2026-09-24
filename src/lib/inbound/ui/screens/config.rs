@@ -158,7 +158,10 @@ pub fn Config() -> Element {
                         span { {display_theme_name(&theme.read().name)} }
                         Button {
                             variant: ButtonVariant::Util,
-                            onclick: move |_| preferences_open.set(true),
+                            onclick: move |_| {
+                                hint.set(Some(ConfigHint::Theme));
+                                preferences_open.set(true);
+                            },
                             "Change"
                         }
                     }
@@ -253,7 +256,14 @@ pub fn Config() -> Element {
                     }
                     div { class: "profile-row-value",
                         span { "{rest_label}" }
-                        Button { variant: ButtonVariant::Util, onclick: move |_| rest_open.set(true), "Change" }
+                        Button {
+                            variant: ButtonVariant::Util,
+                            onclick: move |_| {
+                                hint.set(Some(ConfigHint::RestDays));
+                                rest_open.set(true);
+                            },
+                            "Change"
+                        }
                     }
                 }
             }
@@ -333,8 +343,8 @@ pub fn Config() -> Element {
                 "Back"
             }
         }
-        PreferencesSheet { open: preferences_open }
-        RestDaysSheet { open: rest_open }
+        PreferencesSheet { open: preferences_open, hint: hint_open }
+        RestDaysSheet { open: rest_open, hint: hint_open }
         ConfigHintDialog { open: hint_open, which: hint() }
         HintDialog { open: screen_hint_open, title: "Config",
             HintLine { "Settings only. Nothing here edits your counts." }
@@ -453,7 +463,7 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
             HintDialog { open, title: "Export",
                 HintLine { HintKey { color: "--accent-primary", "CSV" } " writes one file per counter: day and count." }
                 HintBullets {
-                    HintBullet { "iPhone: Files app, On My iPhone, Count." }
+                    HintBullet { "iPhone: Files app, On My iPhone, Cairn." }
                     HintBullet { "Desktop: Downloads." }
                     HintBullet { "Same names overwrite." }
                 }
@@ -472,7 +482,7 @@ fn rollover_label(hour: u32) -> String {
 
 /// Pick the weekdays that don't count. Applies as you tap.
 #[component]
-fn RestDaysSheet(open: Signal<bool>) -> Element {
+fn RestDaysSheet(open: Signal<bool>, hint: Signal<bool>) -> Element {
     const DAYS: [(Weekday, &str); 7] = [
         (Weekday::Mon, "Monday"),
         (Weekday::Tue, "Tuesday"),
@@ -487,6 +497,7 @@ fn RestDaysSheet(open: Signal<bool>) -> Element {
         BottomSheet {
             open,
             title: "Rest days",
+            hint,
             p { class: "pref-note", "Rest days don't break a streak and don't count against consistency." }
             div { class: "chip-row chip-row-center", style: "flex-wrap: wrap;",
                 for (day, name) in DAYS {
@@ -540,7 +551,7 @@ fn ThemeRow(
 /// whole app; Save keeps it, Back and the backdrop restore what was active
 /// when the sheet opened.
 #[component]
-fn PreferencesSheet(mut open: Signal<bool>) -> Element {
+fn PreferencesSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
     let mut live = use_context::<Signal<ThemeConfig>>();
     let toast = use_toast();
     let mut original = use_signal(|| live.peek().clone());
@@ -571,6 +582,7 @@ fn PreferencesSheet(mut open: Signal<bool>) -> Element {
         BottomSheet {
             open,
             title: "Themes",
+            hint,
             on_dismiss: move |()| live.set(original()),
             footer: rsx! {
                 Button {

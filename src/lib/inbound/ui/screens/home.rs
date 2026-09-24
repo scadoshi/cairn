@@ -242,6 +242,7 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
                 HintBullet { "A yearly goal still shows a daily share, so " HintChip { class: "stat-chip-goal", "1,000/year" } " asks for 3 a day." }
                 HintBullet { "Step is how much one tap adds. Set it to 10 and " HintKey { color: "--accent-primary", "+10" } " logs ten at a time." }
                 HintBullet { "Big step adds a second, larger pair outside the first: " HintKey { color: "--accent-primary", "-20" } HintKey { color: "--accent-primary", "-10" } HintKey { color: "--accent-primary", "+10" } HintKey { color: "--accent-primary", "+20" } ". Leave it on None for one pair." }
+                HintBullet { "Goal animation is this counter's own. " HintKey { color: "--accent-primary", "Default" } " follows the app-wide one in Config." }
             }
         }
         BottomSheet {

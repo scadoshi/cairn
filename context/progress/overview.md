@@ -1,6 +1,6 @@
 # Overview
 
-What is live, as of 2026-09-23. `todo.md` is what's next; `backlog.md` is
+What is live, as of 2026-09-24. `todo.md` is what's next; `backlog.md` is
 someday.
 
 ## State
@@ -8,10 +8,10 @@ someday.
 Cairn is installed on a real iPhone and in daily use, signed with a
 development profile good until September 2027. It also runs on desktop and in
 the simulator. There is no App Store listing yet. The database schema is at
-v5, holding nine months of imported history: 224 days, 9,800 taps, 97,900
+v7, holding nine months of imported history: 225 days, 10,200 taps, 98,400
 reps across push-ups, pull-ups and squats.
 
-6,250 lines of Rust, 73 tests, 2,400 lines of pure domain.
+7,200 lines of Rust, 87 tests, 2,800 lines of pure domain.
 
 ## What works
 
@@ -24,14 +24,21 @@ reps across push-ups, pull-ups and squats.
   was logged rather than the best per-counter run.
 - Counter cards with plus and minus by each counter's step, an Edit sheet, and
   a goal tag that counts down in the error colour and turns green when the
-  day's share is in. Tapping the name or numbers opens the counter.
+  day's share is in. Tapping the name or numbers opens the counter. A counter
+  can carry a second, larger step, which puts a wider pair outside the first.
+- Something plays when a counter's day is finished: a sheen, confetti,
+  poppers, a typed line, a stamp, a scanline, or a pulse at the screen edge,
+  chosen per counter or app-wide, or turned off. It fires from the tap that
+  crosses the goal and nowhere else, so no state is stored to remember that a
+  day was already celebrated.
 - Counter screen: odometer, today, this week, this month, trends (six views),
   goal pace, bests, habit figures, by-year table. Delete behind a dialog.
 - Goals per day, week or year, all reducing to what today has to clear.
 - A quote that turns over on the clock hour, 41 of them, each traced to a
   book, newsletter or interview.
-- Config: theme, mark (the C or the owner's S), dark mode, date format, when a
-  day and week start, rest days, counter order, confirm-minus, CSV export.
+- Config: theme, mark (the C or the owner's S), goal animation, dark mode,
+  date format, when a day and week start, rest days, counter order,
+  confirm-minus, CSV export.
   Every row explains itself behind a question mark, and every screen and sheet
   has one in its header.
 - OS back gesture on iOS and Android, closing open sheets first.

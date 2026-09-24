@@ -17,7 +17,7 @@ use crate::{
         TOAST_NORMAL, bump_store_version,
         components::{
             bottom_sheet::BottomSheet,
-            hint::{HintBullet, HintBullets, HintChip, HintDialog, HintLine},
+            hint::{HintBullet, HintBullets, HintChip, HintDialog, HintKey, HintLine},
         },
         today, use_store,
     },
@@ -359,6 +359,7 @@ pub fn EditSheet(
                 HintBullet { "A yearly goal still shows a daily share, so " HintChip { class: "stat-chip-goal", "1,000/year" } " asks for 3 a day." }
                 HintBullet { "Step is how much one tap adds, on this screen and on the list." }
                 HintBullet { "Big step adds a larger pair outside the first, for the days you do more at once. It has to be bigger than the step." }
+                HintBullet { "Goal animation is this counter's own. " HintKey { color: "--accent-primary", "Default" } " follows the app-wide one in Config." }
             }
         }
         BottomSheet {
