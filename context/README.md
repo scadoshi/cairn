@@ -26,4 +26,6 @@ There is a write-up at [scottyfermo.com/side-quests/cairn](https://scottyfermo.c
 
 **Next:** draw the Cairn mark properly, then TestFlight and review via [`operations/ios/submission.md`](operations/ios/submission.md). The database push does not work on a TestFlight build, which is signed without `get-task-allow`; moving data there needs the in-app import on the backlog.
 
+Two features are scoped but not started: [`plans/celebrations.md`](plans/celebrations.md) and [`plans/big_step.md`](plans/big_step.md).
+
 See [`progress/todo.md`](progress/todo.md) for the ordered list.

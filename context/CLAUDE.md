@@ -83,6 +83,6 @@ context/
 ├── architecture/     — structure.md (layout), decisions.md (why)
 ├── development/      — commit_guidelines, versioning, documentation, ownership, dioxus cheatsheet
 ├── operations/       — ios/ (dev_deploy, testers, first_device, submission, history)
-├── plans/            — specs for in-flight work (watch.md is the far horizon)
+├── plans/            — specs for work not started yet (celebrations, big_step, watch)
 └── progress/         — overview.md (live), todo.md (next), backlog.md (someday), changelog.md
 ```
