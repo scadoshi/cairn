@@ -170,15 +170,14 @@ pub fn Home() -> Element {
             }
         }
         HintDialog { open: hint_open, title: "Counters",
-            HintLine { "Tap a counter's name or numbers to open it." }
+            HintLine { "Tap a counter's name or numbers to open it" }
             HintBullets {
                 HintBullet {
                     HintChip { class: "stat-chip-short", "40 to go" }
                     " is what today still owes, and turns into "
                     HintChip { class: "stat-chip-met", "goal met" }
-                    "."
                 }
-                HintBullet { "Up top is every counter added together." }
+                HintBullet { "Up top is every counter added together" }
             }
         }
         CreateSheet { open: create_open, on_created: move |()| reload.call(()) }
@@ -234,11 +233,11 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
 
     rsx! {
         HintDialog { open: hint_open, title: "New counter",
-            HintLine { "Name it after the thing you do, like pushups." }
+            HintLine { "Name it after the thing you do, like pushups" }
             HintBullets {
-                HintBullet { "Goal is optional." }
-                HintBullet { "Step is how much one tap adds. Big step is an outer pair for bigger sets." }
-                HintBullet { HintKey { color: "--accent-primary", "Default" } " follows the animation set in Config." }
+                HintBullet { "Goal is optional" }
+                HintBullet { "Step is how much one tap adds. Big step is an outer pair for bigger sets" }
+                HintBullet { HintKey { color: "--accent-primary", "Default" } " follows the animation set in Config" }
             }
         }
         BottomSheet {

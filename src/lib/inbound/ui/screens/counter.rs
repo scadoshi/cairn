@@ -275,10 +275,10 @@ pub fn CounterScreen(id: i64) -> Element {
             }
         }
         HintDialog { open: hint_open, title: "One counter",
-            HintLine { "The big number is everything you have ever logged here." }
+            HintLine { "The big number is everything you have ever logged here" }
             HintBullets {
-                HintBullet { "Subtracting stops at zero." }
-                HintBullet { HintKey { color: "--color-error", "Delete" } " takes the whole history with it." }
+                HintBullet { "Subtracting stops at zero" }
+                HintBullet { HintKey { color: "--color-error", "Delete" } " takes the whole history with it" }
             }
         }
         EditSheet {

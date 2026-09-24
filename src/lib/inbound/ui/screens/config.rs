@@ -347,11 +347,11 @@ pub fn Config() -> Element {
         RestDaysSheet { open: rest_open, hint: hint_open }
         ConfigHintDialog { open: hint_open, which: hint() }
         HintDialog { open: screen_hint_open, title: "Config",
-            HintLine { "Settings only. Nothing here edits your counts." }
+            HintLine { "Settings only. Nothing here edits your counts" }
             HintBullets {
-                HintBullet { "Tap any row's " HintKey { color: "--accent-primary", "?" } " to learn what it does." }
-                HintBullet { "When to count decides which day a late tap lands on." }
-                HintBullet { HintKey { color: "--accent-primary", "CSV" } " saves one file per counter, ready to share." }
+                HintBullet { "Tap any row's " HintKey { color: "--accent-primary", "?" } " to learn what it does" }
+                HintBullet { "When to count decides which day a late tap lands on" }
+                HintBullet { HintKey { color: "--accent-primary", "CSV" } " saves one file per counter, ready to share" }
             }
         }
     }
@@ -382,89 +382,89 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
     match which {
         ConfigHint::Theme => rsx! {
             HintDialog { open, title: "Theme",
-                HintLine { "The app's palette. " HintKey { "Change" } " opens the picker and previews as you tap." }
-                HintLine { HintKey { color: "--accent-primary", "Save" } " keeps it. " HintKey { color: "--accent-primary", "Back" } " or a tap outside reverts." }
-                HintLine { "The last four suit color vision deficiency." }
+                HintLine { "The app's palette. " HintKey { "Change" } " opens the picker and previews as you tap" }
+                HintLine { HintKey { color: "--accent-primary", "Save" } " keeps it. " HintKey { color: "--accent-primary", "Back" } " or a tap outside reverts" }
+                HintLine { "The last four suit color vision deficiency" }
             }
         },
         ConfigHint::Mark => rsx! {
             HintDialog { open, title: "Mark",
-                HintLine { "Which letter sits at the top of the home screen." }
+                HintLine { "Which letter sits at the top of the home screen" }
                 HintBullets {
-                    HintBullet { HintKey { color: "--accent-primary", "Cairn" } " is the app's own mark, a C." }
-                    HintBullet { HintKey { color: "--accent-primary", "scadoshi" } " is the dev mark this app was built under, an S." }
-                    HintBullet { "It changes nothing but the drawing." }
+                    HintBullet { HintKey { color: "--accent-primary", "Cairn" } " is the app's own mark, a C" }
+                    HintBullet { HintKey { color: "--accent-primary", "scadoshi" } " is the dev mark this app was built under, an S" }
+                    HintBullet { "It changes nothing but the drawing" }
                 }
             }
         },
         ConfigHint::Celebration => rsx! {
             HintDialog { open, title: "Goal animation",
-                HintLine { "What plays when a counter finishes its day. Try them and see." }
+                HintLine { "What plays when a counter finishes its day. Try them and see" }
                 HintBullets {
-                    HintBullet { "Only the tap that crosses the goal fires it." }
-                    HintBullet { "No goal, no celebration." }
-                    HintBullet { "A counter can pick its own in its Edit sheet." }
+                    HintBullet { "Only the tap that crosses the goal fires it" }
+                    HintBullet { "No goal, no celebration" }
+                    HintBullet { "A counter can pick its own in its Edit sheet" }
                 }
             }
         },
         ConfigHint::DarkMode => rsx! {
             HintDialog { open, title: "Dark mode",
-                HintLine { "Every theme has a light and a dark side. This flips between them." }
+                HintLine { "Every theme has a light and a dark side. This flips between them" }
             }
         },
         ConfigHint::Dates => rsx! {
             HintDialog { open, title: "Dates",
-                HintLine { "How every date is written." }
+                HintLine { "How every date is written" }
                 HintBullets {
-                    HintBullet { HintKey { "MM/DD/YY" } " month first." }
-                    HintBullet { HintKey { "DD/MM/YY" } " day first." }
+                    HintBullet { HintKey { "MM/DD/YY" } " month first" }
+                    HintBullet { HintKey { "DD/MM/YY" } " day first" }
                 }
             }
         },
         ConfigHint::DayStarts => rsx! {
             HintDialog { open, title: "Day starts",
-                HintLine { "When a new day begins. Taps after midnight but before this hour count for the day before." }
-                HintLine { "Changing it re-sorts past taps. Totals don't move." }
+                HintLine { "When a new day begins. Taps after midnight but before this hour count for the day before" }
+                HintLine { "Changing it re-sorts past taps. Totals don't move" }
             }
         },
         ConfigHint::WeekStarts => rsx! {
             HintDialog { open, title: "Week starts",
-                HintLine { "Which day opens the week: this week's chart, weekly totals, and the week number." }
+                HintLine { "Which day opens the week: this week's chart, weekly totals, and the week number" }
                 HintBullets {
-                    HintBullet { HintKey { "Monday" } " is ISO." }
-                    HintBullet { HintKey { "Sunday" } " is the US calendar." }
+                    HintBullet { HintKey { "Monday" } " is ISO" }
+                    HintBullet { HintKey { "Sunday" } " is the US calendar" }
                 }
             }
         },
         ConfigHint::RestDays => rsx! {
             HintDialog { open, title: "Rest days",
-                HintLine { "Days you don't train. They don't count against consistency, and a streak steps over them." }
-                HintLine { "Logging on one still counts." }
+                HintLine { "Days you don't train. They don't count against consistency, and a streak steps over them" }
+                HintLine { "Logging on one still counts" }
             }
         },
         ConfigHint::SortCounters => rsx! {
             HintDialog { open, title: "Sort counters",
                 HintBullets {
-                    HintBullet { HintKey { "Created" } " oldest first." }
-                    HintBullet { HintKey { "Name" } " A to Z." }
-                    HintBullet { HintKey { "Most active" } " this year's total." }
-                    HintBullet { HintKey { "Lifetime" } " all-time total." }
+                    HintBullet { HintKey { "Created" } " oldest first" }
+                    HintBullet { HintKey { "Name" } " A to Z" }
+                    HintBullet { HintKey { "Most active" } " this year's total" }
+                    HintBullet { HintKey { "Lifetime" } " all-time total" }
                 }
             }
         },
         ConfigHint::ConfirmMinus => rsx! {
             HintDialog { open, title: "Confirm minus",
-                HintLine { "Every minus button asks first. Worth it when the step is big." }
-                HintLine { "Minus only touches today and never goes below zero." }
+                HintLine { "Every minus button asks first. Worth it when the step is big" }
+                HintLine { "Minus only touches today and never goes below zero" }
             }
         },
         ConfigHint::Export => rsx! {
             HintDialog { open, title: "Export",
-                HintLine { HintKey { color: "--accent-primary", "CSV" } " writes one file per counter: day and count." }
+                HintLine { HintKey { color: "--accent-primary", "CSV" } " writes one file per counter: day and count" }
                 HintBullets {
-                    HintBullet { "iPhone: Files app, On My iPhone, Cairn." }
-                    HintBullet { "Desktop: Downloads." }
-                    HintBullet { "Same names overwrite." }
+                    HintBullet { "iPhone: Files app, On My iPhone, Cairn" }
+                    HintBullet { "Desktop: Downloads" }
+                    HintBullet { "Same names overwrite" }
                 }
             }
         },
