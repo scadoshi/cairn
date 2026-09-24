@@ -21,6 +21,10 @@ use std::{
 const fn linger(how: Celebration) -> Duration {
     match how {
         Celebration::Sheen => Duration::from_millis(700),
+        Celebration::Scanline => Duration::from_millis(850),
+        Celebration::Pulse => Duration::from_millis(900),
+        Celebration::Stamp => Duration::from_millis(1400),
+        Celebration::Typewriter => Duration::from_millis(1900),
         Celebration::Poppers => Duration::from_millis(2400),
         _ => Duration::from_millis(2200),
     }
@@ -58,14 +62,6 @@ const PIECES: [(u32, u32, u32, u8); 18] = [
 /// celebrating bumps cannot go stale that way.
 static FIRED: AtomicU64 = AtomicU64::new(0);
 
-/// A success line, different from the one before it.
-///
-/// Rotation rather than randomness: random would sometimes hand you the same
-/// line twice running, which is the one thing a rotating message must not do.
-pub fn next_success_line() -> &'static str {
-    done_line(FIRED.fetch_add(1, Ordering::Relaxed))
-}
-
 /// Popper pieces: how far across and up the piece travels as a percentage
 /// of the screen, how much it spins, its delay, and which theme color.
 /// Mirrored for the other corner, so one table covers both barrels.
@@ -86,20 +82,43 @@ const POPS: [(i32, i32, i32, u32, u8); 14] = [
     (28, 50, 580, 48, 0),
 ];
 
+/// What is currently playing: the resolved animation and the line that goes
+/// with it, since two of them draw the line themselves.
+#[derive(Clone, PartialEq)]
+pub struct Playing {
+    /// Never `Random`; that is resolved before it gets here.
+    pub how: Celebration,
+    /// The success line for this crossing.
+    pub line: &'static str,
+    /// Which of the theme's three accents this one is drawn in, 0 to 2.
+    /// The success green on everything made the animations look like
+    /// variations of one effect rather than different effects.
+    pub tint: u8,
+}
+
 /// The slot. Provided by the app root.
 #[derive(Clone, Copy)]
-pub struct CelebrationHost(pub Signal<Option<Celebration>>);
+pub struct CelebrationHost(pub Signal<Option<Playing>>);
 
 /// Fires a celebration, if the setting wants one.
 ///
-/// `Off` is checked here rather than at the call sites, so the tap handlers
-/// stay about counting.
-pub fn celebrate(host: CelebrationHost, how: Celebration) {
+/// Returns the line to raise in a toast, or `None` when the animation is
+/// already showing those words, or when the setting is `Off`. Picking the
+/// line here rather than at the call sites is what keeps the toast and the
+/// animation saying the same thing.
+///
+/// `Off` is checked here too, so the tap handlers stay about counting.
+pub fn celebrate(host: CelebrationHost, how: Celebration) -> Option<&'static str> {
     if how == Celebration::Off {
-        return;
+        return None;
     }
+    let nth = FIRED.fetch_add(1, Ordering::Relaxed);
+    let how = how.resolve(nth);
+    let line = done_line(nth);
+    // Stride 2 against 3 accents: every tint before any repeat.
+    let tint = u8::try_from(nth.wrapping_mul(2) % 3).unwrap_or(0);
     let mut slot = host.0;
-    slot.set(Some(how));
+    slot.set(Some(Playing { how, line, tint }));
     spawn(async move {
         tokio::time::sleep(linger(how)).await;
         // Only clear what we set: a second crossing during the linger
@@ -108,17 +127,45 @@ pub fn celebrate(host: CelebrationHost, how: Celebration) {
             slot.set(None);
         }
     });
+    (!how.shows_line()).then_some(line)
 }
 
 /// Draws whatever is in the slot.
 #[component]
 pub fn CelebrationHostView() -> Element {
     let host = use_context::<CelebrationHost>();
-    let Some(how) = host.0.read().to_owned() else {
+    let Some(Playing { how, line, tint }) = host.0.read().to_owned() else {
         return rsx! {};
     };
     match how {
-        Celebration::Off => rsx! {},
+        // Resolved before it reaches the slot, so neither can appear here.
+        Celebration::Off | Celebration::Random => rsx! {},
+        Celebration::Typewriter => rsx! {
+            div { class: "celebrate-text tint-{tint}", aria_hidden: "true",
+                // The cursor is a sibling, not a border: inside the clipping
+                // span it would eat into the animated width and swallow the
+                // last character.
+                span { class: "type-line",
+                    span {
+                        class: "type-text",
+                        style: "--chars: {line.chars().count()};",
+                        "{line}"
+                    }
+                    span { class: "type-cursor" }
+                }
+            }
+        },
+        Celebration::Stamp => rsx! {
+            div { class: "celebrate-text tint-{tint}", aria_hidden: "true",
+                span { class: "stamp-line", "{line}" }
+            }
+        },
+        Celebration::Scanline => rsx! {
+            div { class: "celebrate-scanline tint-{tint}", aria_hidden: "true" }
+        },
+        Celebration::Pulse => rsx! {
+            div { class: "celebrate-pulse tint-{tint}", aria_hidden: "true" }
+        },
         Celebration::Sheen => rsx! {
             div { class: "celebrate-sheen", aria_hidden: "true" }
         },

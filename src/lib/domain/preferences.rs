@@ -87,13 +87,74 @@ pub enum Celebration {
     Confetti,
     /// Two party poppers going off from the bottom corners.
     Poppers,
+    /// The success line typed out in monospace with a cursor.
+    Typewriter,
+    /// A bright line sweeping down the screen, CRT style.
+    Scanline,
+    /// The screen edge flashing the success color. The quiet one.
+    Pulse,
+    /// The success line slamming in oversized and settling.
+    Stamp,
+    /// A different one of the above each time.
+    Random,
     /// Nothing.
     Off,
 }
 
 impl Celebration {
     /// Every option, for cycling.
-    pub const ALL: [Self; 4] = [Self::Sheen, Self::Confetti, Self::Poppers, Self::Off];
+    pub const ALL: [Self; 9] = [
+        Self::Sheen,
+        Self::Confetti,
+        Self::Poppers,
+        Self::Typewriter,
+        Self::Scanline,
+        Self::Pulse,
+        Self::Stamp,
+        Self::Random,
+        Self::Off,
+    ];
+
+    /// The ones that actually draw something, which is what [`Self::Random`]
+    /// chooses between. Off is not a surprise worth having, and Random
+    /// picking itself would not terminate.
+    pub const ANIMATIONS: [Self; 6] = [
+        Self::Sheen,
+        Self::Confetti,
+        Self::Poppers,
+        Self::Typewriter,
+        Self::Scanline,
+        Self::Stamp,
+    ];
+
+    /// Stride through [`Self::ANIMATIONS`]; 5 is coprime with 6.
+    const RANDOM_STRIDE: usize = 5;
+
+    /// The animation to actually play, resolving [`Self::Random`] against a
+    /// counter that the caller bumps.
+    ///
+    /// Rotation rather than chance: real randomness repeats, and the same
+    /// animation twice running is exactly what picking Random is meant to
+    /// avoid. Pulse is left out because it reads as a near-miss for Sheen
+    /// when the two land back to back.
+    #[must_use]
+    pub fn resolve(self, nth: u64) -> Self {
+        if self != Self::Random {
+            return self;
+        }
+        let len = Self::ANIMATIONS.len();
+        let i = usize::try_from(nth % len as u64).unwrap_or(0);
+        Self::ANIMATIONS
+            .get(i.wrapping_mul(Self::RANDOM_STRIDE) % len)
+            .copied()
+            .unwrap_or(Self::Sheen)
+    }
+
+    /// Whether the animation shows the success line itself, in which case
+    /// the caller should not also raise a toast saying the same thing.
+    pub fn shows_line(self) -> bool {
+        matches!(self, Self::Typewriter | Self::Stamp)
+    }
 
     /// Short label.
     pub fn label(self) -> &'static str {
@@ -101,6 +162,11 @@ impl Celebration {
             Self::Sheen => "Sheen",
             Self::Confetti => "Confetti",
             Self::Poppers => "Poppers",
+            Self::Typewriter => "Typewriter",
+            Self::Scanline => "Scanline",
+            Self::Pulse => "Pulse",
+            Self::Stamp => "Stamp",
+            Self::Random => "Random",
             Self::Off => "Off",
         }
     }
@@ -111,6 +177,11 @@ impl Celebration {
             Self::Sheen => "sheen",
             Self::Confetti => "confetti",
             Self::Poppers => "poppers",
+            Self::Typewriter => "typewriter",
+            Self::Scanline => "scanline",
+            Self::Pulse => "pulse",
+            Self::Stamp => "stamp",
+            Self::Random => "random",
             Self::Off => "off",
         }
     }
@@ -298,6 +369,56 @@ mod tests {
             let line = done_line(n);
             assert_ne!(line, last, "the same line twice running at {n}");
             last = line;
+        }
+    }
+
+    #[test]
+    fn random_never_resolves_to_itself_or_to_off() {
+        for n in 0..50 {
+            let got = Celebration::Random.resolve(n);
+            assert_ne!(got, Celebration::Random, "resolve must terminate");
+            assert_ne!(got, Celebration::Off, "Random should always show something");
+        }
+    }
+
+    #[test]
+    fn random_reaches_every_animation_before_repeating() {
+        let mut seen = Vec::new();
+        for n in 0..Celebration::ANIMATIONS.len() as u64 {
+            let got = Celebration::Random.resolve(n);
+            assert!(
+                !seen.contains(&got),
+                "{got:?} came round twice in one cycle"
+            );
+            seen.push(got);
+        }
+        assert_eq!(seen.len(), Celebration::ANIMATIONS.len());
+    }
+
+    #[test]
+    fn anything_but_random_resolves_to_itself() {
+        for c in Celebration::ALL {
+            if c != Celebration::Random {
+                assert_eq!(c.resolve(7), c, "{c:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn only_the_text_animations_claim_the_line() {
+        assert!(Celebration::Typewriter.shows_line());
+        assert!(Celebration::Stamp.shows_line());
+        for c in [
+            Celebration::Sheen,
+            Celebration::Confetti,
+            Celebration::Poppers,
+            Celebration::Scanline,
+            Celebration::Pulse,
+        ] {
+            assert!(
+                !c.shows_line(),
+                "{c:?} would suppress the toast for nothing"
+            );
         }
     }
 

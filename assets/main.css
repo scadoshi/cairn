@@ -1285,11 +1285,201 @@ input {
     }
 }
 
+/* One of the theme's three accents per celebration, so repeated goals do
+   not all look like the same effect. Confetti and poppers already spread
+   across all four colors; the sheen stays white on purpose. */
+.tint-0 {
+    --tint: var(--accent-primary);
+}
+
+.tint-1 {
+    --tint: var(--accent-secondary);
+}
+
+.tint-2 {
+    --tint: var(--accent-tertiary);
+}
+
+/* Text animations share a centred stage. */
+.celebrate-text {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2rem;
+}
+
+/* Typed out a character at a time, with a block cursor that stops blinking
+   when the line finishes. steps() on width is what makes it type rather
+   than slide; ch units are exact because the whole app is monospace. */
+.type-line {
+    display: inline-flex;
+    align-items: stretch;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.1rem;
+    line-height: 1.4;
+    color: var(--tint);
+    animation: type-fade 400ms ease-in 1500ms forwards;
+}
+
+.type-text {
+    white-space: nowrap;
+    overflow: hidden;
+    width: 0;
+    animation: type-out 900ms steps(var(--chars)) forwards;
+}
+
+/* A filled cell, the way a terminal draws it. */
+.type-cursor {
+    width: 1ch;
+    flex-shrink: 0;
+    background-color: var(--tint);
+    animation: type-caret 500ms step-end 4;
+}
+
+@keyframes type-out {
+    to {
+        /* No border to account for now that the cursor is a sibling, so the
+           last character is not clipped by box-sizing: border-box. */
+        width: calc(var(--chars) * 1ch);
+    }
+}
+
+@keyframes type-caret {
+    50% {
+        opacity: 0;
+    }
+}
+
+@keyframes type-fade {
+    to {
+        opacity: 0;
+    }
+}
+
+/* Slams in oversized, overshoots small, settles. */
+.stamp-line {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--tint);
+    border: 2px solid var(--tint);
+    border-radius: 0.4rem;
+    padding: 0.4rem 0.9rem;
+    opacity: 0;
+    animation: stamp-in 1200ms cubic-bezier(0.2, 1.5, 0.4, 1) forwards;
+}
+
+@keyframes stamp-in {
+    from {
+        transform: scale(2.6) rotate(-8deg);
+        opacity: 0;
+    }
+    18% {
+        opacity: 1;
+    }
+    35% {
+        transform: scale(0.94) rotate(-2deg);
+    }
+    50% {
+        transform: scale(1) rotate(-3deg);
+        opacity: 1;
+    }
+    80% {
+        opacity: 1;
+    }
+    to {
+        transform: scale(1) rotate(-3deg);
+        opacity: 0;
+    }
+}
+
+/* A CRT refresh: a bright line down the screen with phosphor behind it. */
+.celebrate-scanline {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.celebrate-scanline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 34vh;
+    /* Soft the whole way down, with the brightest part inset from the
+       bottom rather than sitting on it. The hard leading edge was what made
+       it read as a bar rather than a glow. */
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        color-mix(in srgb, var(--tint) 6%, transparent) 35%,
+        color-mix(in srgb, var(--tint) 26%, transparent) 72%,
+        color-mix(in srgb, var(--tint) 45%, transparent) 88%,
+        color-mix(in srgb, var(--tint) 10%, transparent) 97%,
+        transparent
+    );
+    filter: blur(10px);
+    animation: scan-down 640ms linear forwards;
+}
+
+@keyframes scan-down {
+    from {
+        transform: translateY(-34vh);
+        opacity: 0;
+    }
+    12% {
+        opacity: 1;
+    }
+    78% {
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100vh);
+        opacity: 0;
+    }
+}
+
+/* The quiet one: the screen edge lights up and lets go. */
+.celebrate-pulse {
+    position: fixed;
+    /* Held off the edge and rounded hard, so the glow sits inside the
+       phone's own corner radius instead of being sliced by it. */
+    inset: 0.45rem;
+    z-index: 60;
+    pointer-events: none;
+    border: 0.35rem solid var(--tint);
+    border-radius: 2.6rem;
+    opacity: 0;
+    animation: pulse-edge 800ms ease-out forwards;
+}
+
+@keyframes pulse-edge {
+    from {
+        opacity: 0;
+    }
+    22% {
+        opacity: 0.85;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
 /* Someone who has asked the OS for less motion gets none of this. */
 @media (prefers-reduced-motion: reduce) {
     .celebrate-sheen,
     .celebrate-confetti,
-    .celebrate-poppers {
+    .celebrate-poppers,
+    .celebrate-scanline,
+    .celebrate-pulse,
+    .celebrate-text {
         display: none;
     }
 }

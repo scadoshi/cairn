@@ -22,7 +22,7 @@ use crate::{
         SharedStore,
         components::{
             alert_dialog::ConfirmDialog,
-            celebration::{CelebrationHost, celebrate, next_success_line},
+            celebration::{CelebrationHost, celebrate},
             tile::{Tile, TileGrid, rate},
         },
         now, today, use_prefs, use_store,
@@ -114,11 +114,15 @@ fn CounterCard(
                     .is_some_and(|g| stats::crosses_goal(g, today_count, applied, days));
                 if done {
                     // The counter's own choice wins; None follows Config.
-                    celebrate(host, card_celebration.unwrap_or(prefs.celebration));
-                    toast.success(
-                        next_success_line().to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1800)),
-                    );
+                    let how = card_celebration.unwrap_or(prefs.celebration);
+                    // Typewriter and Stamp put the words on screen themselves,
+                    // so there is nothing left for a toast to add.
+                    if let Some(line) = celebrate(host, how) {
+                        toast.success(
+                            line.to_string(),
+                            ToastOptions::default().duration(Duration::from_millis(1800)),
+                        );
+                    }
                 } else {
                     // No counter name: the toast sits over the card you just
                     // tapped, and a long name pushed it off the screen edge.

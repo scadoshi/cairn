@@ -14,7 +14,7 @@ use crate::{
         bump_store_version,
         components::{
             alert_dialog::ConfirmDialog,
-            celebration::{CelebrationHost, celebrate, next_success_line},
+            celebration::{CelebrationHost, celebrate},
             counter_form::EditSheet,
             hint::{HintBullet, HintBullets, HintDialog, HintKey, HintLine, use_screen_hint},
             line_chart::{LineChart, Point},
@@ -106,11 +106,12 @@ pub fn CounterScreen(id: i64) -> Element {
                     let how = counter()
                         .and_then(|c| c.celebration)
                         .unwrap_or_else(|| celebrate_pref().celebration);
-                    celebrate(host, how);
-                    toast.success(
-                        next_success_line().to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1800)),
-                    );
+                    if let Some(line) = celebrate(host, how) {
+                        toast.success(
+                            line.to_string(),
+                            ToastOptions::default().duration(Duration::from_millis(1800)),
+                        );
+                    }
                 } else {
                     // No counter name: you are already looking at the counter,
                     // and a long one pushed the toast off the screen edge.
