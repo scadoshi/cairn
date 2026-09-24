@@ -2,7 +2,10 @@
 //! adapter in `outbound` implements these; a watch build would add another.
 
 use super::{Counter, CounterId, CounterName, DayCount, Event, Goal, Step};
-use crate::domain::{date_format::DateFormat, preferences::Preferences};
+use crate::domain::{
+    date_format::DateFormat,
+    preferences::{Celebration, Preferences},
+};
 use chrono::{NaiveDate, NaiveDateTime};
 use thiserror::Error;
 use zwipe_components::ThemeConfig;
@@ -26,6 +29,7 @@ pub trait CounterStore {
         goal: Option<Goal>,
         step: Step,
         big_step: Option<Step>,
+        celebration: Option<Celebration>,
         today: NaiveDate,
     ) -> Result<Counter, StoreError>;
     /// Changes a counter's name, goal, and step.
@@ -36,6 +40,7 @@ pub trait CounterStore {
         goal: Option<Goal>,
         step: Step,
         big_step: Option<Step>,
+        celebration: Option<Celebration>,
     ) -> Result<(), StoreError>;
     /// Deletes the counter and every entry under it.
     fn delete_counter(&self, id: CounterId) -> Result<(), StoreError>;

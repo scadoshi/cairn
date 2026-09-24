@@ -2,22 +2,19 @@
 //! delete.
 
 use crate::{
-    domain::{
-        counter::{
-            Counter, CounterId, DayCount, Event, Goal, Step,
-            format::{compact, compact_i64, thousands, thousands_i64},
-            series,
-            series::HourlyBasis,
-            stats,
-            stats::Summary,
-        },
-        preferences::done_line,
+    domain::counter::{
+        Counter, CounterId, DayCount, Event, Goal, Step,
+        format::{compact, compact_i64, thousands, thousands_i64},
+        series,
+        series::HourlyBasis,
+        stats,
+        stats::Summary,
     },
     inbound::ui::{
         bump_store_version,
         components::{
             alert_dialog::ConfirmDialog,
-            celebration::{CelebrationHost, celebrate},
+            celebration::{CelebrationHost, celebrate, next_success_line},
             counter_form::EditSheet,
             hint::{HintBullet, HintBullets, HintDialog, HintKey, HintLine, use_screen_hint},
             line_chart::{LineChart, Point},
@@ -105,9 +102,13 @@ pub fn CounterScreen(id: i64) -> Element {
                     stats::crosses_goal(g, today_count, applied, days)
                 });
                 if done {
-                    celebrate(host, celebrate_pref().celebration);
+                    // The counter's own choice wins; None follows Config.
+                    let how = counter()
+                        .and_then(|c| c.celebration)
+                        .unwrap_or_else(|| celebrate_pref().celebration);
+                    celebrate(host, how);
                     toast.success(
-                        done_line(u64::from(today_count)).to_string(),
+                        next_success_line().to_string(),
                         ToastOptions::default().duration(Duration::from_millis(1800)),
                     );
                 } else {
@@ -289,6 +290,7 @@ pub fn CounterScreen(id: i64) -> Element {
             current_goal: c.goal,
             current_step: c.step.get(),
             current_big_step: c.big_step.map(Step::get),
+            current_celebration: c.celebration,
             on_saved: move |()| reload.call(()),
         }
         if let Some(big) = big {

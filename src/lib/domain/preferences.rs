@@ -83,23 +83,42 @@ pub enum Celebration {
     /// A sheen running up the screen.
     #[default]
     Sheen,
-    /// Confetti in the theme's colors.
+    /// Confetti falling from the top, in the theme's colors.
     Confetti,
+    /// Two party poppers going off from the bottom corners.
+    Poppers,
     /// Nothing.
     Off,
 }
 
 impl Celebration {
     /// Every option, for cycling.
-    pub const ALL: [Self; 3] = [Self::Sheen, Self::Confetti, Self::Off];
+    pub const ALL: [Self; 4] = [Self::Sheen, Self::Confetti, Self::Poppers, Self::Off];
 
     /// Short label.
     pub fn label(self) -> &'static str {
         match self {
             Self::Sheen => "Sheen",
             Self::Confetti => "Confetti",
+            Self::Poppers => "Poppers",
             Self::Off => "Off",
         }
+    }
+
+    /// Stable key for storage, independent of the variant's name.
+    pub fn key(self) -> &'static str {
+        match self {
+            Self::Sheen => "sheen",
+            Self::Confetti => "confetti",
+            Self::Poppers => "poppers",
+            Self::Off => "off",
+        }
+    }
+
+    /// Reads a stored key back. `None` for anything unrecognised, so a
+    /// column written by a newer build falls back rather than failing.
+    pub fn from_key(key: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|c| c.key() == key)
     }
 
     /// The next option round.
@@ -269,6 +288,25 @@ mod tests {
             last = line;
         }
         assert_eq!(seen.len(), DONE_LINES.len(), "some line never shows");
+    }
+
+    #[test]
+    fn success_lines_never_repeat_consecutively_over_many_crossings() {
+        // Three full cycles, the way a heavy day of counting would.
+        let mut last = "";
+        for n in 0..(DONE_LINES.len() as u64 * 3) {
+            let line = done_line(n);
+            assert_ne!(line, last, "the same line twice running at {n}");
+            last = line;
+        }
+    }
+
+    #[test]
+    fn every_celebration_key_round_trips() {
+        for c in Celebration::ALL {
+            assert_eq!(Celebration::from_key(c.key()), Some(c), "{c:?}");
+        }
+        assert_eq!(Celebration::from_key("fireworks"), None);
     }
 
     #[test]

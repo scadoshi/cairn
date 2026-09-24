@@ -6,10 +6,12 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
-- A celebration when a counter's daily goal is met: a sheen up the screen or
-  confetti in the theme's colors, switchable or off under Goal met, with a
-  rotating success line. It fires from the tap that crosses, so reopening the
-  app on a finished day celebrates nothing.
+- A celebration when a counter's daily goal is met: a sheen up the screen,
+  falling confetti, or party poppers from the bottom corners, with a rotating
+  success line. It fires from the tap that crosses, so reopening the app on a
+  finished day celebrates nothing. Set app-wide under Goal animation, and per
+  counter in its Edit sheet, where Default follows the app-wide choice.
+- Step now offers 20, 30 and 40 alongside the sizes it had.
 - An optional big step per counter, giving a bar of `-20 -10 +10 +20 Edit`.
   Schema v6; counters without one keep three buttons.
 
@@ -32,7 +34,7 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 - Counters with per-day entries, a lifetime odometer, and per-year breakdown.
 - Goals per day or per year, with pace: target today, ahead or behind, needed
   per day, projected year end.
-- A step per counter, one of 1, 5, 10, 25, 50, 100.
+- A step per counter, one of 1, 5, 10, 20, 25, 30, 40, 50, 100.
 - Trend charts: this week, 60 days with a 7-day average, weekly totals,
   monthly averages, weekday pattern, hour of day.
 - A numbers card: streaks, consistency, last 7 days against the 7 before,

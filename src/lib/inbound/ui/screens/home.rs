@@ -193,6 +193,7 @@ pub fn Home() -> Element {
                 current_goal: c.goal,
                 current_step: c.step.get(),
                 current_big_step: c.big_step.map(crate::domain::counter::Step::get),
+                current_celebration: c.celebration,
                 on_saved: move |()| reload.call(()),
             }
         }
@@ -211,15 +212,15 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
     // Every open starts blank.
     use_effect(move || {
         if open() {
-            form.load("", None, 1, None);
+            form.load("", None, 1, None, None);
         }
     });
 
     let save = move |_| {
-        let Some((name, goal, step, big_step)) = form.validate() else {
+        let Some(v) = form.validate() else {
             return;
         };
-        match store.create_counter(&name, goal, step, big_step, today()) {
+        match store.create_counter(&v.name, v.goal, v.step, v.big_step, v.celebration, today()) {
             Ok(c) => {
                 toast.success(
                     format!("Saved {}", c.name),

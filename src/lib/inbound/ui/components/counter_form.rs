@@ -12,13 +12,16 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_components::{Button, ButtonVariant, Chip};
 
-use crate::inbound::ui::{
-    bump_store_version,
-    components::{
-        bottom_sheet::BottomSheet,
-        hint::{HintBullet, HintBullets, HintChip, HintDialog, HintLine},
+use crate::{
+    domain::preferences::Celebration,
+    inbound::ui::{
+        bump_store_version,
+        components::{
+            bottom_sheet::BottomSheet,
+            hint::{HintBullet, HintBullets, HintChip, HintDialog, HintLine},
+        },
+        today, use_store,
     },
-    today, use_store,
 };
 
 /// Which period a typed goal amount is for.
@@ -50,6 +53,20 @@ impl GoalUnit {
     }
 }
 
+/// What a filled-in form becomes once every field checks out.
+pub struct ValidCounter {
+    /// Display name.
+    pub name: CounterName,
+    /// Optional target.
+    pub goal: Option<Goal>,
+    /// How much one tap adds.
+    pub step: Step,
+    /// The optional second, larger step.
+    pub big_step: Option<Step>,
+    /// This counter's celebration, or `None` to follow Config.
+    pub celebration: Option<Celebration>,
+}
+
 /// The form's state, owned by the host sheet.
 #[derive(Clone, Copy, PartialEq)]
 pub struct CounterFormState {
@@ -64,6 +81,8 @@ pub struct CounterFormState {
     /// A second, larger step. Zero means none, which keeps the counter's
     /// bar at three buttons.
     pub big_step: Signal<u32>,
+    /// This counter's celebration. `None` follows the app-wide setting.
+    pub celebration: Signal<Option<Celebration>>,
     /// Validation message to show, if any.
     pub error: Signal<Option<String>>,
 }
@@ -77,6 +96,7 @@ impl Default for CounterFormState {
             unit: Signal::new(GoalUnit::Day),
             step: Signal::new(1),
             big_step: Signal::new(0),
+            celebration: Signal::new(None),
             error: Signal::new(None),
         }
     }
@@ -84,7 +104,14 @@ impl Default for CounterFormState {
 
 impl CounterFormState {
     /// Loads an existing counter's values.
-    pub fn load(&mut self, name: &str, goal: Option<Goal>, step: u32, big_step: Option<u32>) {
+    pub fn load(
+        &mut self,
+        name: &str,
+        goal: Option<Goal>,
+        step: u32,
+        big_step: Option<u32>,
+        celebration: Option<Celebration>,
+    ) {
         self.name.set(name.to_string());
         match goal {
             Some(g @ (Goal::PerDay(n) | Goal::PerWeek(n) | Goal::PerYear(n))) => {
@@ -95,11 +122,12 @@ impl CounterFormState {
         }
         self.step.set(step);
         self.big_step.set(big_step.unwrap_or(0));
+        self.celebration.set(celebration);
         self.error.set(None);
     }
 
     /// Validates the fields into domain values, or records the error.
-    pub fn validate(&mut self) -> Option<(CounterName, Option<Goal>, Step, Option<Step>)> {
+    pub fn validate(&mut self) -> Option<ValidCounter> {
         let name = match CounterName::new(&(self.name)()) {
             Ok(n) => n,
             Err(e) => {
@@ -153,7 +181,13 @@ impl CounterFormState {
             }
         };
         self.error.set(None);
-        Some((name, goal, step, big_step))
+        Some(ValidCounter {
+            name,
+            goal,
+            step,
+            big_step,
+            celebration: (self.celebration)(),
+        })
     }
 }
 
@@ -166,6 +200,7 @@ pub fn CounterForm(state: CounterFormState) -> Element {
         mut unit,
         mut step,
         mut big_step,
+        mut celebration,
         error,
     } = state;
     let days = stats::days_in_year(today().year());
@@ -240,6 +275,23 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                     Chip { selected: big_step() == n, onclick: move |_| big_step.set(n), "{n}" }
                 }
             }
+            label { class: "label", "Goal animation" }
+            div { class: "chip-row chip-row-center",
+                // Default first: most counters should follow the app-wide
+                // setting rather than each carrying its own opinion.
+                Chip {
+                    selected: celebration().is_none(),
+                    onclick: move |_| celebration.set(None),
+                    "Default"
+                }
+                for c in Celebration::ALL {
+                    Chip {
+                        selected: celebration() == Some(c),
+                        onclick: move |_| celebration.set(Some(c)),
+                        "{c.label()}"
+                    }
+                }
+            }
             if let Some(e) = error() {
                 p { class: "form-error", "{e}" }
             }
@@ -260,6 +312,7 @@ pub fn EditSheet(
     current_goal: Option<Goal>,
     current_step: u32,
     current_big_step: Option<u32>,
+    current_celebration: Option<Celebration>,
     on_saved: EventHandler<()>,
 ) -> Element {
     let mut open = open;
@@ -271,18 +324,24 @@ pub fn EditSheet(
     let seed_name = current_name.clone();
     use_effect(move || {
         if open() {
-            form.load(&seed_name, current_goal, current_step, current_big_step);
+            form.load(
+                &seed_name,
+                current_goal,
+                current_step,
+                current_big_step,
+                current_celebration,
+            );
         }
     });
 
     let save = move |_| {
-        let Some((name, goal, step, big_step)) = form.validate() else {
+        let Some(v) = form.validate() else {
             return;
         };
-        match store.update_counter(id, &name, goal, step, big_step) {
+        match store.update_counter(id, &v.name, v.goal, v.step, v.big_step, v.celebration) {
             Ok(()) => {
                 toast.success(
-                    format!("Saved {name}"),
+                    format!("Saved {}", v.name),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
                 bump_store_version();

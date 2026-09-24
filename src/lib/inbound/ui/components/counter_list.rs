@@ -16,13 +16,13 @@ use crate::{
             stats,
             stats::days_in_year,
         },
-        preferences::{CounterOrder, done_line},
+        preferences::CounterOrder,
     },
     inbound::ui::{
         SharedStore,
         components::{
             alert_dialog::ConfirmDialog,
-            celebration::{CelebrationHost, celebrate},
+            celebration::{CelebrationHost, celebrate, next_success_line},
             tile::{Tile, TileGrid, rate},
         },
         now, today, use_prefs, use_store,
@@ -91,6 +91,7 @@ fn CounterCard(
     let mut confirm_big = use_signal(|| false);
     let today_count = summary.today;
     let host = use_context::<CelebrationHost>();
+    let card_celebration = counter.celebration;
     let bump = use_callback(move |delta: i64| {
         // Report what actually happened rather than what was asked for: a
         // day cannot go below zero, so this makes an empty day read "-0"
@@ -112,9 +113,10 @@ fn CounterCard(
                     .goal
                     .is_some_and(|g| stats::crosses_goal(g, today_count, applied, days));
                 if done {
-                    celebrate(host, prefs.celebration);
+                    // The counter's own choice wins; None follows Config.
+                    celebrate(host, card_celebration.unwrap_or(prefs.celebration));
                     toast.success(
-                        done_line(u64::from(summary.lifetime)).to_string(),
+                        next_success_line().to_string(),
                         ToastOptions::default().duration(Duration::from_millis(1800)),
                     );
                 } else {

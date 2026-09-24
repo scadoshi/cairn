@@ -275,7 +275,7 @@ pub fn Config() -> Element {
                 }
                 div { class: "profile-row",
                     span { class: "row-label-with-hint",
-                        span { class: "profile-row-label", "Goal met" }
+                        span { class: "profile-row-label", "Goal animation" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Celebration)); hint_open.set(true); } }
                     }
                     div { class: "profile-row-value",
@@ -387,13 +387,12 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
             }
         },
         ConfigHint::Celebration => rsx! {
-            HintDialog { open, title: "Goal met",
-                HintLine { "What happens when a counter finishes its day." }
+            HintDialog { open, title: "Goal animation",
+                HintLine { "What plays when a counter finishes its day. Try them and see." }
                 HintBullets {
-                    HintBullet { HintKey { color: "--accent-primary", "Sheen" } " runs a band of light up the screen." }
-                    HintBullet { HintKey { color: "--accent-primary", "Confetti" } " drops pieces in the current theme's colors." }
                     HintBullet { "Only the tap that crosses the goal fires it, never reopening the app." }
                     HintBullet { "Counters without a goal never celebrate." }
+                    HintBullet { "A counter can pick its own in its Edit sheet; this is the one they follow otherwise." }
                 }
             }
         },

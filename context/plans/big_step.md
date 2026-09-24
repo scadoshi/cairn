@@ -24,7 +24,7 @@ Nullable, so no default and no backfill. This is the first migration since `open
 
 ## Validation
 
-`Step::ALLOWED` stays as it is. The big step must be a different allowed value and larger than the step, otherwise the bar shows two buttons that do nearly the same thing. That is a `ValidationError` variant and a test.
+`Step::ALLOWED` gained 20, 30 and 40 on the way in, so it now reads 1, 5, 10, 20, 25, 30, 40, 50, 100. The big step must be a different allowed value and larger than the step, otherwise the bar shows two buttons that do nearly the same thing. That is a `ValidationError` variant and a test.
 
 ## The bar wraps, and that is the thing to decide
 

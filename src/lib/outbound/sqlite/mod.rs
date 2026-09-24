@@ -9,7 +9,7 @@ use crate::domain::{
         StoreError,
     },
     date_format::DateFormat,
-    preferences::Preferences,
+    preferences::{Celebration, Preferences},
 };
 use chrono::{NaiveDate, NaiveDateTime};
 use rusqlite::{Connection, OptionalExtension, params};
@@ -21,7 +21,7 @@ use zwipe_components::ThemeConfig;
 
 /// Schema version written to SQLite's `user_version` pragma. Bump it and add
 /// a step in `migrate` for each schema change.
-const SCHEMA_VERSION: i64 = 6;
+const SCHEMA_VERSION: i64 = 7;
 
 const SCHEMA_V1: &str = "
 CREATE TABLE IF NOT EXISTS counters (
@@ -66,6 +66,10 @@ const SCHEMA_V5: &str = "ALTER TABLE counters ADD COLUMN goal_per_week INTEGER;"
 /// v6: a counter can carry a second, larger step. Nullable, so a counter
 /// without one keeps the three-button bar it had.
 const SCHEMA_V6: &str = "ALTER TABLE counters ADD COLUMN big_step INTEGER;";
+
+/// v7: a counter can pick its own celebration. Nullable, and null means it
+/// follows the app-wide setting in Config.
+const SCHEMA_V7: &str = "ALTER TABLE counters ADD COLUMN celebration TEXT;";
 
 const THEME_KEY: &str = "theme";
 const DATE_FORMAT_KEY: &str = "date_format";
@@ -130,6 +134,9 @@ fn migrate(conn: &Connection) -> Result<(), StoreError> {
     if version < 6 {
         conn.execute_batch(SCHEMA_V6)?;
     }
+    if version < 7 {
+        conn.execute_batch(SCHEMA_V7)?;
+    }
     if version < SCHEMA_VERSION {
         conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     }
@@ -150,6 +157,7 @@ fn row_to_counter(row: &rusqlite::Row<'_>) -> Result<Counter, StoreError> {
     let step: i64 = row.get(5)?;
     let per_week: Option<i64> = row.get(6)?;
     let big_step: Option<i64> = row.get(7)?;
+    let celebration: Option<String> = row.get(8)?;
     let to_u32 =
         |g: i64| u32::try_from(g).map_err(|_| StoreError(format!("bad goal {g} in database")));
     let bad = |e: super::super::domain::counter::ValidationError| StoreError(e.to_string());
@@ -167,6 +175,9 @@ fn row_to_counter(row: &rusqlite::Row<'_>) -> Result<Counter, StoreError> {
         big_step: big_step
             .map(|b| Step::new(to_u32(b)?).map_err(|e| StoreError(e.to_string())))
             .transpose()?,
+        // An unknown key means a newer build wrote it; fall back to the
+        // app-wide setting rather than refusing to open the counter.
+        celebration: celebration.as_deref().and_then(Celebration::from_key),
         created_on: parse_day(&created)?,
     })
 }
@@ -181,8 +192,8 @@ fn goal_columns(goal: Option<Goal>) -> (Option<u32>, Option<u32>, Option<u32>) {
     }
 }
 
-const COUNTER_COLS: &str =
-    "id, name, goal_per_year, goal_per_day, created_on, step, goal_per_week, big_step";
+const COUNTER_COLS: &str = "id, name, goal_per_year, goal_per_day, created_on, step, \
+                            goal_per_week, big_step, celebration";
 
 impl CounterStore for SqliteStore {
     fn list_counters(&self) -> Result<Vec<Counter>, StoreError> {
@@ -209,13 +220,14 @@ impl CounterStore for SqliteStore {
         goal: Option<Goal>,
         step: Step,
         big_step: Option<Step>,
+        celebration: Option<Celebration>,
         today: NaiveDate,
     ) -> Result<Counter, StoreError> {
         let conn = self.conn()?;
         let (per_year, per_day, per_week) = goal_columns(goal);
         conn.execute(
-            "INSERT INTO counters (name, goal_per_year, goal_per_day, goal_per_week, created_on, step, big_step)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT INTO counters (name, goal_per_year, goal_per_day, goal_per_week, created_on, step, big_step, celebration)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             params![
                 name.as_str(),
                 per_year,
@@ -223,7 +235,8 @@ impl CounterStore for SqliteStore {
                 per_week,
                 today.format("%Y-%m-%d").to_string(),
                 step.get(),
-                big_step.map(Step::get)
+                big_step.map(Step::get),
+                celebration.map(Celebration::key)
             ],
         )?;
         Ok(Counter {
@@ -232,6 +245,7 @@ impl CounterStore for SqliteStore {
             goal,
             step,
             big_step,
+            celebration,
             created_on: today,
         })
     }
@@ -243,13 +257,14 @@ impl CounterStore for SqliteStore {
         goal: Option<Goal>,
         step: Step,
         big_step: Option<Step>,
+        celebration: Option<Celebration>,
     ) -> Result<(), StoreError> {
         let (per_year, per_day, per_week) = goal_columns(goal);
         self.conn()?.execute(
             "UPDATE counters
              SET name = ?1, goal_per_year = ?2, goal_per_day = ?3, goal_per_week = ?4, step = ?5,
-                 big_step = ?6
-             WHERE id = ?7",
+                 big_step = ?6, celebration = ?7
+             WHERE id = ?8",
             params![
                 name.as_str(),
                 per_year,
@@ -257,6 +272,7 @@ impl CounterStore for SqliteStore {
                 per_week,
                 step.get(),
                 big_step.map(Step::get),
+                celebration.map(Celebration::key),
                 id.0
             ],
         )?;
@@ -481,6 +497,7 @@ mod tests {
                 Some(Goal::per_year(5000).unwrap()),
                 Step::default(),
                 None,
+                None,
                 d(2026, 9, 19),
             )
             .unwrap();
@@ -500,6 +517,7 @@ mod tests {
                 None,
                 Step::default(),
                 None,
+                None,
                 d(2026, 1, 1),
             )
             .unwrap();
@@ -509,6 +527,7 @@ mod tests {
             Some(Goal::per_day(20).unwrap()),
             Step::new(25).unwrap(),
             Step::new(50).ok(),
+            Some(Celebration::Poppers),
         )
         .unwrap();
         let got = s.get_counter(c.id).unwrap().unwrap();
@@ -516,19 +535,25 @@ mod tests {
         assert_eq!(got.goal, Some(Goal::PerDay(20)));
         assert_eq!(got.step.get(), 25);
         assert_eq!(got.big_step, Step::new(50).ok(), "the big step round trips");
+        assert_eq!(
+            got.celebration,
+            Some(Celebration::Poppers),
+            "the celebration round trips"
+        );
         s.update_counter(
             c.id,
             &got.name,
             Some(Goal::per_week(100).unwrap()),
             got.step,
             got.big_step,
+            got.celebration,
         )
         .unwrap();
         assert_eq!(
             s.get_counter(c.id).unwrap().unwrap().goal,
             Some(Goal::PerWeek(100))
         );
-        s.update_counter(c.id, &got.name, None, got.step, None)
+        s.update_counter(c.id, &got.name, None, got.step, None, None)
             .unwrap();
         assert_eq!(s.get_counter(c.id).unwrap().unwrap().goal, None);
     }
@@ -541,6 +566,7 @@ mod tests {
                 &CounterName::new("push-ups").unwrap(),
                 Some(Goal::per_day(15).unwrap()),
                 Step::default(),
+                None,
                 None,
                 d(2026, 9, 19),
             )
@@ -559,6 +585,7 @@ mod tests {
                 &CounterName::new("x").unwrap(),
                 None,
                 Step::default(),
+                None,
                 None,
                 d(2026, 1, 1),
             )
@@ -594,6 +621,7 @@ mod tests {
                 &CounterName::new("x").unwrap(),
                 None,
                 Step::default(),
+                None,
                 None,
                 d(2026, 1, 1),
             )
@@ -648,6 +676,7 @@ mod tests {
                 None,
                 Step::default(),
                 None,
+                None,
                 d(2026, 1, 1),
             )
             .unwrap();
@@ -693,7 +722,7 @@ mod tests {
     #[test]
     fn opens_a_database_left_at_every_older_version() {
         let ladder = [
-            SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4, SCHEMA_V5, SCHEMA_V6,
+            SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4, SCHEMA_V5, SCHEMA_V6, SCHEMA_V7,
         ];
         for version in 1..=SCHEMA_VERSION {
             let dir = std::env::temp_dir().join(format!("cairn-aged-{version}"));

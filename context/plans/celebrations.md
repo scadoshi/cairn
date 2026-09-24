@@ -1,6 +1,8 @@
 # Goal-met celebrations
 
-Built 2026-09-24.
+Built 2026-09-24, with two changes from this scope: a third animation
+(poppers) and a per-counter override on top of the app-wide setting. Schema
+v7 carries the per-counter column.
 
 A counter crossing its daily goal should say so: a sheen running up the screen, or confetti in the theme's colors. One or the other, or off. Plus a toast with a rotating success line.
 

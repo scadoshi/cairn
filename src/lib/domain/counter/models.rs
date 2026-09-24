@@ -1,5 +1,6 @@
 //! What a counter and a day's entry are.
 
+use crate::domain::preferences::Celebration;
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -24,7 +25,7 @@ pub enum ValidationError {
     #[error("the big step must be larger than the step")]
     BigStepNotLarger,
     /// Steps come from a fixed menu so the buttons stay readable.
-    #[error("step must be one of 1, 5, 10, 25, 50, 100")]
+    #[error("step must be one of {allowed}", allowed = Step::allowed_list())]
     BadStep,
 }
 
@@ -247,7 +248,7 @@ pub struct Step(u32);
 
 impl Step {
     /// The menu.
-    pub const ALLOWED: [u32; 6] = [1, 5, 10, 25, 50, 100];
+    pub const ALLOWED: [u32; 9] = [1, 5, 10, 20, 25, 30, 40, 50, 100];
 
     /// Rejects anything not on the menu.
     pub fn new(n: u32) -> Result<Self, ValidationError> {
@@ -256,6 +257,16 @@ impl Step {
         } else {
             Err(ValidationError::BadStep)
         }
+    }
+
+    /// The menu as prose, for error messages. Built from [`Self::ALLOWED`]
+    /// so the two cannot drift.
+    pub fn allowed_list() -> String {
+        Self::ALLOWED
+            .iter()
+            .map(u32::to_string)
+            .collect::<Vec<_>>()
+            .join(", ")
     }
 
     /// The amount.
@@ -297,6 +308,9 @@ pub struct Counter {
     /// A second, larger step, shown outside the first on the bar. `None`
     /// leaves the counter with the three-button bar it had.
     pub big_step: Option<Step>,
+    /// What happens when this counter's day is finished. `None` follows the
+    /// app-wide setting in Config.
+    pub celebration: Option<Celebration>,
     /// Day the counter was created; the odometer starts here.
     pub created_on: NaiveDate,
 }
@@ -323,6 +337,27 @@ pub struct DayCount {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_step_menu_is_sorted_and_unique() {
+        let mut sorted = Step::ALLOWED;
+        sorted.sort_unstable();
+        assert_eq!(sorted, Step::ALLOWED, "the picker renders them in order");
+        let unique: std::collections::HashSet<_> = Step::ALLOWED.iter().collect();
+        assert_eq!(unique.len(), Step::ALLOWED.len(), "a duplicate in the menu");
+        assert!(
+            Step::ALLOWED.iter().all(|n| *n > 0),
+            "a step of zero moves nothing"
+        );
+    }
+
+    #[test]
+    fn the_error_message_lists_the_real_menu() {
+        let msg = ValidationError::BadStep.to_string();
+        for n in Step::ALLOWED {
+            assert!(msg.contains(&n.to_string()), "{n} missing from {msg:?}");
+        }
+    }
 
     #[test]
     fn a_big_step_has_to_be_bigger() {
