@@ -94,6 +94,10 @@ pub struct Playing {
     /// The success green on everything made the animations look like
     /// variations of one effect rather than different effects.
     pub tint: u8,
+    /// Which crossing this is. Used as the element key, so a re-render
+    /// while an animation is running reuses the node instead of building a
+    /// fresh one and starting the animation over.
+    pub id: u64,
 }
 
 /// The slot. Provided by the app root.
@@ -118,15 +122,15 @@ pub fn celebrate(host: CelebrationHost, how: Celebration) -> Option<&'static str
     // Stride 2 against 3 accents: every tint before any repeat.
     let tint = u8::try_from(nth.wrapping_mul(2) % 3).unwrap_or(0);
     let mut slot = host.0;
-    slot.set(Some(Playing { how, line, tint }));
-    spawn(async move {
-        tokio::time::sleep(linger(how)).await;
-        // Only clear what we set: a second crossing during the linger
-        // replaces this one rather than being cut short by it.
-        if slot.peek().is_some() {
-            slot.set(None);
-        }
-    });
+    slot.set(Some(Playing {
+        how,
+        line,
+        tint,
+        id: nth,
+    }));
+    // The timer belongs to the host, not here. Spawning it from a tap
+    // handler tied it to whichever card was tapped, and a re-render or a
+    // reorder of the list could drop the task mid-animation.
     (!how.shows_line()).then_some(line)
 }
 
@@ -134,14 +138,41 @@ pub fn celebrate(host: CelebrationHost, how: Celebration) -> Option<&'static str
 #[component]
 pub fn CelebrationHostView() -> Element {
     let host = use_context::<CelebrationHost>();
-    let Some(Playing { how, line, tint }) = host.0.read().to_owned() else {
+    let mut slot = host.0;
+
+    // Clears the slot once the animation has had its time. Keyed on the
+    // crossing's id, so a new celebration restarts the clock and a mere
+    // re-render does not. This component lives at the app root and never
+    // unmounts, so the timer cannot be cancelled out from under it.
+    let playing = slot.read().to_owned();
+    let current = playing.as_ref().map(|p| (p.id, p.how));
+    use_effect(use_reactive(&current, move |current| {
+        if let Some((id, how)) = current {
+            spawn(async move {
+                tokio::time::sleep(linger(how)).await;
+                // Only clear this one. A later crossing has already
+                // replaced it and owns the slot now.
+                if slot.peek().as_ref().is_some_and(|p| p.id == id) {
+                    slot.set(None);
+                }
+            });
+        }
+    }));
+
+    let Some(Playing {
+        how,
+        line,
+        tint,
+        id,
+    }) = playing
+    else {
         return rsx! {};
     };
     match how {
         // Resolved before it reaches the slot, so neither can appear here.
         Celebration::Off | Celebration::Random => rsx! {},
         Celebration::Typewriter => rsx! {
-            div { class: "celebrate-text tint-{tint}", aria_hidden: "true",
+            div { key: "{id}", class: "celebrate-text tint-{tint}", aria_hidden: "true",
                 // The cursor is a sibling, not a border: inside the clipping
                 // span it would eat into the animated width and swallow the
                 // last character.
@@ -156,21 +187,21 @@ pub fn CelebrationHostView() -> Element {
             }
         },
         Celebration::Stamp => rsx! {
-            div { class: "celebrate-text tint-{tint}", aria_hidden: "true",
+            div { key: "{id}", class: "celebrate-text tint-{tint}", aria_hidden: "true",
                 span { class: "stamp-line", "{line}" }
             }
         },
         Celebration::Scanline => rsx! {
-            div { class: "celebrate-scanline tint-{tint}", aria_hidden: "true" }
+            div { key: "{id}", class: "celebrate-scanline tint-{tint}", aria_hidden: "true" }
         },
         Celebration::Pulse => rsx! {
-            div { class: "celebrate-pulse tint-{tint}", aria_hidden: "true" }
+            div { key: "{id}", class: "celebrate-pulse tint-{tint}", aria_hidden: "true" }
         },
         Celebration::Sheen => rsx! {
-            div { class: "celebrate-sheen", aria_hidden: "true" }
+            div { key: "{id}", class: "celebrate-sheen", aria_hidden: "true" }
         },
         Celebration::Poppers => rsx! {
-            div { class: "celebrate-poppers", aria_hidden: "true",
+            div { key: "{id}", class: "celebrate-poppers", aria_hidden: "true",
                 // Two barrels from the bottom corners. The x sign is what
                 // mirrors the table; everything else is shared.
                 for (side, dir) in [("left", 1_i32), ("right", -1_i32)] {
@@ -191,7 +222,7 @@ pub fn CelebrationHostView() -> Element {
             }
         },
         Celebration::Confetti => rsx! {
-            div { class: "celebrate-confetti", aria_hidden: "true",
+            div { key: "{id}", class: "celebrate-confetti", aria_hidden: "true",
                 for (i, (x, delay, dur, color)) in PIECES.iter().enumerate() {
                     div {
                         key: "{i}",
