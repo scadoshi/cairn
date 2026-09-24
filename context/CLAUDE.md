@@ -4,7 +4,7 @@ Guidance for Claude Code and any other AI assistant working in this repository.
 
 ## Project Overview
 
-Cairn is a lifetime counter, named for the pile of stones where every passer-by adds one. You name a thing you do (pull-ups,
+Cairn is a lifetime counter, named for the waymarker you build by walking the same path and adding a stone every time you pass. You name a thing you do (pull-ups,
 push-ups, pages read), log how many you did each day, and Cairn keeps the running
 total plus the rates and averages that make a total mean something: this year's
 total, average per day, where you stand against a yearly goal, and what today

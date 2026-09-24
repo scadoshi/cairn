@@ -52,7 +52,9 @@ The sync unit is the events table. Every tap is an append-only record with a tim
 
 ## 12. Cairn
 
-2026-09-23. Crow said nothing to a stranger and Count said nothing at all. A cairn is the pile of stones on a mountain path where everyone who passes adds one: the act is identical every time, small and unglamorous, and the pile is the whole point. It is Sisyphus with the boulder staying put, which is exactly what a lifetime counter is. It also marks the way for whoever comes next.
+2026-09-23. Crow said nothing to a stranger and Count said nothing at all. A cairn is a waymarker on a mountain path, built one stone at a time by whoever walks it, and the walker here is you: the same path, the same small unglamorous act, every day. The pile is the record of having done it. It is Sisyphus with the boulder staying put, which is exactly what a lifetime counter is, and it marks the way besides.
+
+The first version of this entry said "everyone who passes adds one", which reads as a crowd each passing once. That is a worse description of the app than one person passing repeatedly, and it briefly made the name look wrong when it was the sentence that was wrong.
 
 Sisyphus itself was considered and rejected: his defining trait is that the work accumulates nothing, which is the opposite of the app. Notch was rejected because two apps on the store are already called Notch and both are tally counters, and because the word belongs to Markus Persson and to the iPhone screen cutout. Groove was rejected because it names a training protocol (Pavel Tsatsouline's grease the groove) that this app does not implement, and six apps already sit under that banner.
 

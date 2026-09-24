@@ -16,7 +16,7 @@ Read [`CLAUDE.md`](CLAUDE.md) first for the rules.
 
 ## Current focus
 
-**2026-09-23: the app is Cairn.** A cairn is the pile of stones where everyone who passes adds one, which is what a lifetime counter is. The crate, the repo and the home-screen header are Cairn. The mark is the C in `assets/c.txt`, with the owner's S behind the Mark setting in Config. `architecture/decisions.md` entry 12 covers the reasoning and the names that lost.
+**2026-09-23: the app is Cairn.** A cairn is the waymarker you build one stone at a time, walking the same path and adding one every time you pass. The same small act, repeated, and the pile is the record. The crate, the repo and the home-screen header are Cairn. The mark is the C in `assets/c.txt`, with the owner's S behind the Mark setting in Config. `architecture/decisions.md` entry 12 covers the reasoning and the names that lost.
 
 Two things deliberately did not change, because both are permanent once real data exists: the bundle id `com.scadoshi.count`, which App Store Connect never lets you edit, and the on-device data folder `scadoshi-count/count.db`, which holds nine months of real counts.
 

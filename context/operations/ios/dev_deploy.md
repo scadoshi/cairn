@@ -37,7 +37,7 @@ Reinstalling over an existing app keeps its data container, so an ordinary deplo
 The long way, if you want to see the pieces, pasted as one line because zsh mangles `\` continuations on paste:
 
 ```bash
-cd ~/Developer/cairn && dx build --platform ios --device true && ios-deploy --bundle ~/Developer/cairn/target/dx/cairn/debug/ios/Cairn.app
+cd ~/Developer/cairn && dx build --release --platform ios --device true && ios-deploy --bundle ~/Developer/cairn/target/dx/cairn/debug/ios/Cairn.app
 ```
 
 dx signs the bundle itself from `~/Library/Developer/Xcode/UserData/Provisioning Profiles/Count_Development.mobileprovision`. There is no manual `codesign` step for dev builds.

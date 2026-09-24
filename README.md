@@ -1,8 +1,6 @@
 # Cairn
 
-A counter, named for the pile of stones where everyone who passes adds one. You
-name something you do, log how many you did today, and the number goes up and
-stays up.
+A counter, named for the waymarker you build one stone at a time by walking the same path and adding one every time you pass. You name something you do, log how many you did today, and the number goes up and stays up.
 
 I built it to track lifetime pull-ups and push-ups. A lifetime total on its own
 is a trivia fact, so Cairn also breaks it down by year: this year's total, the
