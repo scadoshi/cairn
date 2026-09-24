@@ -68,6 +68,13 @@ pub fn until_next<Tz: TimeZone>(at: &DateTime<Tz>) -> Duration {
 /// McDougall, and "you have power over your mind, not outside events" does
 /// not appear in any published translation of Meditations. Anything added
 /// later should clear the same bar, because most of these people are alive.
+///
+/// The Avatar lines are scripted dialogue rather than something someone said
+/// about their own life, so they carry the episode they are from.
+///
+/// Anything translated names its translator, because Marcus in Long and
+/// Marcus in Hays read like two different men and the source is the only
+/// way to tell which one is talking.
 pub const QUOTES: &[Quote] = &[
     Quote {
         text: "Procrastination is often not about indecision. It's a decision to live in theory rather than in practice.",
@@ -273,6 +280,161 @@ pub const QUOTES: &[Quote] = &[
         text: "If I used being busy as an excuse not to run, I'd never run again.",
         author: "Haruki Murakami",
         source: "What I Talk About When I Talk About Running",
+    },
+    Quote {
+        text: "I don't need luck, though. I don't want it. I've always had to struggle and fight, and that's made me strong. It's made me who I am.",
+        author: "Zuko",
+        source: "Avatar: The Last Airbender, The Siege of the North",
+    },
+    Quote {
+        text: "In the darkest times, hope is something you give yourself. That is the meaning of inner strength.",
+        author: "Uncle Iroh",
+        source: "Avatar: The Last Airbender, Avatar Day",
+    },
+    Quote {
+        text: "Pride is not the opposite of shame, but its source. True humility is the only antidote to shame.",
+        author: "Uncle Iroh",
+        source: "Avatar: The Last Airbender, Bitter Work",
+    },
+    Quote {
+        text: "It is important to draw wisdom from many different places. If you take it from only one place, it becomes rigid and stale.",
+        author: "Uncle Iroh",
+        source: "Avatar: The Last Airbender, Bitter Work",
+    },
+    Quote {
+        text: "Sometimes life is like this dark tunnel. You can't always see the light at the end of the tunnel, but if you just keep moving, you will come to a better place.",
+        author: "Uncle Iroh",
+        source: "Avatar: The Last Airbender, The Crossroads of Destiny",
+    },
+    Quote {
+        text: "I fear not the man who has practiced 10,000 kicks once, but I fear the man who has practiced one kick 10,000 times.",
+        author: "Bruce Lee",
+        source: "Bruce Lee Family Archive",
+    },
+    Quote {
+        text: "I hated every minute of training, but I said, don't quit. Suffer now and live the rest of your life as a champion.",
+        author: "Muhammad Ali",
+        source: "Muhammad Ali Center, In His Own Words",
+    },
+    Quote {
+        text: "Today is victory over yourself of yesterday; tomorrow is your victory over lesser men.",
+        author: "Miyamoto Musashi",
+        source: "The Book of Five Rings",
+    },
+    Quote {
+        text: "The Way is in training.",
+        author: "Miyamoto Musashi",
+        source: "The Book of Five Rings",
+    },
+    Quote {
+        text: "Do not regret what you have done.",
+        author: "Miyamoto Musashi",
+        source: "Dokkodo",
+    },
+    Quote {
+        text: "Every time I go in there, I'm just chipping away, making the space a little bigger.",
+        author: "Courtney Dauwalter",
+        source: "on the pain cave, in interviews",
+    },
+    Quote {
+        text: "The victorious strategist only seeks battle after the victory has been won, whereas he who is destined to defeat first fights and afterwards looks for victory.",
+        author: "Sun Tzu",
+        source: "The Art of War, Giles translation",
+    },
+    Quote {
+        text: "Accept everything just the way it is.",
+        author: "Miyamoto Musashi",
+        source: "Dokkodo",
+    },
+    Quote {
+        text: "Think lightly of yourself and deeply of the world.",
+        author: "Miyamoto Musashi",
+        source: "Dokkodo",
+    },
+    Quote {
+        text: "Do nothing which is of no use.",
+        author: "Miyamoto Musashi",
+        source: "Dokkodo",
+    },
+    Quote {
+        text: "Never stray from the Way.",
+        author: "Miyamoto Musashi",
+        source: "Dokkodo",
+    },
+    Quote {
+        text: "Perceive that which cannot be seen with the eye.",
+        author: "Miyamoto Musashi",
+        source: "The Book of Five Rings",
+    },
+    Quote {
+        text: "Talk is cheap. Show me the code.",
+        author: "Linus Torvalds",
+        source: "linux-kernel mailing list, 2000",
+    },
+    Quote {
+        text: "Inspiration is perishable.",
+        author: "Jason Fried and David Heinemeier Hansson",
+        source: "Rework",
+    },
+    Quote {
+        text: "The key is deliberative practice: not just doing it again and again, but challenging yourself with a task that is just beyond your current ability. Then repeat. And repeat again.",
+        author: "Peter Norvig",
+        source: "Teach Yourself Programming in Ten Years",
+    },
+    Quote {
+        text: "My hero is always ten years away. I'm never going to be my hero. I'm not going to obtain that, and that's fine with me, because it keeps me with somebody to keep on chasing.",
+        author: "Matthew McConaughey",
+        source: "Oscar acceptance speech, 2014",
+    },
+    Quote {
+        text: "The sooner we become less impressed and more involved, the sooner we get a whole lot better at doing it.",
+        author: "Matthew McConaughey",
+        source: "University of Houston commencement, 2015",
+    },
+    Quote {
+        text: "Life's a verb. We try our best, we don't always do our best.",
+        author: "Matthew McConaughey",
+        source: "University of Houston commencement, 2015",
+    },
+    Quote {
+        text: "The crumbs I'm talking about are the choices that we make that make us have to look over our shoulder in the future.",
+        author: "Matthew McConaughey",
+        source: "University of Houston commencement, 2015",
+    },
+    Quote {
+        text: "At dawn, when you have trouble getting out of bed, tell yourself: I have to go to work, as a human being.",
+        author: "Marcus Aurelius",
+        source: "Meditations 5.1, Hays translation",
+    },
+    Quote {
+        text: "The impediment to action advances action. What stands in the way becomes the way.",
+        author: "Marcus Aurelius",
+        source: "Meditations 5.20, Hays translation",
+    },
+    Quote {
+        text: "You could leave life right now. Let that determine what you do and say and think.",
+        author: "Marcus Aurelius",
+        source: "Meditations 2.11, Hays translation",
+    },
+    Quote {
+        text: "First say to yourself what you would be; and then do what you have to do.",
+        author: "Epictetus",
+        source: "Discourses 3.23",
+    },
+    Quote {
+        text: "If you want to improve, be content to be thought foolish and stupid.",
+        author: "Epictetus",
+        source: "Enchiridion 13",
+    },
+    Quote {
+        text: "It is not that we have a short time to live, but that we waste a lot of it.",
+        author: "Seneca",
+        source: "On the Shortness of Life",
+    },
+    Quote {
+        text: "There are more things likely to frighten us than there are to crush us; we suffer more often in imagination than in reality.",
+        author: "Seneca",
+        source: "Letters to Lucilius 13, Gummere translation",
     },
 ];
 

@@ -26,15 +26,15 @@ reps across push-ups, pull-ups and squats.
   a goal tag that counts down in the error colour and turns green when the
   day's share is in. Tapping the name or numbers opens the counter. A counter
   can carry a second, larger step, which puts a wider pair outside the first.
-- Something plays when a counter's day is finished: a sheen, confetti,
-  poppers, a typed line, a stamp, a scanline, or a pulse at the screen edge,
+- Something plays when a counter's day is finished: a level up, confetti,
+  poppers, a typed line, a stamp, or rings pulsing inward,
   chosen per counter or app-wide, or turned off. It fires from the tap that
   crosses the goal and nowhere else, so no state is stored to remember that a
   day was already celebrated.
 - Counter screen: odometer, today, this week, this month, trends (six views),
   goal pace, bests, habit figures, by-year table. Delete behind a dialog.
 - Goals per day, week or year, all reducing to what today has to clear.
-- A quote that turns over on the clock hour, 41 of them, each traced to a
+- A quote that turns over on the clock hour, 72 of them, each traced to a
   book, newsletter or interview.
 - Config: theme, mark (the C or the owner's S), goal animation, dark mode,
   date format, when a day and week start, rest days, counter order,
