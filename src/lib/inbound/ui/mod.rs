@@ -11,7 +11,7 @@ use crate::domain::{
 };
 use chrono::{Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::ToastProvider;
+use dioxus_primitives::toast::{Toast, ToastPropsWithOwner, ToastProvider};
 use router::Route;
 use std::{sync::Arc, time::Duration};
 use zwipe_components::{Button, ButtonVariant, COMPONENTS_CSS, THEMES_CSS, ThemeConfig};
@@ -59,16 +59,31 @@ pub fn now() -> NaiveDateTime {
 #[derive(Clone, Copy)]
 pub struct StoreVersion(pub Signal<u32>);
 
-/// How long a quick acknowledgement stays up, the "+10" kind.
+/// How long a toast stays up, shared with zwipe so a confirmation does not
+/// linger twice as long in one app as the other. Re-exported at this path so
+/// call sites keep importing from `inbound::ui`.
 ///
-/// These are paired with `assets/toast.css`, which fades each toast in and
-/// out across its own lifetime. The stylesheet keys off `data-type`, so a
-/// duration changed here has to change there too, or a toast will either
-/// vanish while still opaque or sit invisible waiting to be removed.
-pub const TOAST_QUICK: Duration = Duration::from_millis(900);
+/// These are paired with `assets/toast.css`, which fades each toast in and out
+/// across its own lifetime. The stylesheet keys off `data-type`: info ->
+/// quick, success and warning -> normal, error -> the library's own 5s
+/// default, which `normal` matches.
+///
+/// That pairing is why the assertion below exists. The values live in another
+/// repo now, so a bump there arriving via `cargo update -p zwipe-components`
+/// would otherwise leave the keyframes mistimed and toasts fading out while
+/// still up, with nothing to notice it. This fails the build instead.
+///
+/// Lengthened from 900ms and 1500ms on 2026-09-24, partly because toasts now
+/// collapse into a stack you tap to expand and at 900ms one was gone before a
+/// thumb could land on it.
+pub use zwipe_components::{TOAST_NORMAL, TOAST_QUICK};
 
-/// How long anything worth reading stays up.
-pub const TOAST_NORMAL: Duration = Duration::from_millis(1500);
+const _: () = assert!(
+    TOAST_QUICK.as_secs() == 3 && TOAST_NORMAL.as_secs() == 5,
+    "toast bands changed in zwipe-components: retune the toast-life-3000 and \
+     toast-life-5000 keyframes in assets/toast.css to match, then update this \
+     assertion"
+);
 
 /// Marks the store as changed.
 ///
@@ -83,6 +98,15 @@ pub fn bump_store_version() {
 /// context, so this crate never decides where the database lives.
 #[component]
 pub fn App() -> Element {
+    // Toasts collapse into a stack and expand on tap, the way grouped
+    // notifications do, so three of them cost about one toast of screen.
+    let mut toasts_expanded = use_signal(|| false);
+    // Set only for the length of a tap-driven toggle. The collapse offset is a
+    // margin, and an arriving toast changes that same margin by taking over as
+    // `:first-child`, so a permanent transition animated the stack expanding to
+    // full height and dropping back every time one landed. CSS cannot tell the
+    // two apart; this can, because only the tap sets it.
+    let mut toasts_animating = use_signal(|| false);
     let store = use_store();
     let saved = store.theme().ok().flatten();
     let theme = use_signal(move || saved.unwrap_or_default());
@@ -152,7 +176,33 @@ pub fn App() -> Element {
         // container, which mounts above the router, resolves the same
         // palette instead of falling through to unset variables.
         div { class: "theme-root {theme.read().css_class()}",
-            ToastProvider { max_toasts: 3_usize, class: "toast-container",
+            ToastProvider {
+                max_toasts: 3_usize,
+                class: match (toasts_expanded(), toasts_animating()) {
+                    (true, true) => "toast-container expanded animating",
+                    (true, false) => "toast-container expanded",
+                    (false, true) => "toast-container animating",
+                    (false, false) => "toast-container",
+                },
+                // The library owns the container and list DOM and does not pass
+                // event handlers through `attributes`, so the tap target has to
+                // be the toast itself. `display: contents` keeps this wrapper
+                // out of the layout.
+                render_toast: move |props: ToastPropsWithOwner| rsx! {
+                    div {
+                        class: "toast-tap",
+                        onclick: move |_| {
+                            toasts_expanded.toggle();
+                            toasts_animating.set(true);
+                            spawn(async move {
+                                // Outlasts the 0.2s transition in toast.css.
+                                tokio::time::sleep(Duration::from_millis(250)).await;
+                                toasts_animating.set(false);
+                            });
+                        },
+                        Toast { ..props }
+                    }
+                },
                 Router::<Route> {}
                 // Dialogs draw here, beside the router, so no screen's scroll
                 // container can trap their fixed overlay.
