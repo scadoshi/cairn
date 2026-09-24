@@ -348,11 +348,7 @@ pub fn Config() -> Element {
         ConfigHintDialog { open: hint_open, which: hint() }
         HintDialog { open: screen_hint_open, title: "Config",
             HintLine { "Settings only. Nothing here edits your counts" }
-            HintBullets {
-                HintBullet { "Tap any row's " HintKey { color: "--accent-primary", "?" } " to learn what it does" }
-                HintBullet { "When to count decides which day a late tap lands on" }
-                HintBullet { HintKey { color: "--accent-primary", "CSV" } " saves one file per counter, ready to share" }
-            }
+            HintLine { "Tap any row's " HintKey { color: "--accent-primary", "?" } " to learn what it does" }
         }
     }
 }
@@ -382,9 +378,8 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
     match which {
         ConfigHint::Theme => rsx! {
             HintDialog { open, title: "Theme",
-                HintLine { "The app's palette. " HintKey { "Change" } " opens the picker and previews as you tap" }
-                HintLine { HintKey { color: "--accent-primary", "Save" } " keeps it. " HintKey { color: "--accent-primary", "Back" } " or a tap outside reverts" }
-                HintLine { "The last four suit color vision deficiency" }
+                HintLine { "The app's palette. It previews as you tap" }
+                HintLine { "The last four are color blind modes" }
             }
         },
         ConfigHint::Mark => rsx! {
@@ -399,12 +394,8 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
         },
         ConfigHint::Celebration => rsx! {
             HintDialog { open, title: "Goal animation",
-                HintLine { "What plays when a counter finishes its day. Try them and see" }
-                HintBullets {
-                    HintBullet { "Only the tap that crosses the goal fires it" }
-                    HintBullet { "No goal, no celebration" }
-                    HintBullet { "A counter can pick its own in its Edit sheet" }
-                }
+                HintLine { "What plays when a counter finishes its day" }
+                HintLine { "A counter can pick its own in its " HintKey { color: "--accent-primary", "Edit" } " sheet" }
             }
         },
         ConfigHint::DarkMode => rsx! {

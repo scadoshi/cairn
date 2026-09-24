@@ -160,6 +160,21 @@ input {
     margin-bottom: 0.4rem;
 }
 
+/* A form label and its "?" on one row. The button stands taller than the
+   label's text, so the row owns the spacing below rather than the label:
+   otherwise the "?" sits almost on top of the input. The gap is the
+   button's own margin-left, the same pairing config rows use. */
+.label-with-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.7rem;
+}
+
+.label-with-hint .label {
+    margin-bottom: 0;
+}
+
 .text-center {
     text-align: center;
 }
@@ -825,7 +840,7 @@ input {
 }
 
 .hint-body {
-    padding: 0.5rem 0;
+    padding: 0.25rem 0;
     text-align: left;
     opacity: 1;
 }
@@ -911,7 +926,7 @@ input {
     max-height: calc(
         100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 16rem
     );
-    padding: 2rem;
+    padding: 1.25rem 1.5rem;
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
     background: var(--bg-primary);
@@ -944,7 +959,8 @@ input {
     border: none;
     border-top: 1px solid var(--border-secondary);
     align-self: stretch;
-    margin: 0 -2rem;
+    /* Negative by the dialog's side padding, so the rule reaches both edges. */
+    margin: 0 -1.5rem;
 }
 
 .alert-dialog-actions {
@@ -953,7 +969,7 @@ input {
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.75rem;
-    margin-top: 0.5rem;
+    margin-top: 0.25rem;
 }
 
 .alert-dialog-cancel,

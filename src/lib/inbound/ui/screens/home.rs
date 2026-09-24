@@ -19,9 +19,7 @@ use crate::{
             bottom_sheet::BottomSheet,
             counter_form::{CounterForm, CounterFormState, EditSheet},
             counter_list::CounterList,
-            hint::{
-                HintBullet, HintBullets, HintChip, HintDialog, HintKey, HintLine, use_screen_hint,
-            },
+            hint::{HintBullet, HintBullets, HintChip, HintDialog, HintLine, use_screen_hint},
             quote_card::QuoteCard,
             tile::Tile,
         },
@@ -204,7 +202,6 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
     let store = use_store();
     let toast = use_toast();
     let mut form = use_hook(CounterFormState::default);
-    let hint_open = use_signal(|| false);
 
     // Every open starts blank.
     use_effect(move || {
@@ -232,18 +229,9 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
     };
 
     rsx! {
-        HintDialog { open: hint_open, title: "New counter",
-            HintLine { "Name it after the thing you do, like pushups" }
-            HintBullets {
-                HintBullet { "Goal is optional" }
-                HintBullet { "Step is how much one tap adds. Big step is an outer pair for bigger sets" }
-                HintBullet { HintKey { color: "--accent-primary", "Default" } " follows the animation set in Config" }
-            }
-        }
         BottomSheet {
             open,
             title: "Create counter",
-            hint: hint_open,
             footer: rsx! {
                 Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
                 Button { variant: ButtonVariant::Util, onclick: save, "Save" }

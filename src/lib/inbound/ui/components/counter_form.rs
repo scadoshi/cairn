@@ -17,7 +17,7 @@ use crate::{
         TOAST_NORMAL, bump_store_version,
         components::{
             bottom_sheet::BottomSheet,
-            hint::{HintBullet, HintBullets, HintDialog, HintKey, HintLine},
+            hint::{HintDialog, HintKey, HintLine, InfoButton},
         },
         today, use_store,
     },
@@ -202,6 +202,8 @@ pub fn CounterForm(state: CounterFormState) -> Element {
         mut celebration,
         error,
     } = state;
+    let mut hint = use_signal(|| None::<FormHint>);
+    let mut hint_open = use_signal(|| false);
     let days = stats::days_in_year(today().year());
     let preview = amount()
         .trim()
@@ -213,7 +215,10 @@ pub fn CounterForm(state: CounterFormState) -> Element {
 
     rsx! {
         form { class: "flex-col text-center", onsubmit: move |e| e.prevent_default(),
-            label { class: "label", r#for: "counter_name", "Name" }
+            div { class: "label-with-hint",
+                label { class: "label", r#for: "counter_name", "Name" }
+                InfoButton { onclick: move |_| { hint.set(Some(FormHint::Name)); hint_open.set(true); } }
+            }
             input {
                 class: "input",
                 id: "counter_name",
@@ -225,7 +230,10 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                 spellcheck: "false",
                 oninput: move |e| name.set(e.value()),
             }
-            label { class: "label", r#for: "counter_goal", "Goal" }
+            div { class: "label-with-hint",
+                label { class: "label", r#for: "counter_goal", "Goal" }
+                InfoButton { onclick: move |_| { hint.set(Some(FormHint::Goal)); hint_open.set(true); } }
+            }
             // A text field, not type=number: iOS WebKit drops keystrokes when a
             // number input's value is rewritten mid-typing, which a bound value
             // does on every key. inputmode still brings up the number pad, and
@@ -255,13 +263,19 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                     }
                 }
             }
-            label { class: "label", "Step" }
+            div { class: "label-with-hint",
+                label { class: "label", "Step" }
+                InfoButton { onclick: move |_| { hint.set(Some(FormHint::Step)); hint_open.set(true); } }
+            }
             div { class: "chip-row chip-row-center",
                 for n in Step::ALLOWED {
                     Chip { selected: step() == n, onclick: move |_| step.set(n), "{n}" }
                 }
             }
-            label { class: "label", "Big step" }
+            div { class: "label-with-hint",
+                label { class: "label", "Big step" }
+                InfoButton { onclick: move |_| { hint.set(Some(FormHint::BigStep)); hint_open.set(true); } }
+            }
             div { class: "chip-row chip-row-center",
                 // Zero is "none", and it comes first so the default reads as
                 // the absence of a second button rather than a size.
@@ -274,7 +288,10 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                     Chip { selected: big_step() == n, onclick: move |_| big_step.set(n), "{n}" }
                 }
             }
-            label { class: "label", "Goal animation" }
+            div { class: "label-with-hint",
+                label { class: "label", "Goal animation" }
+                InfoButton { onclick: move |_| { hint.set(Some(FormHint::Celebration)); hint_open.set(true); } }
+            }
             div { class: "chip-row chip-row-center",
                 // Default first: most counters should follow the app-wide
                 // setting rather than each carrying its own opinion.
@@ -295,6 +312,57 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                 p { class: "form-error", "{e}" }
             }
         }
+        FormHintDialog { open: hint_open, which: hint() }
+    }
+}
+
+/// Which field's hint is showing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FormHint {
+    Name,
+    Goal,
+    Step,
+    BigStep,
+    Celebration,
+}
+
+/// One dialog for the whole form, its content picked by `which`. The same
+/// shape Config uses: a "?" per field beats one dialog trying to explain
+/// every field at once.
+#[component]
+fn FormHintDialog(open: Signal<bool>, which: Option<FormHint>) -> Element {
+    let Some(which) = which else {
+        return rsx! {};
+    };
+    match which {
+        FormHint::Name => rsx! {
+            HintDialog { open, title: "Name",
+                HintLine { "Names the counter and its CSV export" }
+            }
+        },
+        FormHint::Goal => rsx! {
+            HintDialog { open, title: "Goal",
+                HintLine { "Optional. Any unit becomes what today has to clear" }
+                HintLine { "Changing it leaves logged days alone" }
+            }
+        },
+        FormHint::Step => rsx! {
+            HintDialog { open, title: "Step",
+                HintLine { "How much one tap adds, and minus takes off" }
+            }
+        },
+        FormHint::BigStep => rsx! {
+            HintDialog { open, title: "Big step",
+                HintLine { "An optional second pair of buttons, outside the first" }
+                HintLine { "Has to be larger than the step" }
+            }
+        },
+        FormHint::Celebration => rsx! {
+            HintDialog { open, title: "Goal animation",
+                HintLine { "What plays when this counter finishes its day" }
+                HintLine { HintKey { color: "--accent-primary", "Default" } " follows the animation set in Config" }
+            }
+        },
     }
 }
 
@@ -318,7 +386,6 @@ pub fn EditSheet(
     let store = use_store();
     let toast = use_toast();
     let mut form = use_hook(CounterFormState::default);
-    let hint_open = use_signal(|| false);
 
     let seed_name = current_name.clone();
     use_effect(move || {
@@ -352,18 +419,9 @@ pub fn EditSheet(
     };
 
     rsx! {
-        HintDialog { open: hint_open, title: "Edit counter",
-            HintLine { "Changing these does not touch anything already logged" }
-            HintBullets {
-                HintBullet { "Goal is optional" }
-                HintBullet { "Big step is an outer pair for bigger sets. It has to beat the step" }
-                HintBullet { HintKey { color: "--accent-primary", "Default" } " follows the animation set in Config" }
-            }
-        }
         BottomSheet {
             open,
             title: "Edit counter",
-            hint: hint_open,
             footer: rsx! {
                 Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
                 Button { variant: ButtonVariant::Util, onclick: save, "Save" }
