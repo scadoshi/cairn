@@ -1088,3 +1088,93 @@ input {
     color: var(--text-muted);
     text-align: center;
 }
+
+/* ==================
+   celebrations
+   ================== */
+
+/* Both mount at the app root, beside the router, so nothing clips them.
+   transform and opacity only: anything that triggers layout janks in the
+   WebView. pointer-events: none so a celebration never eats a tap. */
+.celebrate-sheen,
+.celebrate-confetti {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+/* A band of light running up the screen once. */
+.celebrate-sheen::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 45vh;
+    background: linear-gradient(
+        to top,
+        transparent,
+        color-mix(in srgb, var(--color-success) 22%, transparent),
+        color-mix(in srgb, var(--accent-primary) 16%, transparent),
+        transparent
+    );
+    animation: sheen-rise 900ms ease-out forwards;
+}
+
+@keyframes sheen-rise {
+    from {
+        transform: translateY(100vh);
+        opacity: 0;
+    }
+    25% {
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-50vh);
+        opacity: 0;
+    }
+}
+
+.confetti-piece {
+    position: absolute;
+    top: -6vh;
+    width: 0.5rem;
+    height: 0.8rem;
+    border-radius: 0.1rem;
+    opacity: 0;
+    animation-name: confetti-fall;
+    animation-timing-function: ease-in;
+    animation-fill-mode: forwards;
+}
+
+/* The theme's own colors, so confetti follows the palette. */
+.confetti-color-0 { background-color: var(--accent-primary); }
+.confetti-color-1 { background-color: var(--accent-secondary); }
+.confetti-color-2 { background-color: var(--accent-tertiary); }
+.confetti-color-3 { background-color: var(--color-success); }
+
+@keyframes confetti-fall {
+    from {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    85% {
+        opacity: 1;
+    }
+    to {
+        transform: translateY(110vh) rotate(540deg);
+        opacity: 0;
+    }
+}
+
+/* Someone who has asked the OS for less motion gets none of this. */
+@media (prefers-reduced-motion: reduce) {
+    .celebrate-sheen,
+    .celebrate-confetti {
+        display: none;
+    }
+}

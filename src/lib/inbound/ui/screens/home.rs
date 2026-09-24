@@ -192,6 +192,7 @@ pub fn Home() -> Element {
                 current_name: c.name.to_string(),
                 current_goal: c.goal,
                 current_step: c.step.get(),
+                current_big_step: c.big_step.map(crate::domain::counter::Step::get),
                 on_saved: move |()| reload.call(()),
             }
         }
@@ -210,15 +211,15 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
     // Every open starts blank.
     use_effect(move || {
         if open() {
-            form.load("", None, 1);
+            form.load("", None, 1, None);
         }
     });
 
     let save = move |_| {
-        let Some((name, goal, step)) = form.validate() else {
+        let Some((name, goal, step, big_step)) = form.validate() else {
             return;
         };
-        match store.create_counter(&name, goal, step, today()) {
+        match store.create_counter(&name, goal, step, big_step, today()) {
             Ok(c) => {
                 toast.success(
                     format!("Saved {}", c.name),
@@ -239,6 +240,7 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
                 HintBullet { "Goal is optional. Pick a number and whether it is per day, week, or year." }
                 HintBullet { "A yearly goal still shows a daily share, so " HintChip { class: "stat-chip-goal", "1,000/year" } " asks for 3 a day." }
                 HintBullet { "Step is how much one tap adds. Set it to 10 and " HintKey { color: "--accent-primary", "+10" } " logs ten at a time." }
+                HintBullet { "Big step adds a second, larger pair outside the first: " HintKey { color: "--accent-primary", "-20" } HintKey { color: "--accent-primary", "-10" } HintKey { color: "--accent-primary", "+10" } HintKey { color: "--accent-primary", "+20" } ". Leave it on None for one pair." }
             }
         }
         BottomSheet {

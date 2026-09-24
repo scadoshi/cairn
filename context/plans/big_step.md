@@ -1,6 +1,6 @@
 # A second, larger increment
 
-Not started. Scoped 2026-09-24.
+Built 2026-09-24. The bar wrap question is still open; look at it on the phone.
 
 A counter gets an optional big step alongside its step, so the bar reads `[-20] [-10] [+10] [+20] [Edit]`. Usually sets of ten, sometimes twenty.
 

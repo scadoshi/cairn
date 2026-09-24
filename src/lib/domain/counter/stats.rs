@@ -428,6 +428,22 @@ pub fn across_counters(
     out
 }
 
+/// Whether this tap is the one that finished the day.
+///
+/// True only when the day was short before and is not after. Firing from the
+/// tap rather than from render state is what keeps this free: there is no
+/// celebrated-today flag to store or clear, and reopening the app on a day
+/// already finished celebrates nothing.
+pub fn crosses_goal(goal: Goal, before: u32, applied: i64, days_in_year: u32) -> bool {
+    if applied <= 0 {
+        return false;
+    }
+    let after = u64::from(before).saturating_add(applied.unsigned_abs());
+    let after = u32::try_from(after).unwrap_or(u32::MAX);
+    remaining_today(goal, before, days_in_year) > 0
+        && remaining_today(goal, after, days_in_year) == 0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -595,6 +611,36 @@ mod tests {
         let entries = [e(2026, 1, 1, 50), e(2026, 1, 2, 50), e(2026, 1, 3, 10)];
         let s = summarize(&entries, None, d(2026, 1, 3));
         assert_eq!(s.best_day, Some(e(2026, 1, 1, 50)));
+    }
+
+    #[test]
+    fn crossing_the_goal_fires_once_on_the_tap_that_does_it() {
+        let goal = Goal::per_day(100).unwrap();
+        // The tap that lands on it, and the one that sails past it.
+        assert!(crosses_goal(goal, 90, 10, 365));
+        assert!(crosses_goal(goal, 90, 50, 365));
+        // Short before and short after.
+        assert!(!crosses_goal(goal, 10, 10, 365));
+        // Already finished: every later tap is silent.
+        assert!(!crosses_goal(goal, 100, 10, 365));
+        assert!(!crosses_goal(goal, 250, 10, 365));
+    }
+
+    #[test]
+    fn subtracting_never_celebrates() {
+        let goal = Goal::per_day(100).unwrap();
+        assert!(!crosses_goal(goal, 150, -10, 365));
+        assert!(!crosses_goal(goal, 100, -1, 365));
+        // A tap that applied nothing is not a crossing either.
+        assert!(!crosses_goal(goal, 90, 0, 365));
+    }
+
+    #[test]
+    fn a_weekly_goal_crosses_at_its_daily_share() {
+        // 20,000 a week is 2,858 a day once rounded up.
+        let goal = Goal::per_week(20_000).unwrap();
+        assert!(!crosses_goal(goal, 2_800, 50, 365));
+        assert!(crosses_goal(goal, 2_800, 58, 365));
     }
 
     #[test]

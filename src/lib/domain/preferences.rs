@@ -77,6 +77,74 @@ impl Logo {
     }
 }
 
+/// What happens when a counter's daily goal is met.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum Celebration {
+    /// A sheen running up the screen.
+    #[default]
+    Sheen,
+    /// Confetti in the theme's colors.
+    Confetti,
+    /// Nothing.
+    Off,
+}
+
+impl Celebration {
+    /// Every option, for cycling.
+    pub const ALL: [Self; 3] = [Self::Sheen, Self::Confetti, Self::Off];
+
+    /// Short label.
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Sheen => "Sheen",
+            Self::Confetti => "Confetti",
+            Self::Off => "Off",
+        }
+    }
+
+    /// The next option round.
+    #[must_use]
+    pub fn next(self) -> Self {
+        let i = Self::ALL.iter().position(|o| *o == self).unwrap_or(0);
+        Self::ALL
+            .get((i + 1) % Self::ALL.len())
+            .copied()
+            .unwrap_or_default()
+    }
+}
+
+/// Lines shown when a goal is met, one picked per crossing.
+///
+/// Stepped through with a stride coprime with the length, the way the quotes
+/// rotate, so the same one does not come up twice running and nothing has to
+/// be stored to remember which was last.
+const DONE_LINES: [&str; 11] = [
+    "Day done",
+    "Goal met",
+    "That's the day",
+    "Signed off",
+    "Another stone on the pile",
+    "Logged and done",
+    "Today is paid",
+    "Nothing owed",
+    "Squared away",
+    "That's the work",
+    "Done and dusted",
+];
+
+/// Stride through [`DONE_LINES`]; 4 is coprime with 11.
+const DONE_STRIDE: usize = 4;
+
+/// A success line, varied by `nth` so consecutive crossings differ.
+pub fn done_line(nth: u64) -> &'static str {
+    let len = DONE_LINES.len();
+    let i = usize::try_from(nth % len as u64).unwrap_or(0);
+    DONE_LINES
+        .get(i.wrapping_mul(DONE_STRIDE) % len)
+        .copied()
+        .unwrap_or("Goal met")
+}
+
 /// The settings that shape the statistics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -97,6 +165,8 @@ pub struct Preferences {
     pub confirm_minus: bool,
     /// Which mark the home screen shows.
     pub logo: Logo,
+    /// What happens when a daily goal is met.
+    pub celebration: Celebration,
 }
 
 impl Default for Preferences {
@@ -109,6 +179,7 @@ impl Default for Preferences {
             counter_order: CounterOrder::Created,
             confirm_minus: false,
             logo: Logo::Cairn,
+            celebration: Celebration::Sheen,
         }
     }
 }
@@ -185,6 +256,33 @@ mod tests {
         assert_eq!(p.counter_order, CounterOrder::Lifetime);
         assert!(p.confirm_minus);
         assert_eq!(p.logo, Logo::Cairn, "a missing field takes its default");
+    }
+
+    #[test]
+    fn every_success_line_is_reachable_before_any_repeats() {
+        let mut seen = std::collections::HashSet::new();
+        let mut last = "";
+        for n in 0..DONE_LINES.len() as u64 {
+            let line = done_line(n);
+            assert_ne!(line, last, "the same line twice running at {n}");
+            seen.insert(line);
+            last = line;
+        }
+        assert_eq!(seen.len(), DONE_LINES.len(), "some line never shows");
+    }
+
+    #[test]
+    fn the_celebration_option_cycles_through_every_choice() {
+        let mut seen = Vec::new();
+        let mut c = Celebration::default();
+        for _ in 0..Celebration::ALL.len() {
+            seen.push(c);
+            c = c.next();
+        }
+        assert_eq!(c, Celebration::default());
+        for option in Celebration::ALL {
+            assert!(seen.contains(&option), "{option:?} is never reachable");
+        }
     }
 
     #[test]

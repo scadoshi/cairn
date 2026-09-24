@@ -3,7 +3,9 @@
 //! button on each card, and the counter screen, so the three never drift.
 //! The host owns the signals and does the saving.
 
-use crate::domain::counter::{CounterId, CounterName, Goal, Step, ValidationError, stats};
+use crate::domain::counter::{
+    CounterId, CounterName, Goal, Step, ValidationError, check_big_step, stats,
+};
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -59,6 +61,9 @@ pub struct CounterFormState {
     pub unit: Signal<GoalUnit>,
     /// Step, one of `Step::ALLOWED`.
     pub step: Signal<u32>,
+    /// A second, larger step. Zero means none, which keeps the counter's
+    /// bar at three buttons.
+    pub big_step: Signal<u32>,
     /// Validation message to show, if any.
     pub error: Signal<Option<String>>,
 }
@@ -71,6 +76,7 @@ impl Default for CounterFormState {
             amount: Signal::new(String::new()),
             unit: Signal::new(GoalUnit::Day),
             step: Signal::new(1),
+            big_step: Signal::new(0),
             error: Signal::new(None),
         }
     }
@@ -78,7 +84,7 @@ impl Default for CounterFormState {
 
 impl CounterFormState {
     /// Loads an existing counter's values.
-    pub fn load(&mut self, name: &str, goal: Option<Goal>, step: u32) {
+    pub fn load(&mut self, name: &str, goal: Option<Goal>, step: u32, big_step: Option<u32>) {
         self.name.set(name.to_string());
         match goal {
             Some(g @ (Goal::PerDay(n) | Goal::PerWeek(n) | Goal::PerYear(n))) => {
@@ -88,11 +94,12 @@ impl CounterFormState {
             None => self.amount.set(String::new()),
         }
         self.step.set(step);
+        self.big_step.set(big_step.unwrap_or(0));
         self.error.set(None);
     }
 
     /// Validates the fields into domain values, or records the error.
-    pub fn validate(&mut self) -> Option<(CounterName, Option<Goal>, Step)> {
+    pub fn validate(&mut self) -> Option<(CounterName, Option<Goal>, Step, Option<Step>)> {
         let name = match CounterName::new(&(self.name)()) {
             Ok(n) => n,
             Err(e) => {
@@ -124,8 +131,29 @@ impl CounterFormState {
                 return None;
             }
         };
+        // Zero is the form's way of saying "none"; the domain decides
+        // whether what is left is a sensible pair.
+        let raw_big = (self.big_step)();
+        let big = if raw_big == 0 {
+            None
+        } else {
+            match Step::new(raw_big) {
+                Ok(s) => Some(s),
+                Err(e) => {
+                    self.error.set(Some(e.to_string()));
+                    return None;
+                }
+            }
+        };
+        let big_step = match check_big_step(step, big) {
+            Ok(b) => b,
+            Err(e) => {
+                self.error.set(Some(e.to_string()));
+                return None;
+            }
+        };
         self.error.set(None);
-        Some((name, goal, step))
+        Some((name, goal, step, big_step))
     }
 }
 
@@ -137,6 +165,7 @@ pub fn CounterForm(state: CounterFormState) -> Element {
         mut amount,
         mut unit,
         mut step,
+        mut big_step,
         error,
     } = state;
     let days = stats::days_in_year(today().year());
@@ -192,10 +221,23 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                     }
                 }
             }
-            label { class: "label", "Tap increments" }
+            label { class: "label", "Step" }
             div { class: "chip-row chip-row-center",
                 for n in Step::ALLOWED {
                     Chip { selected: step() == n, onclick: move |_| step.set(n), "{n}" }
+                }
+            }
+            label { class: "label", "Big step" }
+            div { class: "chip-row chip-row-center",
+                // Zero is "none", and it comes first so the default reads as
+                // the absence of a second button rather than a size.
+                Chip {
+                    selected: big_step() == 0,
+                    onclick: move |_| big_step.set(0),
+                    "None"
+                }
+                for n in Step::ALLOWED.into_iter().filter(|n| *n > step()) {
+                    Chip { selected: big_step() == n, onclick: move |_| big_step.set(n), "{n}" }
                 }
             }
             if let Some(e) = error() {
@@ -217,6 +259,7 @@ pub fn EditSheet(
     current_name: String,
     current_goal: Option<Goal>,
     current_step: u32,
+    current_big_step: Option<u32>,
     on_saved: EventHandler<()>,
 ) -> Element {
     let mut open = open;
@@ -228,15 +271,15 @@ pub fn EditSheet(
     let seed_name = current_name.clone();
     use_effect(move || {
         if open() {
-            form.load(&seed_name, current_goal, current_step);
+            form.load(&seed_name, current_goal, current_step, current_big_step);
         }
     });
 
     let save = move |_| {
-        let Some((name, goal, step)) = form.validate() else {
+        let Some((name, goal, step, big_step)) = form.validate() else {
             return;
         };
-        match store.update_counter(id, &name, goal, step) {
+        match store.update_counter(id, &name, goal, step, big_step) {
             Ok(()) => {
                 toast.success(
                     format!("Saved {name}"),
@@ -257,6 +300,7 @@ pub fn EditSheet(
                 HintBullet { "Goal is optional. Clear it and the counter just totals up." }
                 HintBullet { "A yearly goal still shows a daily share, so " HintChip { class: "stat-chip-goal", "1,000/year" } " asks for 3 a day." }
                 HintBullet { "Step is how much one tap adds, on this screen and on the list." }
+                HintBullet { "Big step adds a larger pair outside the first, for the days you do more at once. It has to be bigger than the step." }
             }
         }
         BottomSheet {

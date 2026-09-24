@@ -1,6 +1,6 @@
 # Goal-met celebrations
 
-Not started. Scoped 2026-09-24.
+Built 2026-09-24.
 
 A counter crossing its daily goal should say so: a sheen running up the screen, or confetti in the theme's colors. One or the other, or off. Plus a toast with a rotating success line.
 

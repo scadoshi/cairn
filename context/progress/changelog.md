@@ -6,6 +6,13 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- A celebration when a counter's daily goal is met: a sheen up the screen or
+  confetti in the theme's colors, switchable or off under Goal met, with a
+  rotating success line. It fires from the tap that crosses, so reopening the
+  app on a finished day celebrates nothing.
+- An optional big step per counter, giving a bar of `-20 -10 +10 +20 Edit`.
+  Schema v6; counters without one keep three buttons.
+
 - Renamed to Cairn. The bundle id `com.scadoshi.count` and the data folder
   `scadoshi-count/count.db` deliberately did not move: both are permanent once
   real data exists.

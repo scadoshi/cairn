@@ -19,6 +19,10 @@ pub enum ValidationError {
     /// A goal of zero means "no goal"; use `None` for that instead.
     #[error("goal must be at least 1")]
     ZeroGoal,
+    /// Two buttons that move the count by nearly the same amount are not
+    /// worth the width they cost.
+    #[error("the big step must be larger than the step")]
+    BigStepNotLarger,
     /// Steps come from a fixed menu so the buttons stay readable.
     #[error("step must be one of 1, 5, 10, 25, 50, 100")]
     BadStep,
@@ -266,6 +270,19 @@ impl Default for Step {
     }
 }
 
+/// Checks a big step against the step it sits beside.
+///
+/// `None` is always fine: a counter without a big step keeps the
+/// three-button bar. A big step that is not larger is rejected, because two
+/// buttons moving the count by nearly the same amount are not worth the
+/// width they cost.
+pub fn check_big_step(step: Step, big: Option<Step>) -> Result<Option<Step>, ValidationError> {
+    match big {
+        Some(b) if b.get() <= step.get() => Err(ValidationError::BigStepNotLarger),
+        other => Ok(other),
+    }
+}
+
 /// A thing being counted.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Counter {
@@ -277,6 +294,9 @@ pub struct Counter {
     pub goal: Option<Goal>,
     /// How much one tap adds.
     pub step: Step,
+    /// A second, larger step, shown outside the first on the bar. `None`
+    /// leaves the counter with the three-button bar it had.
+    pub big_step: Option<Step>,
     /// Day the counter was created; the odometer starts here.
     pub created_on: NaiveDate,
 }
@@ -303,6 +323,25 @@ pub struct DayCount {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_big_step_has_to_be_bigger() {
+        let ten = Step::new(10).unwrap();
+        assert_eq!(check_big_step(ten, None), Ok(None));
+        assert_eq!(
+            check_big_step(ten, Step::new(25).ok()),
+            Ok(Step::new(25).ok())
+        );
+        assert_eq!(
+            check_big_step(ten, Step::new(10).ok()),
+            Err(ValidationError::BigStepNotLarger),
+            "the same size twice is two buttons doing one job"
+        );
+        assert_eq!(
+            check_big_step(ten, Step::new(5).ok()),
+            Err(ValidationError::BigStepNotLarger)
+        );
+    }
 
     #[test]
     fn name_trims_and_rejects_empty() {

@@ -2,6 +2,7 @@
 
 pub mod alert_dialog;
 pub mod bottom_sheet;
+pub mod celebration;
 pub mod counter_form;
 pub mod counter_list;
 pub mod dialog_host;

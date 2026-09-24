@@ -16,12 +16,13 @@ use crate::{
             stats,
             stats::days_in_year,
         },
-        preferences::CounterOrder,
+        preferences::{CounterOrder, done_line},
     },
     inbound::ui::{
         SharedStore,
         components::{
             alert_dialog::ConfirmDialog,
+            celebration::{CelebrationHost, celebrate},
             tile::{Tile, TileGrid, rate},
         },
         now, today, use_prefs, use_store,
@@ -85,8 +86,11 @@ fn CounterCard(
         .goal
         .map(|g| stats::remaining_today(g, summary.today, days))
         .filter(|left| *left > 0);
+    let big = counter.big_step.map(|b| i64::from(b.get()));
     let mut confirm_open = use_signal(|| false);
+    let mut confirm_big = use_signal(|| false);
     let today_count = summary.today;
+    let host = use_context::<CelebrationHost>();
     let bump = use_callback(move |delta: i64| {
         // Report what actually happened rather than what was asked for: a
         // day cannot go below zero, so this makes an empty day read "-0"
@@ -101,16 +105,30 @@ fn CounterCard(
         }
         match bump_store.adjust(id, now(), today(), applied) {
             Ok(_) => {
-                // No counter name: the toast sits over the card you just
-                // tapped, and a long name pushed it off the screen edge.
-                toast.info(
-                    if applied >= 0 {
-                        format!("+{}", thousands_i64(applied))
-                    } else {
-                        format!("-{}", thousands_i64(-applied))
-                    },
-                    ToastOptions::default().duration(Duration::from_millis(900)),
-                );
+                // The tap that finishes the day says so, once. Firing from
+                // here rather than from render state is what keeps it from
+                // going off on every launch of an already-finished day.
+                let done = counter
+                    .goal
+                    .is_some_and(|g| stats::crosses_goal(g, today_count, applied, days));
+                if done {
+                    celebrate(host, prefs.celebration);
+                    toast.success(
+                        done_line(u64::from(summary.lifetime)).to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(1800)),
+                    );
+                } else {
+                    // No counter name: the toast sits over the card you just
+                    // tapped, and a long name pushed it off the screen edge.
+                    toast.info(
+                        if applied >= 0 {
+                            format!("+{}", thousands_i64(applied))
+                        } else {
+                            format!("-{}", thousands_i64(-applied))
+                        },
+                        ToastOptions::default().duration(Duration::from_millis(900)),
+                    );
+                }
                 on_bump.call(());
             }
             Err(e) => toast.error(e.to_string(), ToastOptions::default()),
@@ -152,6 +170,15 @@ fn CounterCard(
                 }
             }
             ActionBar {
+                // Big on the outside: distance from the centre matching
+                // magnitude is what makes the bar readable without labels.
+                if let Some(big) = big {
+                    Button {
+                        variant: ButtonVariant::Util,
+                        onclick: move |_| if confirm_minus { confirm_big.set(true) } else { bump.call(-big) },
+                        "-{big}"
+                    }
+                }
                 Button {
                     variant: ButtonVariant::Util,
                     onclick: move |_| if confirm_minus { confirm_open.set(true) } else { bump.call(-step) },
@@ -162,10 +189,26 @@ fn CounterCard(
                     onclick: move |_| bump.call(step),
                     "+{step}"
                 }
+                if let Some(big) = big {
+                    Button {
+                        variant: ButtonVariant::Util,
+                        onclick: move |_| bump.call(big),
+                        "+{big}"
+                    }
+                }
                 Button {
                     variant: ButtonVariant::Util,
                     onclick: move |_| on_edit.call(()),
                     "Edit"
+                }
+            }
+            if let Some(big) = big {
+                ConfirmDialog {
+                    open: confirm_big,
+                    title: format!("Take {big} off {}?", counter.name),
+                    body: "This subtracts from today's count.".to_string(),
+                    confirm_label: format!("Take {big}"),
+                    on_confirm: move |()| bump.call(-big),
                 }
             }
             ConfirmDialog {

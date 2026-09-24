@@ -105,6 +105,8 @@ pub fn App() -> Element {
     use_context_provider(|| dialogs);
     let screen_hint = components::hint::ScreenHint(use_signal(|| None));
     use_context_provider(|| screen_hint);
+    let celebrations = components::celebration::CelebrationHost(use_signal(|| None));
+    use_context_provider(|| celebrations);
 
     // Persist every theme change. Runs once at mount too, which is harmless:
     // it writes back whatever was just loaded.
@@ -144,6 +146,9 @@ pub fn App() -> Element {
                 // Dialogs draw here, beside the router, so no screen's scroll
                 // container can trap their fixed overlay.
                 components::dialog_host::DialogHostView {}
+                // Same reason as the dialogs: a fixed overlay inside a
+                // screen is clipped by the card or the scroll column.
+                components::celebration::CelebrationHostView {}
             }
         }
     }

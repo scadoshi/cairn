@@ -2,18 +2,22 @@
 //! delete.
 
 use crate::{
-    domain::counter::{
-        Counter, CounterId, DayCount, Event, Goal,
-        format::{compact, compact_i64, thousands, thousands_i64},
-        series,
-        series::HourlyBasis,
-        stats,
-        stats::Summary,
+    domain::{
+        counter::{
+            Counter, CounterId, DayCount, Event, Goal, Step,
+            format::{compact, compact_i64, thousands, thousands_i64},
+            series,
+            series::HourlyBasis,
+            stats,
+            stats::Summary,
+        },
+        preferences::done_line,
     },
     inbound::ui::{
         bump_store_version,
         components::{
             alert_dialog::ConfirmDialog,
+            celebration::{CelebrationHost, celebrate},
             counter_form::EditSheet,
             hint::{HintBullet, HintBullets, HintDialog, HintKey, HintLine, use_screen_hint},
             line_chart::{LineChart, Point},
@@ -75,6 +79,8 @@ pub fn CounterScreen(id: i64) -> Element {
     use_effect(move || reload.call(()));
 
     let adjust_store = store.clone();
+    let host = use_context::<CelebrationHost>();
+    let celebrate_pref = use_prefs();
     let adjust = use_callback(move |delta: i64| {
         let today_count = entries()
             .iter()
@@ -93,16 +99,29 @@ pub fn CounterScreen(id: i64) -> Element {
         }
         match adjust_store.adjust(id, now(), today(), applied) {
             Ok(_) => {
-                // No counter name: you are already looking at the counter,
-                // and a long one pushed the toast off the screen edge.
-                toast.info(
-                    if applied >= 0 {
-                        format!("+{}", thousands_i64(applied))
-                    } else {
-                        format!("-{}", thousands_i64(-applied))
-                    },
-                    ToastOptions::default().duration(Duration::from_millis(900)),
-                );
+                // The tap that finishes the day says so, once.
+                let done = counter().and_then(|c| c.goal).is_some_and(|g| {
+                    let days = stats::days_in_year(today().year());
+                    stats::crosses_goal(g, today_count, applied, days)
+                });
+                if done {
+                    celebrate(host, celebrate_pref().celebration);
+                    toast.success(
+                        done_line(u64::from(today_count)).to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(1800)),
+                    );
+                } else {
+                    // No counter name: you are already looking at the counter,
+                    // and a long one pushed the toast off the screen edge.
+                    toast.info(
+                        if applied >= 0 {
+                            format!("+{}", thousands_i64(applied))
+                        } else {
+                            format!("-{}", thousands_i64(-applied))
+                        },
+                        ToastOptions::default().duration(Duration::from_millis(900)),
+                    );
+                }
                 reload.call(());
             }
             Err(e) => toast.error(e.to_string(), ToastOptions::default()),
@@ -119,6 +138,7 @@ pub fn CounterScreen(id: i64) -> Element {
         };
     };
     let step = i64::from(c.step.get());
+    let big = c.big_step.map(|b| i64::from(b.get()));
     let now = today();
     let prefs = use_prefs()();
     let summary = stats::summarize_with(&entries(), c.goal, now, &prefs);
@@ -145,6 +165,7 @@ pub fn CounterScreen(id: i64) -> Element {
 
     let mut confirm_delete = use_signal(|| false);
     let mut confirm_minus = use_signal(|| false);
+    let mut confirm_big = use_signal(|| false);
     let mut rename_open = use_signal(|| false);
     let hint_open = use_signal(|| false);
     use_screen_hint(hint_open);
@@ -182,12 +203,27 @@ pub fn CounterScreen(id: i64) -> Element {
                         Tile { label: "this month", value: compact(summary.this_month) }
                     }
                     ActionBar {
+                        // Big on the outside, matching the card's bar.
+                        if let Some(big) = big {
+                            Button {
+                                variant: ButtonVariant::Util,
+                                onclick: move |_| if prefs.confirm_minus { confirm_big.set(true) } else { adjust.call(-big) },
+                                "-{big}"
+                            }
+                        }
                         Button {
                             variant: ButtonVariant::Util,
                             onclick: move |_| if prefs.confirm_minus { confirm_minus.set(true) } else { adjust.call(-step) },
                             "-{step}"
                         }
                         Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(step), "+{step}" }
+                        if let Some(big) = big {
+                            Button {
+                                variant: ButtonVariant::Util,
+                                onclick: move |_| adjust.call(big),
+                                "+{big}"
+                            }
+                        }
                     }
                 }
                 YearCard { summary: summary.clone() }
@@ -252,7 +288,17 @@ pub fn CounterScreen(id: i64) -> Element {
             current_name: c.name.to_string(),
             current_goal: c.goal,
             current_step: c.step.get(),
+            current_big_step: c.big_step.map(Step::get),
             on_saved: move |()| reload.call(()),
+        }
+        if let Some(big) = big {
+            ConfirmDialog {
+                open: confirm_big,
+                title: format!("Take {big} off {}?", c.name),
+                body: "This subtracts from today's count.".to_string(),
+                confirm_label: format!("Take {big}"),
+                on_confirm: move |()| adjust.call(-big),
+            }
         }
         ConfirmDialog {
             open: confirm_minus,

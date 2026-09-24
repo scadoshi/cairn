@@ -275,6 +275,19 @@ pub fn Config() -> Element {
                 }
                 div { class: "profile-row",
                     span { class: "row-label-with-hint",
+                        span { class: "profile-row-label", "Goal met" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Celebration)); hint_open.set(true); } }
+                    }
+                    div { class: "profile-row-value",
+                        Button {
+                            variant: ButtonVariant::Util,
+                            onclick: move |_| prefs.with_mut(|q| q.celebration = q.celebration.next()),
+                            "{prefs().celebration.label()}"
+                        }
+                    }
+                }
+                div { class: "profile-row",
+                    span { class: "row-label-with-hint",
                         span { class: "profile-row-label", "Confirm minus" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::ConfirmMinus)); hint_open.set(true); } }
                     }
@@ -338,6 +351,7 @@ pub fn Config() -> Element {
 enum ConfigHint {
     Theme,
     Mark,
+    Celebration,
     DarkMode,
     Dates,
     DayStarts,
@@ -369,6 +383,17 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
                     HintBullet { HintKey { color: "--accent-primary", "Cairn" } " is the app's own mark, a C." }
                     HintBullet { HintKey { color: "--accent-primary", "scadoshi" } " is the dev mark this app was built under, an S." }
                     HintBullet { "It changes nothing but the drawing." }
+                }
+            }
+        },
+        ConfigHint::Celebration => rsx! {
+            HintDialog { open, title: "Goal met",
+                HintLine { "What happens when a counter finishes its day." }
+                HintBullets {
+                    HintBullet { HintKey { color: "--accent-primary", "Sheen" } " runs a band of light up the screen." }
+                    HintBullet { HintKey { color: "--accent-primary", "Confetti" } " drops pieces in the current theme's colors." }
+                    HintBullet { "Only the tap that crosses the goal fires it, never reopening the app." }
+                    HintBullet { "Counters without a goal never celebrate." }
                 }
             }
         },

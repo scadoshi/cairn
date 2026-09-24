@@ -25,6 +25,7 @@ pub trait CounterStore {
         name: &CounterName,
         goal: Option<Goal>,
         step: Step,
+        big_step: Option<Step>,
         today: NaiveDate,
     ) -> Result<Counter, StoreError>;
     /// Changes a counter's name, goal, and step.
@@ -34,6 +35,7 @@ pub trait CounterStore {
         name: &CounterName,
         goal: Option<Goal>,
         step: Step,
+        big_step: Option<Step>,
     ) -> Result<(), StoreError>;
     /// Deletes the counter and every entry under it.
     fn delete_counter(&self, id: CounterId) -> Result<(), StoreError>;
