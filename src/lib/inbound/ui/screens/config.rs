@@ -401,10 +401,9 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
             HintDialog { open, title: "Goal animation",
                 HintLine { "What plays when a counter finishes its day. Try them and see." }
                 HintBullets {
-                    HintBullet { "Only the tap that crosses the goal fires it, never reopening the app." }
-                    HintBullet { "Counters without a goal never celebrate." }
-                    HintBullet { "A counter can pick its own in its Edit sheet; this is the one they follow otherwise." }
-                    HintBullet { HintKey { color: "--accent-primary", "Random" } " uses a different one each time, never the same twice running." }
+                    HintBullet { "Only the tap that crosses the goal fires it." }
+                    HintBullet { "No goal, no celebration." }
+                    HintBullet { "A counter can pick its own in its Edit sheet." }
                 }
             }
         },

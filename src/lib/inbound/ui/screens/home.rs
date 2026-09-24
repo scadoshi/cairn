@@ -172,13 +172,11 @@ pub fn Home() -> Element {
         HintDialog { open: hint_open, title: "Counters",
             HintLine { "Tap a counter's name or numbers to open it." }
             HintBullets {
-                HintBullet { HintKey { color: "--accent-primary", "+" } " and " HintKey { color: "--accent-primary", "-" } " log today. Each tap moves by that counter's step." }
-                HintBullet { HintKey { color: "--accent-primary", "Edit" } " renames a counter or changes its goal and step." }
                 HintBullet {
                     HintChip { class: "stat-chip-short", "40 to go" }
-                    " is what today still owes. It becomes "
+                    " is what today still owes, and turns into "
                     HintChip { class: "stat-chip-met", "goal met" }
-                    " when you get there."
+                    "."
                 }
                 HintBullet { "Up top is every counter added together." }
             }
@@ -238,11 +236,9 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
         HintDialog { open: hint_open, title: "New counter",
             HintLine { "Name it after the thing you do, like pushups." }
             HintBullets {
-                HintBullet { "Goal is optional. Pick a number and whether it is per day, week, or year." }
-                HintBullet { "A yearly goal still shows a daily share, so " HintChip { class: "stat-chip-goal", "1,000/year" } " asks for 3 a day." }
-                HintBullet { "Step is how much one tap adds. Set it to 10 and " HintKey { color: "--accent-primary", "+10" } " logs ten at a time." }
-                HintBullet { "Big step adds a second, larger pair outside the first: " HintKey { color: "--accent-primary", "-20" } HintKey { color: "--accent-primary", "-10" } HintKey { color: "--accent-primary", "+10" } HintKey { color: "--accent-primary", "+20" } ". Leave it on None for one pair." }
-                HintBullet { "Goal animation is this counter's own. " HintKey { color: "--accent-primary", "Default" } " follows the app-wide one in Config." }
+                HintBullet { "Goal is optional." }
+                HintBullet { "Step is how much one tap adds. Big step is an outer pair for bigger sets." }
+                HintBullet { HintKey { color: "--accent-primary", "Default" } " follows the animation set in Config." }
             }
         }
         BottomSheet {

@@ -17,7 +17,7 @@ use crate::{
         TOAST_NORMAL, bump_store_version,
         components::{
             bottom_sheet::BottomSheet,
-            hint::{HintBullet, HintBullets, HintChip, HintDialog, HintKey, HintLine},
+            hint::{HintBullet, HintBullets, HintDialog, HintKey, HintLine},
         },
         today, use_store,
     },
@@ -355,11 +355,9 @@ pub fn EditSheet(
         HintDialog { open: hint_open, title: "Edit counter",
             HintLine { "Changing these does not touch anything already logged." }
             HintBullets {
-                HintBullet { "Goal is optional. Clear it and the counter just totals up." }
-                HintBullet { "A yearly goal still shows a daily share, so " HintChip { class: "stat-chip-goal", "1,000/year" } " asks for 3 a day." }
-                HintBullet { "Step is how much one tap adds, on this screen and on the list." }
-                HintBullet { "Big step adds a larger pair outside the first, for the days you do more at once. It has to be bigger than the step." }
-                HintBullet { "Goal animation is this counter's own. " HintKey { color: "--accent-primary", "Default" } " follows the app-wide one in Config." }
+                HintBullet { "Clear the goal and the counter just totals up." }
+                HintBullet { "Big step is an outer pair for bigger sets. It has to beat the step." }
+                HintBullet { HintKey { color: "--accent-primary", "Default" } " follows the animation set in Config." }
             }
         }
         BottomSheet {
