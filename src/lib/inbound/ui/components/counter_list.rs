@@ -89,6 +89,8 @@ fn CounterCard(
     let mut confirm_open = use_signal(|| false);
     let mut confirm_big = use_signal(|| false);
     let today_count = summary.today;
+    // Owned, because the callback outlives this render.
+    let name = counter.name.to_string();
     let host = use_context::<CelebrationHost>();
     let card_celebration = counter.celebration;
     let bump = use_callback(move |delta: i64| {
@@ -123,13 +125,14 @@ fn CounterCard(
                         );
                     }
                 } else {
-                    // No counter name: the toast sits over the card you just
-                    // tapped, and a long name pushed it off the screen edge.
+                    // Named, because toasts stack in the corner rather than
+                    // over the card that raised them, so three of them in a
+                    // row are otherwise just numbers.
                     toast.info(
                         if applied >= 0 {
-                            format!("+{}", thousands_i64(applied))
+                            format!("{name} +{}", thousands_i64(applied))
                         } else {
-                            format!("-{}", thousands_i64(-applied))
+                            format!("{name} -{}", thousands_i64(-applied))
                         },
                         ToastOptions::default().duration(TOAST_QUICK),
                     );

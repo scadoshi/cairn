@@ -202,13 +202,14 @@ pub fn CounterScreen(id: i64) -> Element {
                         );
                     }
                 } else {
-                    // No counter name: you are already looking at the counter,
-                    // and a long one pushed the toast off the screen edge.
+                    // Named here too, so a toast reads the same wherever the
+                    // tap came from.
+                    let name = counter().map(|c| c.name.to_string()).unwrap_or_default();
                     toast.info(
                         if applied >= 0 {
-                            format!("+{}", thousands_i64(applied))
+                            format!("{name} +{}", thousands_i64(applied))
                         } else {
-                            format!("-{}", thousands_i64(-applied))
+                            format!("{name} -{}", thousands_i64(-applied))
                         },
                         ToastOptions::default().duration(TOAST_QUICK),
                     );

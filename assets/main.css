@@ -380,6 +380,9 @@ input {
     font-size: 1rem;
     letter-spacing: 0.1em;
     color: var(--accent-tertiary);
+    /* Counter names sit here and are often one unbroken word. */
+    overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .card-subtitle {
@@ -935,6 +938,14 @@ input {
     font-weight: 400;
     text-align: center;
     gap: 0.5rem;
+}
+
+/* Titles and bodies carry counter names, which are one unbroken word as
+   often as not. Without this, "Delete Squatsandlungesandmore?" runs out
+   through the dialog's side rather than wrapping. */
+.alert-dialog-title,
+.alert-dialog-description {
+    overflow-wrap: anywhere;
 }
 
 .alert-dialog-title {

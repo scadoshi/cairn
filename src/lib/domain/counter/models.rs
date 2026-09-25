@@ -45,7 +45,11 @@ pub struct CounterName(String);
 
 impl CounterName {
     /// Longest name accepted, in characters.
-    pub const MAX_LEN: usize = 48;
+    ///
+    /// Short because the name has to share a line with something else
+    /// everywhere it appears: a toast beside the delta, a card title beside
+    /// the goal tag, a header beside the hint. Forty-eight fit none of them.
+    pub const MAX_LEN: usize = 24;
 
     /// Trims and validates.
     pub fn new(raw: &str) -> Result<Self, ValidationError> {
