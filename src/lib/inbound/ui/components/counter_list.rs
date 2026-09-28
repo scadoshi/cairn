@@ -85,6 +85,16 @@ fn CounterCard(
         .goal
         .map(|g| stats::remaining_today(g, summary.today, days))
         .filter(|left| *left > 0);
+    // The same question asked of the year rather than of an average day:
+    // what today needs given how far ahead or behind the total is. Only
+    // shown when it disagrees with the flat one, which is the only time it
+    // says anything the tag beside it does not.
+    let pace_today = summary
+        .this_year
+        .pace
+        .as_ref()
+        .map(|p| stats::pace_remaining_today(p, summary.today))
+        .filter(|left| *left > 0 && Some(*left) != left_today);
     let big = counter.big_step.map(|b| i64::from(b.get()));
     let mut confirm_open = use_signal(|| false);
     let mut confirm_big = use_signal(|| false);
@@ -163,6 +173,9 @@ fn CounterCard(
                                 span { class: "stat-chip stat-chip-short", "{thousands(left)} to go" }
                             } else {
                                 span { class: "stat-chip stat-chip-met", "goal met" }
+                            }
+                            if let Some(left) = pace_today {
+                                span { class: "stat-chip stat-chip-derived", "{thousands(left)} to pace" }
                             }
                         }
                     }

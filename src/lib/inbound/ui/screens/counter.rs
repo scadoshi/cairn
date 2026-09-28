@@ -93,8 +93,11 @@ fn CounterHintDialog(open: Signal<bool>, which: Option<CounterHint>) -> Element 
         },
         CounterHint::Goal => rsx! {
             HintDialog { open, title: "Goal",
-                HintLine { "Where you stand against the target, and what today has to clear" }
-                HintLine { "Behind means the days left have to carry more than the original pace" }
+                HintLine { "Where you stand against the target" }
+                HintBullets {
+                    HintBullet { HintKey { "day goal" } " is what the goal asks of every day" }
+                    HintBullet { HintKey { "today to pace" } " is what today asks given how far ahead or behind you are" }
+                }
             }
         },
         CounterHint::Trends => rsx! {
@@ -683,6 +686,16 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
             }
             TileGrid {
                 Tile { label: "remaining", value: compact_i64(p.remaining) }
+                Tile {
+                    label: "day goal",
+                    value: compact(goal.daily_target(year_len)),
+                    hint: "every day".to_string(),
+                }
+                Tile {
+                    label: "today to pace",
+                    value: compact(stats::pace_remaining_today(&p, summary.today)),
+                    hint: "given where you are".to_string(),
+                }
                 Tile { label: "needed per day", value: rate(p.needed_per_day), hint: "to land on it".to_string() }
                 Tile { label: "pace", value: pace_value, hint: pace_hint.to_string() }
             }

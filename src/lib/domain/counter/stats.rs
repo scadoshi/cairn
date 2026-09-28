@@ -354,6 +354,27 @@ pub fn remaining_today(goal: Goal, today_count: u32, days_in_year: u32) -> u32 {
     goal.daily_target(days_in_year).saturating_sub(today_count)
 }
 
+/// What today still needs to keep the year's goal on track, given how far
+/// ahead or behind the total already is.
+///
+/// [`remaining_today`] answers a different question: what the goal asks of
+/// an average day, every day, regardless of history. This one spreads what
+/// is actually left over the days that are actually left, so a week of
+/// surplus lowers it and a week off raises it.
+///
+/// Rounded up, for the same reason the flat target is: a fraction of a rep
+/// left over still has to be done, and rounding down would let the goal
+/// slip by a little every day.
+#[must_use]
+pub fn pace_remaining_today(pace: &Pace, today_count: u32) -> u32 {
+    if pace.needed_per_day <= 0.0 {
+        return 0;
+    }
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let needed = pace.needed_per_day.ceil() as u32;
+    needed.saturating_sub(today_count)
+}
+
 /// How much of `delta` a day holding `today_count` can actually take.
 ///
 /// A day never goes below zero, so subtracting more than is there only takes
@@ -785,5 +806,43 @@ mod tests {
         assert_eq!(remaining_today(goal, 0, 365), 3);
         assert_eq!(remaining_today(goal, 2, 365), 1);
         assert_eq!(remaining_today(goal, 3, 365), 0);
+    }
+
+    #[test]
+    fn pace_target_falls_when_you_are_ahead() {
+        // Day 100 of 365, 10,000 a year, and 5,000 already logged: well
+        // ahead, so the rest of the year carries less than the flat target.
+        let goal = Goal::per_year(10_000).unwrap();
+        let flat = goal.daily_target(365);
+        let ahead = pace(goal, 5_000, d(2026, 4, 10));
+        assert!(
+            pace_remaining_today(&ahead, 0) < flat,
+            "being ahead should ask less of today"
+        );
+    }
+
+    #[test]
+    fn pace_target_rises_when_you_are_behind() {
+        let goal = Goal::per_year(10_000).unwrap();
+        let flat = goal.daily_target(365);
+        let behind = pace(goal, 100, d(2026, 4, 10));
+        assert!(
+            pace_remaining_today(&behind, 0) > flat,
+            "being behind should ask more of today"
+        );
+    }
+
+    #[test]
+    fn pace_target_counts_what_today_already_has() {
+        let p = pace(Goal::per_year(10_000).unwrap(), 100, d(2026, 4, 10));
+        let fresh = pace_remaining_today(&p, 0);
+        assert_eq!(pace_remaining_today(&p, 10), fresh - 10);
+        assert_eq!(pace_remaining_today(&p, fresh + 50), 0, "never negative");
+    }
+
+    #[test]
+    fn a_goal_already_passed_asks_nothing_more() {
+        let done = pace(Goal::per_year(1_000).unwrap(), 2_000, d(2026, 4, 10));
+        assert_eq!(pace_remaining_today(&done, 0), 0);
     }
 }
