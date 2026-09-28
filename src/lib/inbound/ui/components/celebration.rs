@@ -131,8 +131,9 @@ const SPARKS: [(u32, u32, u32, i32); 12] = [
 pub struct Playing {
     /// Never `Random`; that is resolved before it gets here.
     pub how: Celebration,
-    /// The success line for this crossing.
-    pub line: &'static str,
+    /// The line for this crossing. Owned, because some of them carry a
+    /// figure worked out at the tap, like "40% of the year".
+    pub line: String,
     /// Which of the theme's three accents this one is drawn in, 0 to 2.
     /// The success green on everything made the animations look like
     /// variations of one effect rather than different effects.
@@ -141,6 +142,17 @@ pub struct Playing {
     /// while an animation is running reuses the node instead of building a
     /// fresh one and starting the animation over.
     pub id: u64,
+}
+
+/// What a celebration says.
+///
+/// Two kinds, because the line sets rotate so the same words do not come up
+/// twice running, while a figure worked out at the tap is whatever it is.
+pub enum Saying {
+    /// This exact text, such as "40% of the year".
+    Fixed(String),
+    /// One of a set, picked by how many celebrations have fired.
+    Rotating(fn(u64) -> &'static str),
 }
 
 /// The slot. Provided by the app root.
@@ -155,19 +167,37 @@ pub struct CelebrationHost(pub Signal<Option<Playing>>);
 /// animation saying the same thing.
 ///
 /// `Off` is checked here too, so the tap handlers stay about counting.
-pub fn celebrate(host: CelebrationHost, how: Celebration) -> Option<&'static str> {
+pub fn celebrate(host: CelebrationHost, how: Celebration) -> Option<String> {
+    celebrate_saying(host, how, None)
+}
+
+/// Fires a celebration that says something other than the usual line.
+///
+/// Same animation either way. The day being finished outright is a bigger
+/// event than one counter finishing, but it is the same kind of event, so
+/// it gets the same treatment with different words rather than an effect of
+/// its own.
+pub fn celebrate_saying(
+    host: CelebrationHost,
+    how: Celebration,
+    saying: Option<Saying>,
+) -> Option<String> {
     if how == Celebration::Off {
         return None;
     }
     let nth = next_nth();
     let how = how.resolve(nth);
-    let line = done_line(nth);
+    let line = match saying {
+        Some(Saying::Fixed(text)) => text,
+        Some(Saying::Rotating(pick)) => pick(nth).to_string(),
+        None => done_line(nth).to_string(),
+    };
     // Stride 2 against 3 accents: every tint before any repeat.
     let tint = u8::try_from(nth.wrapping_mul(2) % 3).unwrap_or(0);
     let mut slot = host.0;
     slot.set(Some(Playing {
         how,
-        line,
+        line: line.clone(),
         tint,
         id: nth,
     }));

@@ -2,19 +2,22 @@
 //! delete.
 
 use crate::{
-    domain::counter::{
-        Counter, CounterId, DayCount, Event, Goal, Step,
-        format::{compact, compact_i64, thousands, thousands_i64},
-        series,
-        series::HourlyBasis,
-        stats,
-        stats::Summary,
+    domain::{
+        counter::{
+            Counter, CounterId, DayCount, Event, Goal, Step,
+            format::{compact, compact_i64, thousands, thousands_i64},
+            series,
+            series::HourlyBasis,
+            stats,
+            stats::Summary,
+        },
+        preferences::all_done_line,
     },
     inbound::ui::{
-        TOAST_NORMAL, TOAST_QUICK, bump_store_version,
+        TOAST_NORMAL, TOAST_QUICK, all_goals_met, bump_store_version,
         components::{
             alert_dialog::ConfirmDialog,
-            celebration::{CelebrationHost, celebrate},
+            celebration::{CelebrationHost, Saying, celebrate_saying},
             counter_form::EditSheet,
             hint::{
                 HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton, use_screen_hint,
@@ -188,21 +191,37 @@ pub fn CounterScreen(id: i64) -> Element {
         }
         match adjust_store.adjust(id, now(), today(), applied) {
             Ok(_) => {
-                // The tap that finishes the day says so, once.
-                let done = counter().and_then(|c| c.goal).is_some_and(|g| {
-                    let days = stats::days_in_year(today().year());
-                    stats::crosses_goal(g, today_count, applied, days)
-                });
-                if done {
+                // What this tap crossed, if anything, asked of the tap
+                // rather than of the screen. The same three the counter
+                // list asks, so a crossing looks the same from either
+                // screen.
+                let days = stats::days_in_year(today().year());
+                let goal = counter().and_then(|c| c.goal);
+                let done = goal.is_some_and(|g| stats::crosses_goal(g, today_count, applied, days));
+                let year_before = entries()
+                    .iter()
+                    .filter(|e| e.day.year() == today().year())
+                    .map(|e| e.count)
+                    .sum::<u32>();
+                let mark = goal
+                    .and_then(|g| stats::goal_mark_crossed(g.yearly(days), year_before, applied));
+                let all_done = done && all_goals_met(&adjust_store, today(), &celebrate_pref());
+
+                let saying = if let Some(pct) = mark {
+                    Some(Saying::Fixed(format!("{pct}% of the year")))
+                } else if all_done {
+                    Some(Saying::Rotating(all_done_line))
+                } else {
+                    None
+                };
+
+                if done || mark.is_some() {
                     // The counter's own choice wins; None follows Config.
                     let how = counter()
                         .and_then(|c| c.celebration)
                         .unwrap_or_else(|| celebrate_pref().celebration);
-                    if let Some(line) = celebrate(host, how) {
-                        toast.success(
-                            line.to_string(),
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        );
+                    if let Some(line) = celebrate_saying(host, how, saying) {
+                        toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
                     }
                 } else {
                     // Named here too, so a toast reads the same wherever the

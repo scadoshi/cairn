@@ -29,8 +29,9 @@ reps across push-ups, pull-ups and squats.
 - Something plays when a counter's day is finished: a level up, confetti,
   poppers, a typed line, a stamp, or rings pulsing inward,
   chosen per counter or app-wide, or turned off. It fires from the tap that
-  crosses the goal and nowhere else, so no state is stored to remember that a
-  day was already celebrated.
+  crosses: a counter's day, the last counter of the day, or another tenth of
+  the year's goal. Nowhere else, so no state is stored to remember that a day
+  was already celebrated.
 - Counter screen: odometer, today, this week, this month, trends (six views),
   goal pace, bests, habit figures, by-year table. Delete behind a dialog.
 - Goals per day, week or year, all reducing to what today has to clear.

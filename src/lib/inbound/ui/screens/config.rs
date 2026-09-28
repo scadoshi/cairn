@@ -4,7 +4,7 @@
 use crate::{
     domain::{
         counter::csv,
-        preferences::{Celebration, Preferences, rest_mask_has, rest_mask_toggled},
+        preferences::{Celebration, Logo, Preferences, rest_mask_has, rest_mask_toggled},
     },
     inbound::ui::{
         TOAST_NORMAL, TOAST_QUICK,

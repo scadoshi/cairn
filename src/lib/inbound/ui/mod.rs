@@ -5,7 +5,7 @@ pub mod router;
 pub mod screens;
 
 use crate::domain::{
-    counter::{CounterId, Store},
+    counter::{self, CounterId, DayCount, Goal, Store},
     date_format::DateFormat,
     preferences::Preferences,
 };
@@ -84,6 +84,33 @@ const _: () = assert!(
      toast-life-5000 keyframes in assets/toast.css to match, then update this \
      assertion"
 );
+
+/// Whether every counter that has a goal has met it for `day`.
+///
+/// Read back from the store rather than from what is on screen, because it
+/// is asked right after a tap has been written and before anything has
+/// reloaded. False when nothing has a goal: there is no day to finish.
+pub fn all_goals_met(store: &SharedStore, day: NaiveDate, prefs: &Preferences) -> bool {
+    let Ok(counters) = store.list_counters() else {
+        return false;
+    };
+    let loaded: Vec<(Option<Goal>, Vec<DayCount>)> = counters
+        .iter()
+        .map(|c| (c.goal, store.entries(c.id).unwrap_or_default()))
+        .collect();
+    let across = counter::stats::across_counters(
+        &loaded
+            .iter()
+            .map(|(goal, entries)| counter::stats::CounterDays {
+                goal: *goal,
+                entries,
+            })
+            .collect::<Vec<_>>(),
+        day,
+        prefs,
+    );
+    across.with_goals > 0 && across.goals_met == across.with_goals
+}
 
 /// Marks the store as changed.
 ///

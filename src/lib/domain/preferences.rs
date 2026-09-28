@@ -265,6 +265,35 @@ const DONE_LINES: [&str; 51] = [
 /// Stride through [`DONE_LINES`]; 8 is coprime with 51.
 const DONE_STRIDE: usize = 8;
 
+/// Lines for the tap that finishes the last counter of the day.
+///
+/// Separate from [`DONE_LINES`] because it is a different event: not this
+/// counter done, but everything done.
+const ALL_DONE_LINES: [&str; 8] = [
+    "All of it, done",
+    "Every counter cleared",
+    "Nothing left today",
+    "That's the whole day",
+    "The board is clean",
+    "All squared away",
+    "Everything paid",
+    "Day fully done",
+];
+
+/// Stride through [`ALL_DONE_LINES`]; 3 is coprime with 8.
+const ALL_DONE_STRIDE: usize = 3;
+
+/// A line for the day being finished outright.
+#[must_use]
+pub fn all_done_line(nth: u64) -> &'static str {
+    let len = ALL_DONE_LINES.len();
+    let i = usize::try_from(nth % len as u64).unwrap_or(0);
+    ALL_DONE_LINES
+        .get(i.wrapping_mul(ALL_DONE_STRIDE) % len)
+        .copied()
+        .unwrap_or("All of it, done")
+}
+
 /// A success line, varied by `nth` so consecutive crossings differ.
 pub fn done_line(nth: u64) -> &'static str {
     let len = DONE_LINES.len();
@@ -617,5 +646,13 @@ mod tests {
         let without_monday = rest_mask_toggled(monday_and_friday, Weekday::Mon);
         assert!(!rest_mask_has(without_monday, Weekday::Mon));
         assert!(rest_mask_has(without_monday, Weekday::Fri));
+    }
+
+    #[test]
+    fn every_all_done_line_is_reachable_before_any_repeats() {
+        let seen: std::collections::HashSet<_> = (0..ALL_DONE_LINES.len() as u64)
+            .map(all_done_line)
+            .collect();
+        assert_eq!(seen.len(), ALL_DONE_LINES.len(), "some line never shows");
     }
 }

@@ -465,6 +465,42 @@ pub fn crosses_goal(goal: Goal, before: u32, applied: i64, days_in_year: u32) ->
         && remaining_today(goal, after, days_in_year) == 0
 }
 
+/// How far through a goal is worth marking, in percent.
+///
+/// Fractions of the goal rather than round rep counts, so the marks mean
+/// the same thing to someone doing 50 a day as to someone doing 500.
+pub const GOAL_MARKS: [u32; 10] = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+
+/// Whether this tap took the total past `threshold`.
+///
+/// Upward only, so a minus that drops back under a line and a plus that
+/// re-crosses it do not announce it twice. Same shape as
+/// [`crosses_goal`], and for the same reason: asked of the tap, not of the
+/// screen, so nothing has to be stored to remember what was already said.
+#[must_use]
+pub fn crosses(threshold: u64, before: u64, applied: i64) -> bool {
+    if applied <= 0 || threshold == 0 {
+        return false;
+    }
+    let after = before.saturating_add(applied.unsigned_abs());
+    before < threshold && after >= threshold
+}
+
+/// The furthest mark of the year's goal this tap went past, in percent.
+///
+/// The furthest rather than each: a big enough tap can clear two at once,
+/// and "40%" says everything "30%" would have.
+///
+/// `goal` is the yearly equivalent, so a per-day or per-week goal is
+/// measured the same way: what the whole year asks for.
+#[must_use]
+pub fn goal_mark_crossed(goal: u32, year_total_before: u32, applied: i64) -> Option<u32> {
+    GOAL_MARKS.into_iter().rev().find(|pct| {
+        let threshold = u64::from(goal) * u64::from(*pct) / 100;
+        crosses(threshold, u64::from(year_total_before), applied)
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -844,5 +880,39 @@ mod tests {
     fn a_goal_already_passed_asks_nothing_more() {
         let done = pace(Goal::per_year(1_000).unwrap(), 2_000, d(2026, 4, 10));
         assert_eq!(pace_remaining_today(&done, 0), 0);
+    }
+
+    #[test]
+    fn crossing_is_upward_only() {
+        assert!(crosses(100, 90, 20));
+        assert!(crosses(100, 0, 100), "landing exactly on it counts");
+        assert!(!crosses(100, 100, 20), "already past");
+        assert!(!crosses(100, 120, -30), "falling back under says nothing");
+        assert!(!crosses(100, 90, 0));
+    }
+
+    #[test]
+    fn a_big_tap_reports_the_furthest_mark_it_cleared() {
+        // 10,000 a year, at 900, plus 3,200: past 10% and 20% and 30%.
+        assert_eq!(goal_mark_crossed(10_000, 900, 3_200), Some(40));
+    }
+
+    #[test]
+    fn marks_only_fire_on_the_tap_that_passes_them() {
+        assert_eq!(goal_mark_crossed(10_000, 990, 10), Some(10));
+        assert_eq!(goal_mark_crossed(10_000, 1_000, 10), None, "already past");
+        assert_eq!(goal_mark_crossed(10_000, 900, 50), None, "not there yet");
+    }
+
+    #[test]
+    fn the_last_mark_is_the_goal_itself() {
+        assert_eq!(goal_mark_crossed(10_000, 9_990, 10), Some(100));
+        assert_eq!(goal_mark_crossed(10_000, 10_000, 500), None);
+    }
+
+    #[test]
+    fn marks_are_in_order_and_end_at_the_whole_goal() {
+        assert!(GOAL_MARKS.windows(2).all(|w| w[0] < w[1]));
+        assert_eq!(GOAL_MARKS.last().copied(), Some(100));
     }
 }

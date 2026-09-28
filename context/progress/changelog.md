@@ -6,6 +6,13 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- Celebrations now fire on three things, not one: a counter finishing its
+  day, the tap that finishes the last counter of the day, and passing
+  another tenth of the year's goal. Same animation for all three, different
+  words: the day's own lines, a set for the whole day being cleared, and the
+  figure itself for a tenth ("40% of the year"). Rarest wins when a tap
+  crosses more than one.
+
 - Something happens when a counter's daily goal is met. Six of them: a level
   up, with the words, a beam of light and sparks rising with it; falling
   confetti; party poppers from the bottom corners; the success line typed out

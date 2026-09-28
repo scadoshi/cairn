@@ -16,13 +16,13 @@ use crate::{
             stats,
             stats::days_in_year,
         },
-        preferences::CounterOrder,
+        preferences::{CounterOrder, all_done_line},
     },
     inbound::ui::{
-        SharedStore, TOAST_NORMAL, TOAST_QUICK,
+        SharedStore, TOAST_NORMAL, TOAST_QUICK, all_goals_met,
         components::{
             alert_dialog::ConfirmDialog,
-            celebration::{CelebrationHost, celebrate},
+            celebration::{CelebrationHost, Saying, celebrate_saying},
             tile::{Tile, TileGrid, rate},
         },
         now, today, use_prefs, use_store,
@@ -99,6 +99,7 @@ fn CounterCard(
     let mut confirm_open = use_signal(|| false);
     let mut confirm_big = use_signal(|| false);
     let today_count = summary.today;
+    let year_before = summary.this_year.total;
     // Owned, because the callback outlives this render.
     let name = counter.name.to_string();
     let host = use_context::<CelebrationHost>();
@@ -117,22 +118,38 @@ fn CounterCard(
         }
         match bump_store.adjust(id, now(), today(), applied) {
             Ok(_) => {
-                // The tap that finishes the day says so, once. Firing from
-                // here rather than from render state is what keeps it from
-                // going off on every launch of an already-finished day.
+                // What this tap crossed, if anything. All three are asked
+                // of the tap rather than of the screen, so nothing has to
+                // be stored to remember what was already said, and
+                // reopening the app on a finished day is silent.
                 let done = counter
                     .goal
                     .is_some_and(|g| stats::crosses_goal(g, today_count, applied, days));
-                if done {
+                let mark = counter
+                    .goal
+                    .and_then(|g| stats::goal_mark_crossed(g.yearly(days), year_before, applied));
+                // Only worth asking when this counter just finished: the
+                // day cannot have been completed by a tap that did not.
+                let all_done = done && all_goals_met(&bump_store, today(), &prefs);
+
+                // Rarest first. A fraction of the year comes round a few
+                // times a year, the whole day most days, one counter's day
+                // several times a day.
+                let saying = if let Some(pct) = mark {
+                    Some(Saying::Fixed(format!("{pct}% of the year")))
+                } else if all_done {
+                    Some(Saying::Rotating(all_done_line))
+                } else {
+                    None
+                };
+
+                if done || mark.is_some() {
                     // The counter's own choice wins; None follows Config.
                     let how = card_celebration.unwrap_or(prefs.celebration);
                     // Typewriter and Stamp put the words on screen themselves,
                     // so there is nothing left for a toast to add.
-                    if let Some(line) = celebrate(host, how) {
-                        toast.success(
-                            line.to_string(),
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        );
+                    if let Some(line) = celebrate_saying(host, how, saying) {
+                        toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
                     }
                 } else {
                     // Named, because toasts stack in the corner rather than
