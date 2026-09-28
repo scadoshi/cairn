@@ -2,9 +2,12 @@
 //! profile screen with its preferences sheet.
 
 use crate::{
-    domain::{counter::csv, preferences::Preferences},
+    domain::{
+        counter::csv,
+        preferences::{Celebration, Preferences, rest_mask_has, rest_mask_toggled},
+    },
     inbound::ui::{
-        TOAST_NORMAL,
+        TOAST_NORMAL, TOAST_QUICK,
         components::{
             bottom_sheet::BottomSheet,
             hint::{
@@ -62,6 +65,7 @@ pub fn Config() -> Element {
     let mut prefs = use_prefs();
     let mut rest_open = use_signal(|| false);
     let mut hint = use_signal(|| None::<ConfigHint>);
+    let mut celebration_open = use_signal(|| false);
     let mut hint_open = use_signal(|| false);
     let screen_hint_open = use_signal(|| false);
     use_screen_hint(screen_hint_open);
@@ -134,12 +138,22 @@ pub fn Config() -> Element {
     };
 
     // Dark mode flips live; the App-level effect persists it.
+    // Every row says what it did, in the same voice and for the same
+    // length, because a setting that changes something you cannot see from
+    // Config (when a day starts, how counters sort) is otherwise a button
+    // that looks like it did nothing.
+    let said = use_callback(move |what: String| {
+        toast.success(what, ToastOptions::default().duration(TOAST_NORMAL));
+    });
+
     let toggle_dark = move |_| {
         let prev = theme.read().clone();
+        let on = !prev.is_dark;
         theme.set(ThemeConfig {
             name: prev.name,
-            is_dark: !prev.is_dark,
+            is_dark: on,
         });
+        said.call(format!("Dark mode {}", if on { "on" } else { "off" }));
     };
 
     rsx! {
@@ -174,7 +188,11 @@ pub fn Config() -> Element {
                     div { class: "profile-row-value",
                         Button {
                             variant: ButtonVariant::Util,
-                            onclick: move |_| prefs.with_mut(|q| q.logo = q.logo.next()),
+                            onclick: move |_| {
+                                let next = prefs.peek().logo.next();
+                                prefs.with_mut(|q| q.logo = next);
+                                said.call(format!("{} mark", next.label()));
+                            },
                             "{prefs().logo.label()}"
                         }
                     }
@@ -203,10 +221,7 @@ pub fn Config() -> Element {
                             onclick: move |_| {
                                 let next = date_format().next();
                                 date_format.set(next);
-                                toast.success(
-                                    format!("Dates as {}", next.label()),
-                                    ToastOptions::default().duration(TOAST_NORMAL),
-                                );
+                                said.call(format!("Dates as {}", next.label()));
                             },
                             "{date_format().label()}"
                         }
@@ -225,13 +240,18 @@ pub fn Config() -> Element {
                     div { class: "profile-row-value",
                         Button {
                             variant: ButtonVariant::Util,
-                            onclick: move |_| prefs.with_mut(|q| {
-                                let i = Preferences::ROLLOVER_HOURS.iter().position(|h| *h == q.rollover_hour).unwrap_or(0);
-                                q.rollover_hour = Preferences::ROLLOVER_HOURS
+                            onclick: move |_| {
+                                let i = Preferences::ROLLOVER_HOURS
+                                    .iter()
+                                    .position(|h| *h == prefs.peek().rollover_hour)
+                                    .unwrap_or(0);
+                                let next = Preferences::ROLLOVER_HOURS
                                     .get((i + 1) % Preferences::ROLLOVER_HOURS.len())
                                     .copied()
                                     .unwrap_or(0);
-                            }),
+                                prefs.with_mut(|q| q.rollover_hour = next);
+                                said.call(format!("Day starts at {}", rollover_label(next).to_lowercase()));
+                            },
                             {rollover_label(prefs().rollover_hour)}
                         }
                     }
@@ -244,7 +264,15 @@ pub fn Config() -> Element {
                     div { class: "profile-row-value",
                         Button {
                             variant: ButtonVariant::Util,
-                            onclick: move |_| prefs.with_mut(|q| q.week_start = if q.week_start == Weekday::Mon { Weekday::Sun } else { Weekday::Mon }),
+                            onclick: move |_| {
+                                let next = if prefs.peek().week_start == Weekday::Mon {
+                                    Weekday::Sun
+                                } else {
+                                    Weekday::Mon
+                                };
+                                prefs.with_mut(|q| q.week_start = next);
+                                said.call(format!("Week starts {next}"));
+                            },
                             if prefs().week_start == Weekday::Mon { "Monday" } else { "Sunday" }
                         }
                     }
@@ -279,7 +307,11 @@ pub fn Config() -> Element {
                     div { class: "profile-row-value",
                         Button {
                             variant: ButtonVariant::Util,
-                            onclick: move |_| prefs.with_mut(|q| q.counter_order = q.counter_order.next()),
+                            onclick: move |_| {
+                                let next = prefs.peek().counter_order.next();
+                                prefs.with_mut(|q| q.counter_order = next);
+                                said.call(format!("Sorted by {}", next.label().to_lowercase()));
+                            },
                             "{prefs().counter_order.label()}"
                         }
                     }
@@ -290,10 +322,14 @@ pub fn Config() -> Element {
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Celebration)); hint_open.set(true); } }
                     }
                     div { class: "profile-row-value",
+                        span { {prefs().celebration.label()} }
                         Button {
                             variant: ButtonVariant::Util,
-                            onclick: move |_| prefs.with_mut(|q| q.celebration = q.celebration.next()),
-                            "{prefs().celebration.label()}"
+                            onclick: move |_| {
+                                hint.set(Some(ConfigHint::Celebration));
+                                celebration_open.set(true);
+                            },
+                            "Change"
                         }
                     }
                 }
@@ -305,7 +341,11 @@ pub fn Config() -> Element {
                     div { class: "profile-row-value",
                         Button {
                             variant: ButtonVariant::Util,
-                            onclick: move |_| prefs.with_mut(|q| q.confirm_minus = !q.confirm_minus),
+                            onclick: move |_| {
+                                let on = !prefs.peek().confirm_minus;
+                                prefs.with_mut(|q| q.confirm_minus = on);
+                                said.call(format!("Confirm minus {}", if on { "on" } else { "off" }));
+                            },
                             if prefs().confirm_minus { "On" } else { "Off" }
                         }
                     }
@@ -345,10 +385,91 @@ pub fn Config() -> Element {
         }
         PreferencesSheet { open: preferences_open, hint: hint_open }
         RestDaysSheet { open: rest_open, hint: hint_open }
+        CelebrationSheet { open: celebration_open, hint: hint_open }
         ConfigHintDialog { open: hint_open, which: hint() }
         HintDialog { open: screen_hint_open, title: "Config",
             HintLine { "Settings only. Nothing here edits your counts" }
             HintLine { "Tap any row's " HintKey { color: "--accent-primary", "?" } " to learn what it does" }
+        }
+    }
+}
+
+/// Every goal animation as chips, one selected, kept until Save.
+///
+/// A sheet rather than a button that cycles: nine values behind one button
+/// meant eight taps to see the one you wanted, and no way to see what the
+/// choices were without tapping through them.
+///
+/// The pick is held locally and only written on Save, the way the theme
+/// sheet works, so tapping through the options to read them does not change
+/// the setting.
+#[component]
+fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
+    let mut prefs = use_prefs();
+    let toast = use_toast();
+    let saved = prefs().celebration;
+    let mut draft = use_signal(|| saved);
+
+    // Every open starts from what is actually set, including one that
+    // follows a Back.
+    use_effect(move || {
+        if open() {
+            draft.set(prefs.peek().celebration);
+        }
+    });
+
+    // Back and a tap outside are the same act, so they say the same thing.
+    let discard = use_callback(move |()| {
+        if draft.peek().to_owned() != saved {
+            toast.info(
+                "Animation changes discarded".to_string(),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
+        }
+    });
+
+    rsx! {
+        BottomSheet {
+            open,
+            title: "Goal animation",
+            hint,
+            on_dismiss: move |()| discard.call(()),
+            footer: rsx! {
+                Button {
+                    variant: ButtonVariant::Util,
+                    onclick: move |_| {
+                        // Said out loud, because the pick is still on screen
+                        // as the sheet slides away and it otherwise looks
+                        // like it took.
+                        discard.call(());
+                        open.set(false);
+                    },
+                    "Back"
+                }
+                Button {
+                    variant: ButtonVariant::Util,
+                    disabled: draft() == saved,
+                    onclick: move |_| {
+                        let picked = draft();
+                        prefs.with_mut(|q| q.celebration = picked);
+                        toast.success(
+                            format!("Goal animation: {}", picked.label()),
+                            ToastOptions::default().duration(TOAST_NORMAL),
+                        );
+                        open.set(false);
+                    },
+                    "Save"
+                }
+            },
+            div { class: "chip-row chip-row-center", style: "flex-wrap: wrap;",
+                for c in Celebration::ALL {
+                    Chip {
+                        selected: draft() == c,
+                        onclick: move |_| draft.set(c),
+                        "{c.label()}"
+                    }
+                }
+            }
         }
     }
 }
@@ -472,7 +593,7 @@ fn rollover_label(hour: u32) -> String {
 
 /// Pick the weekdays that don't count. Applies as you tap.
 #[component]
-fn RestDaysSheet(open: Signal<bool>, hint: Signal<bool>) -> Element {
+fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
     const DAYS: [(Weekday, &str); 7] = [
         (Weekday::Mon, "Monday"),
         (Weekday::Tue, "Tuesday"),
@@ -483,17 +604,68 @@ fn RestDaysSheet(open: Signal<bool>, hint: Signal<bool>) -> Element {
         (Weekday::Sun, "Sunday"),
     ];
     let mut prefs = use_prefs();
+    let toast = use_toast();
+    let saved = prefs().rest_days;
+    // Held until Save, so toggling a day to see what it does costs nothing.
+    // Rest days re-sort consistency and streaks across the whole history,
+    // which is too much to happen under a finger that is still deciding.
+    let mut draft = use_signal(|| saved);
+
+    use_effect(move || {
+        if open() {
+            draft.set(prefs.peek().rest_days);
+        }
+    });
+
+    let discard = use_callback(move |()| {
+        if draft.peek().to_owned() != saved {
+            toast.info(
+                "Rest day changes discarded".to_string(),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
+        }
+    });
+
     rsx! {
         BottomSheet {
             open,
             title: "Rest days",
             hint,
-            p { class: "pref-note", "Rest days don't break a streak and don't count against consistency." }
+            on_dismiss: move |()| discard.call(()),
+            footer: rsx! {
+                Button {
+                    variant: ButtonVariant::Util,
+                    onclick: move |_| {
+                        discard.call(());
+                        open.set(false);
+                    },
+                    "Back"
+                }
+                Button {
+                    variant: ButtonVariant::Util,
+                    disabled: draft() == saved,
+                    onclick: move |_| {
+                        let picked = draft();
+                        prefs.with_mut(|q| q.rest_days = picked);
+                        let count = picked.count_ones();
+                        toast.success(
+                            match count {
+                                0 => "No rest days".to_string(),
+                                1 => "1 rest day".to_string(),
+                                n => format!("{n} rest days"),
+                            },
+                            ToastOptions::default().duration(TOAST_NORMAL),
+                        );
+                        open.set(false);
+                    },
+                    "Save"
+                }
+            },
             div { class: "chip-row chip-row-center", style: "flex-wrap: wrap;",
                 for (day, name) in DAYS {
                     Chip {
-                        selected: prefs().rest_days & (1 << day.num_days_from_monday()) != 0,
-                        onclick: move |_| prefs.with_mut(|q| *q = q.toggle_rest(day)),
+                        selected: rest_mask_has(draft(), day),
+                        onclick: move |_| draft.with_mut(|d| *d = rest_mask_toggled(*d, day)),
                         "{name}"
                     }
                 }
@@ -573,18 +745,39 @@ fn PreferencesSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             open,
             title: "Themes",
             hint,
-            on_dismiss: move |()| live.set(original()),
+            on_dismiss: move |()| {
+                let changed = selected.peek().to_owned() != original.peek().name
+                    || dark.peek().to_owned() != original.peek().is_dark;
+                live.set(original());
+                if changed {
+                    toast.info(
+                        "Theme changes discarded".to_string(),
+                        ToastOptions::default().duration(TOAST_QUICK),
+                    );
+                }
+            },
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Util,
                     onclick: move |_| {
+                        let changed = selected() != original().name || dark() != original().is_dark;
                         live.set(original());
+                        if changed {
+                            toast.info(
+                                "Theme changes discarded".to_string(),
+                                ToastOptions::default().duration(TOAST_QUICK),
+                            );
+                        }
                         open.set(false);
                     },
                     "Back"
                 }
                 Button {
                     variant: ButtonVariant::Util,
+                    // Nothing to save until the pick differs from the theme
+                    // the sheet opened on. The palette is already live, so
+                    // Save is only confirming that it stays.
+                    disabled: selected() == original().name && dark() == original().is_dark,
                     onclick: move |_| {
                         open.set(false);
                         toast.success(

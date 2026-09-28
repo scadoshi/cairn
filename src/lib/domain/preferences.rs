@@ -275,6 +275,23 @@ pub fn done_line(nth: u64) -> &'static str {
         .unwrap_or("Goal met")
 }
 
+/// Whether a rest-day mask marks `weekday`.
+///
+/// The mask is here rather than in the UI because which bit is which day is
+/// domain knowledge: it is what gets written to the settings blob, and a
+/// screen holding a half-edited copy should not have to know the layout to
+/// show it.
+#[must_use]
+pub fn rest_mask_has(mask: u8, weekday: Weekday) -> bool {
+    mask & (1 << weekday.num_days_from_monday()) != 0
+}
+
+/// `mask` with `weekday` flipped.
+#[must_use]
+pub fn rest_mask_toggled(mask: u8, weekday: Weekday) -> u8 {
+    mask ^ (1 << weekday.num_days_from_monday())
+}
+
 /// The settings that shape the statistics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -348,14 +365,14 @@ impl Preferences {
 
     /// Whether a weekday is a rest day.
     pub fn is_rest(&self, day: NaiveDate) -> bool {
-        self.rest_days & (1 << day.weekday().num_days_from_monday()) != 0
+        rest_mask_has(self.rest_days, day.weekday())
     }
 
     /// Flips a weekday's rest status.
     #[must_use]
     pub fn toggle_rest(self, weekday: Weekday) -> Self {
         Self {
-            rest_days: self.rest_days ^ (1 << weekday.num_days_from_monday()),
+            rest_days: rest_mask_toggled(self.rest_days, weekday),
             ..self
         }
     }
@@ -589,5 +606,16 @@ mod tests {
     fn order_cycles() {
         assert_eq!(CounterOrder::Lifetime.next(), CounterOrder::Created);
         assert_eq!(CounterOrder::Created.next(), CounterOrder::Name);
+    }
+
+    #[test]
+    fn a_rest_mask_flips_one_day_and_leaves_the_rest() {
+        let monday_and_friday = rest_mask_toggled(rest_mask_toggled(0, Weekday::Mon), Weekday::Fri);
+        assert!(rest_mask_has(monday_and_friday, Weekday::Mon));
+        assert!(rest_mask_has(monday_and_friday, Weekday::Fri));
+        assert!(!rest_mask_has(monday_and_friday, Weekday::Sun));
+        let without_monday = rest_mask_toggled(monday_and_friday, Weekday::Mon);
+        assert!(!rest_mask_has(without_monday, Weekday::Mon));
+        assert!(rest_mask_has(without_monday, Weekday::Fri));
     }
 }
