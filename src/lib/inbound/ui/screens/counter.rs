@@ -107,6 +107,7 @@ fn CounterHintDialog(open: Signal<bool>, which: Option<CounterHint>) -> Element 
             HintDialog { open, title: "Trends",
                 HintLine { "The chips pick what the line counts" }
                 HintBullets {
+                    HintBullet { HintKey { "Total" } " and " HintKey { "Per day" } " on Weeks and Months: the period's sum, or its average active day" }
                     HintBullet { "The dashed line is the direction over the whole series" }
                     HintBullet { "The band is one standard deviation either side of the average, so a narrow band is a steady habit" }
                     HintBullet { "Weekday and Hour have no direction, only a shape" }
@@ -525,41 +526,71 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
             )
         }
         Trend::Weekly => {
-            let weeks = series::weekly_totals(&entries, year, &p);
-            let points = weeks
-                .iter()
-                .map(|(d, c)| Point {
-                    label: df.short(*d),
-                    value: Some(f64::from(*c)),
-                })
-                .collect();
+            let points = if p.trend_per_day {
+                series::weekly_average(&entries, year, &p)
+                    .iter()
+                    .map(|(d, v)| Point {
+                        label: df.short(*d),
+                        value: Some(*v),
+                    })
+                    .collect()
+            } else {
+                series::weekly_totals(&entries, year, &p)
+                    .iter()
+                    .map(|(d, c)| Point {
+                        label: df.short(*d),
+                        value: Some(f64::from(*c)),
+                    })
+                    .collect()
+            };
             (
                 points,
                 Vec::new(),
                 String::new(),
-                "total per week this year",
+                if p.trend_per_day {
+                    "average per active day, by week"
+                } else {
+                    "total per week this year"
+                },
                 true,
-                0,
+                // A year is about 52 points, so every fifth keeps eight or
+                // nine dates along the bottom: enough to place a rise
+                // without crowding them into each other.
+                5,
             )
         }
         Trend::Monthly => {
-            let months = series::monthly_average(&entries, year);
             let names = [
                 "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
             ];
-            let points = months
-                .iter()
-                .zip(names)
-                .map(|(v, n)| Point {
-                    label: n.to_string(),
-                    value: *v,
-                })
-                .collect();
+            let points = if p.trend_per_day {
+                series::monthly_average(&entries, year)
+                    .iter()
+                    .zip(names)
+                    .map(|(v, n)| Point {
+                        label: n.to_string(),
+                        value: *v,
+                    })
+                    .collect()
+            } else {
+                series::monthly_totals(&entries, year)
+                    .iter()
+                    .zip(names)
+                    .map(|(m, n)| Point {
+                        label: n.to_string(),
+                        value: m.map(|(total, _)| f64::from(total)),
+                    })
+                    .collect()
+            };
             (
                 points,
                 Vec::new(),
                 String::new(),
-                "average per active day, by month",
+                if p.trend_per_day {
+                    "average per active day, by month"
+                } else {
+                    "total per month this year"
+                },
                 true,
                 1,
             )
@@ -614,6 +645,15 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                     div { class: "chip-row chip-row-tight chip-row-basis",
                         Chip { selected: !p.hourly_all_days, onclick: move |_| prefs.with_mut(|q| q.hourly_all_days = false), "Active days" }
                         Chip { selected: p.hourly_all_days, onclick: move |_| prefs.with_mut(|q| q.hourly_all_days = true), "All days" }
+                    }
+                }
+                // Weeks and Months are the two that hold a period's worth
+                // of days, so they are the two where the total and the
+                // average say different things.
+                if matches!(trend(), Trend::Weekly | Trend::Monthly) {
+                    div { class: "chip-row chip-row-tight chip-row-basis",
+                        Chip { selected: !p.trend_per_day, onclick: move |_| prefs.with_mut(|q| q.trend_per_day = false), "Total" }
+                        Chip { selected: p.trend_per_day, onclick: move |_| prefs.with_mut(|q| q.trend_per_day = true), "Per day" }
                     }
                 }
                 p { class: "chart-note", "{note}" }

@@ -339,6 +339,9 @@ pub struct Preferences {
     pub rest_days: u8,
     /// Hourly chart divides by every day, not just active ones.
     pub hourly_all_days: bool,
+    /// Weeks and Months charts show an average per active day rather than
+    /// the period's total.
+    pub trend_per_day: bool,
     /// Counter list order.
     pub counter_order: CounterOrder,
     /// Minus buttons ask before subtracting.
@@ -379,6 +382,7 @@ impl Default for Preferences {
             rollover_hour: 0,
             rest_days: 0,
             hourly_all_days: false,
+            trend_per_day: false,
             counter_order: CounterOrder::Created,
             confirm_minus: false,
             logo: Logo::Cairn,

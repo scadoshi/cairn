@@ -125,6 +125,38 @@ pub fn weekly_totals(
 }
 
 /// Total and active-day count for each calendar month of `year`. `None`
+/// Average per active day for each week of `year`, the weekly twin of
+/// [`monthly_average`].
+///
+/// Per active day rather than per calendar day, so a week with four
+/// sessions is not read as four sevenths of itself. Weeks with nothing
+/// logged are absent rather than zero, the same as the totals.
+#[must_use]
+pub fn weekly_average(
+    entries: &[DayCount],
+    year: i32,
+    prefs: &Preferences,
+) -> Vec<(NaiveDate, f64)> {
+    let mut out: Vec<(NaiveDate, u32, u32)> = Vec::new();
+    for e in entries
+        .iter()
+        .filter(|e| e.day.year() == year && e.count > 0)
+    {
+        let monday = week_start(e.day, prefs);
+        match out.iter_mut().find(|(m, _, _)| *m == monday) {
+            Some((_, total, days)) => {
+                *total = total.saturating_add(e.count);
+                *days += 1;
+            }
+            None => out.push((monday, e.count, 1)),
+        }
+    }
+    out.sort_by_key(|(m, _, _)| *m);
+    out.into_iter()
+        .map(|(m, total, days)| (m, f64::from(total) / f64::from(days.max(1))))
+        .collect()
+}
+
 /// where nothing was logged that month.
 pub fn monthly_totals(entries: &[DayCount], year: i32) -> [Option<(u32, u32)>; 12] {
     let mut sums = [0u32; 12];
@@ -483,5 +515,16 @@ mod tests {
         let v = [Some(10.0), Some(5.0), Some(0.0)];
         let f = shape(&v).expect("three points fit");
         assert!(f.at(9).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn weekly_average_is_per_active_day() {
+        // Two days in one week, 10 and 30, is an average of 20, not of
+        // 40/7. A week with nothing in it does not appear at all.
+        let entries = [e(2026, 9, 21, 10), e(2026, 9, 23, 30), e(2026, 10, 5, 50)];
+        let weeks = weekly_average(&entries, 2026, &Preferences::default());
+        assert_eq!(weeks.len(), 2, "only the weeks with something logged");
+        assert!((weeks[0].1 - 20.0).abs() < f64::EPSILON);
+        assert!((weeks[1].1 - 50.0).abs() < f64::EPSILON);
     }
 }
