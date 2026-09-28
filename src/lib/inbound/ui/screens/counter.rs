@@ -430,12 +430,13 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
     // The last field says whether x is time, which is what makes a fitted
     // line mean anything. Across weekdays or hours it would only describe
     // the order the buckets sit in.
-    let (points, overlay, unit, note, over_time): (
+    let (points, overlay, unit, note, over_time, label_every): (
         Vec<Point>,
         Vec<Option<f64>>,
         String,
         &str,
         bool,
+        usize,
     ) = match trend() {
         Trend::ThisWeek => {
             let week = series::this_week(&entries, now, &p);
@@ -453,6 +454,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 String::new(),
                 "this week, Monday to today",
                 true,
+                1,
             )
         }
         Trend::Weekday => {
@@ -476,6 +478,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 String::new(),
                 "average per active day, by weekday, all time",
                 false,
+                1,
             )
         }
         Trend::Daily => {
@@ -496,6 +499,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 String::new(),
                 "last 60 days, with the 7-day average",
                 true,
+                0,
             )
         }
         Trend::Weekly => {
@@ -513,6 +517,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 String::new(),
                 "total per week this year",
                 true,
+                0,
             )
         }
         Trend::Monthly => {
@@ -534,6 +539,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 String::new(),
                 "average per active day, by month",
                 true,
+                1,
             )
         }
         Trend::Hourly => {
@@ -558,13 +564,12 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
             } else {
                 "average reps per hour, over days with taps"
             };
-            (points, Vec::new(), String::new(), note, false)
+            (points, Vec::new(), String::new(), note, false, 3)
         }
     };
 
     let values: Vec<Option<f64>> = points.iter().map(|p| p.value).collect();
     let shape = series::shape(&values);
-    let spread = shape.map(|f| format!("avg {:.0}, sd {:.0}", f.mean, f.sd));
 
     rsx! {
         div { class: "profile-list",
@@ -589,27 +594,32 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                         Chip { selected: p.hourly_all_days, onclick: move |_| prefs.with_mut(|q| q.hourly_all_days = true), "All days" }
                     }
                 }
-                LineChart { points, overlay, unit, shape, trend: over_time }
-                p { class: "chart-legend",
+                p { class: "chart-note", "{note}" }
+                LineChart { points, overlay, unit, shape, trend: over_time, label_every }
+                div { class: "chart-tags",
                     if trend() == Trend::Daily {
-                        span { class: "legend-swatch legend-line" }
-                        "each day"
-                        span { class: "legend-swatch legend-overlay" }
-                        "7-day average"
-                    }
-                    if shape.is_some() {
-                        if over_time {
-                            span { class: "legend-swatch legend-trend" }
-                            "trend"
+                        span { class: "stat-chip stat-chip-key",
+                            span { class: "chart-key" }
+                            "each day"
                         }
-                        span { class: "legend-swatch legend-band" }
-                        "1 sd"
+                        span { class: "stat-chip stat-chip-goal stat-chip-key",
+                            span { class: "chart-key chart-key-overlay" }
+                            "7-day average"
+                        }
                     }
-                }
-                p { class: "chart-note",
-                    "{note}"
-                    if let Some(spread) = spread {
-                        span { class: "chart-note-spread", "{spread}" }
+                    if let Some(f) = shape {
+                        if over_time {
+                            span { class: "stat-chip stat-chip-trend stat-chip-key",
+                                span { class: "chart-key chart-key-trend" }
+                                "trend"
+                            }
+                        }
+                        span { class: "stat-chip stat-chip-derived stat-chip-key",
+                            span { class: "chart-key chart-key-band" }
+                            "1 sd"
+                        }
+                        span { class: "stat-chip stat-chip-derived", "avg {f.mean:.0}" }
+                        span { class: "stat-chip stat-chip-derived", "sd {f.sd:.0}" }
                     }
                 }
             }

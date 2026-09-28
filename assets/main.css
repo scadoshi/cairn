@@ -234,6 +234,13 @@ input {
     border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
 }
 
+/* The fitted line's own color, so the chip naming it matches it. */
+.stat-chip-trend {
+    color: var(--accent-secondary);
+    background-color: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--accent-secondary) 35%, transparent);
+}
+
 .stat-chip-goal {
     color: var(--accent-tertiary);
     background-color: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
@@ -1101,67 +1108,58 @@ input {
     }
 }
 
-.chart-legend {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.4rem;
-    margin-top: 0.4rem;
+/* What the chart is, above it, as a plain line. The chips below name the
+   lines and carry the figures; this says what the series is. */
+.chart-note {
+    margin: 0 0 0.3rem;
     font-size: 0.7rem;
     color: var(--text-muted);
+    text-align: center;
 }
 
-.legend-swatch {
+/* A chip that names a line draws that line inside itself. The mark takes
+   currentColor, so it is whatever color the chip already is and the two
+   cannot drift apart. */
+.stat-chip-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.chart-key {
     display: inline-block;
     width: 1rem;
     height: 2px;
     border-radius: 1px;
+    background: currentColor;
 }
 
-.legend-swatch + span,
-.legend-line + * {
-    margin-left: 0;
-}
-
-.legend-overlay {
-    margin-left: 0.6rem;
-    background: var(--accent-tertiary);
+.chart-key-overlay {
     height: 3px;
 }
 
-.legend-line {
-    background: var(--accent-primary);
-}
-
-.legend-trend {
-    margin-left: 0.6rem;
+.chart-key-trend {
     background: repeating-linear-gradient(
         to right,
-        var(--accent-secondary) 0 4px,
+        currentColor 0 4px,
         transparent 4px 7px
     );
 }
 
-.legend-band {
-    margin-left: 0.6rem;
+/* The band is an area rather than a line, so it is drawn as one: taller,
+   and as faint as the band on the chart. */
+.chart-key-band {
     height: 0.6rem;
     border-radius: 2px;
-    background: var(--text-muted);
-    opacity: 0.25;
+    opacity: 0.35;
 }
 
-/* The average and spread sit on the note line, after a dot, so the numbers
-   stay with the sentence that says what the chart is. */
-.chart-note-spread::before {
-    content: " · ";
-    opacity: 0.6;
-}
-
-.chart-note {
-    margin-top: 0.4rem;
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    text-align: center;
+.chart-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-top: 0.5rem;
 }
 
 /* ==================

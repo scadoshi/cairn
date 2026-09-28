@@ -42,6 +42,11 @@ pub fn LineChart(
     /// order the buckets happen to sit in.
     #[props(default)]
     trend: bool,
+    /// Label every nth point along the bottom. Zero, the default, labels
+    /// the first, the middle and the last, which is all there is room for
+    /// on a long series.
+    #[props(default)]
+    label_every: usize,
 ) -> Element {
     const W: f64 = 320.0;
     const H: f64 = 140.0;
@@ -105,14 +110,41 @@ pub fn LineChart(
         (f.slope.to_bits(), f.intercept.to_bits(), f.sd.to_bits()).hash(&mut hasher);
     }
     trend.hash(&mut hasher);
+    label_every.hash(&mut hasher);
     let key = hasher.finish();
 
-    let last_label = points.last().map(|p| p.label.clone()).unwrap_or_default();
-    let first_label = points.first().map(|p| p.label.clone()).unwrap_or_default();
-    let mid_label = points
-        .get(n / 2)
-        .map(|p| p.label.clone())
-        .unwrap_or_default();
+    // (x position, text, anchor). Either every nth point, or the three that
+    // fit on a series too long to label.
+    let ticks: Vec<(f64, String, &str)> = if label_every > 0 {
+        points
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| i % label_every == 0)
+            .map(|(i, p)| {
+                // The ends anchor inwards so they do not hang off the chart.
+                let anchor = if i == 0 {
+                    "start"
+                } else if i + label_every >= n {
+                    "end"
+                } else {
+                    "middle"
+                };
+                (x_of(i), p.label.clone(), anchor)
+            })
+            .collect()
+    } else {
+        let at = |i: usize, anchor: &'static str| {
+            points.get(i).map(|p| (x_of(i), p.label.clone(), anchor))
+        };
+        [
+            at(0, "start"),
+            at(n / 2, "middle"),
+            at(n.saturating_sub(1), "end"),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
+    };
     let baseline = y_of(0.0);
     let top = y_of(max);
     // Both are clamped into the plot: a band an average sits near the top of
@@ -139,9 +171,15 @@ pub fn LineChart(
             line { class: "chart-axis chart-axis-faint", x1: "{PAD_L}", y1: "{top}", x2: "{W - PAD_R}", y2: "{top}" }
             text { class: "chart-tick", x: "{PAD_L - 4.0}", y: "{top + 3.0}", text_anchor: "end", "{max:.0}{unit}" }
             text { class: "chart-tick", x: "{PAD_L - 4.0}", y: "{baseline + 3.0}", text_anchor: "end", "0" }
-            text { class: "chart-tick", x: "{PAD_L}", y: "{H - 6.0}", text_anchor: "start", "{first_label}" }
-            text { class: "chart-tick", x: "{(PAD_L + W - PAD_R) / 2.0}", y: "{H - 6.0}", text_anchor: "middle", "{mid_label}" }
-            text { class: "chart-tick", x: "{W - PAD_R}", y: "{H - 6.0}", text_anchor: "end", "{last_label}" }
+            for (x, label, anchor) in ticks.iter() {
+                text {
+                    class: "chart-tick",
+                    x: "{x}",
+                    y: "{H - 6.0}",
+                    text_anchor: "{anchor}",
+                    "{label}"
+                }
+            }
             // Drawn first so the data reads over the top of them.
             if let Some((y, height, mean_y)) = band {
                 rect {
