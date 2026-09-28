@@ -66,6 +66,7 @@ pub fn Config() -> Element {
     let mut rest_open = use_signal(|| false);
     let mut hint = use_signal(|| None::<ConfigHint>);
     let mut celebration_open = use_signal(|| false);
+    let mut mark_open = use_signal(|| false);
     let mut hint_open = use_signal(|| false);
     let screen_hint_open = use_signal(|| false);
     use_screen_hint(screen_hint_open);
@@ -186,14 +187,14 @@ pub fn Config() -> Element {
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Mark)); hint_open.set(true); } }
                     }
                     div { class: "profile-row-value",
+                        span { {prefs().logo.label()} }
                         Button {
                             variant: ButtonVariant::Util,
                             onclick: move |_| {
-                                let next = prefs.peek().logo.next();
-                                prefs.with_mut(|q| q.logo = next);
-                                said.call(format!("{} mark", next.label()));
+                                hint.set(Some(ConfigHint::Mark));
+                                mark_open.set(true);
                             },
-                            "{prefs().logo.label()}"
+                            "Change"
                         }
                     }
                 }
@@ -386,10 +387,77 @@ pub fn Config() -> Element {
         PreferencesSheet { open: preferences_open, hint: hint_open }
         RestDaysSheet { open: rest_open, hint: hint_open }
         CelebrationSheet { open: celebration_open, hint: hint_open }
+        MarkSheet { open: mark_open, hint: hint_open }
         ConfigHintDialog { open: hint_open, which: hint() }
         HintDialog { open: screen_hint_open, title: "Config",
             HintLine { "Settings only. Nothing here edits your counts" }
             HintLine { "Tap any row's " HintKey { color: "--accent-primary", "?" } " to learn what it does" }
+        }
+    }
+}
+
+/// The letters to pick a mark from, one selected, kept until Save.
+#[component]
+fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
+    let mut prefs = use_prefs();
+    let toast = use_toast();
+    let saved = prefs().logo;
+    let mut draft = use_signal(|| saved);
+
+    use_effect(move || {
+        if open() {
+            draft.set(prefs.peek().logo);
+        }
+    });
+
+    let discard = use_callback(move |()| {
+        if draft.peek().to_owned() != saved {
+            toast.info(
+                "Mark unchanged".to_string(),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
+        }
+    });
+
+    rsx! {
+        BottomSheet {
+            open,
+            title: "Mark",
+            hint,
+            on_dismiss: move |()| discard.call(()),
+            footer: rsx! {
+                Button {
+                    variant: ButtonVariant::Util,
+                    onclick: move |_| {
+                        discard.call(());
+                        open.set(false);
+                    },
+                    "Back"
+                }
+                Button {
+                    variant: ButtonVariant::Util,
+                    disabled: draft() == saved,
+                    onclick: move |_| {
+                        let picked = draft();
+                        prefs.with_mut(|q| q.logo = picked);
+                        toast.success(
+                            format!("Mark: {}", picked.label()),
+                            ToastOptions::default().duration(TOAST_NORMAL),
+                        );
+                        open.set(false);
+                    },
+                    "Save"
+                }
+            },
+            div { class: "chip-row chip-row-center", style: "flex-wrap: wrap;",
+                for l in Logo::ALL {
+                    Chip {
+                        selected: draft() == l,
+                        onclick: move |_| draft.set(l),
+                        "{l.label()}"
+                    }
+                }
+            }
         }
     }
 }
@@ -506,16 +574,12 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
         ConfigHint::Mark => rsx! {
             HintDialog { open, title: "Mark",
                 HintLine { "Which letter sits at the top of the home screen" }
-                HintBullets {
-                    HintBullet { HintKey { color: "--accent-primary", "Cairn" } " is the app's own mark, a C" }
-                    HintBullet { HintKey { color: "--accent-primary", "scadoshi" } " is the dev mark this app was built under, an S" }
-                    HintBullet { "It changes nothing but the drawing" }
-                }
+                HintLine { "It changes nothing but the drawing" }
             }
         },
         ConfigHint::Celebration => rsx! {
             HintDialog { open, title: "Goal animation",
-                HintLine { "What plays when a counter finishes its day" }
+                HintLine { "What plays when a counter finishes its day, clears the whole day, or passes another tenth of its year" }
                 HintLine { "A counter can pick its own in its " HintKey { color: "--accent-primary", "Edit" } " sheet" }
             }
         },

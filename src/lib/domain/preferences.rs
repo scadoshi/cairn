@@ -58,11 +58,15 @@ impl Logo {
     /// Every option, for cycling.
     pub const ALL: [Self; 2] = [Self::Cairn, Self::Scadoshi];
 
-    /// Short label.
+    /// The letter itself, which is all the option is.
+    ///
+    /// Named for the glyph rather than for what it stands for: they are
+    /// letters drawn in ASCII, and which one you like is the whole
+    /// decision. More of them are coming.
     pub fn label(self) -> &'static str {
         match self {
-            Self::Cairn => "Cairn",
-            Self::Scadoshi => "scadoshi",
+            Self::Cairn => "C",
+            Self::Scadoshi => "S",
         }
     }
 
