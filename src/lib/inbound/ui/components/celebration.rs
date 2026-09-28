@@ -54,13 +54,39 @@ const PIECES: [(u32, u32, u32, u8); 18] = [
     (98, 440, 1650, 0),
 ];
 
-/// How many celebrations have fired this run.
+/// How many celebrations have fired, seeded from the clock at first use.
 ///
 /// The line used to be picked from a figure read off the screen, which a
 /// `use_callback` captured on first render and then never changed, so the
 /// same line came up until the app was relaunched. A counter that the act of
 /// celebrating bumps cannot go stale that way.
-static FIRED: AtomicU64 = AtomicU64::new(0);
+///
+/// Seeded rather than started at zero because the count is also where
+/// Random and the success lines pick from: from zero, the first goal
+/// crossed after every launch drew the same animation and the same line,
+/// and on a phone the app is relaunched far more often than it is left
+/// running.
+static FIRED: AtomicU64 = AtomicU64::new(u64::MAX);
+
+/// The next crossing's number, seeding from the clock on the first call.
+///
+/// `u64::MAX` is the "not seeded yet" mark. It cannot be a real count: at
+/// one crossing a nanosecond it would take longer than the age of the
+/// universe to reach.
+fn next_nth() -> u64 {
+    let seeded = FIRED.load(Ordering::Relaxed);
+    if seeded != u64::MAX {
+        return FIRED.fetch_add(1, Ordering::Relaxed);
+    }
+    let seed = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    // A losing racer just takes the next number off whoever won.
+    match FIRED.compare_exchange(u64::MAX, seed + 1, Ordering::Relaxed, Ordering::Relaxed) {
+        Ok(_) => seed,
+        Err(_) => FIRED.fetch_add(1, Ordering::Relaxed),
+    }
+}
 
 /// Popper pieces: how far across and up the piece travels as a percentage
 /// of the screen, how much it spins, its delay, and which theme color.
@@ -133,7 +159,7 @@ pub fn celebrate(host: CelebrationHost, how: Celebration) -> Option<&'static str
     if how == Celebration::Off {
         return None;
     }
-    let nth = FIRED.fetch_add(1, Ordering::Relaxed);
+    let nth = next_nth();
     let how = how.resolve(nth);
     let line = done_line(nth);
     // Stride 2 against 3 accents: every tint before any repeat.
