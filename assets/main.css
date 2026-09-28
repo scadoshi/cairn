@@ -388,7 +388,7 @@ input {
     letter-spacing: 0.1em;
     color: var(--accent-tertiary);
     /* Counter names sit here and are often one unbroken word. */
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     min-width: 0;
 }
 
@@ -888,6 +888,12 @@ input {
     font-weight: 700;
     white-space: nowrap;
     pointer-events: none;
+    /* Its padding and border would otherwise grow the line box and push the
+       line above it up, so a hint with a tag in it sits unevenly. Pinning
+       the line height keeps the tag's box the height of the text it sits
+       in, and the padding spills over the top and bottom without moving
+       anything. */
+    line-height: 1;
 }
 
 /* A real .stat-chip shown as an example mid-sentence. */
@@ -949,10 +955,15 @@ input {
 
 /* Titles and bodies carry counter names, which are one unbroken word as
    often as not. Without this, "Delete Squatsandlungesandmore?" runs out
-   through the dialog's side rather than wrapping. */
+   through the dialog's side rather than wrapping.
+ *
+ * break-word, not anywhere: anywhere breaks any word at any character it
+ * likes, which chopped "count" across two lines in the middle of an
+ * ordinary sentence. break-word only splits a word that would not fit on a
+ * line of its own, which is the case this is here for. */
 .alert-dialog-title,
 .alert-dialog-description {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
 }
 
 .alert-dialog-title {

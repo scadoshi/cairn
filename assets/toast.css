@@ -3,14 +3,17 @@
  * `class:` prop spread through its `#[props(extends = GlobalAttributes)]` attributes.
  * Inner DOM is owned by the library: <div.toast-container> > <ol> > <li> > <div role="alertdialog" data-type="...">.
  * `data-type` is part of ToastProvider's documented stable contract. */
-/* Top left, below the header, stacking downwards. They used to sit above
-   the bottom bar, where they covered the buttons of whichever counter was
-   last in the list, which is the one you are most likely tapping. */
+/* Top left, over the header, stacking downwards. They used to sit above the
+   bottom bar, where they covered the buttons of whichever counter was last
+   in the list, which is the one you are most likely tapping. Over the
+   header rather than under it: the header is the one strip of the screen
+   with nothing to read, so covering it costs nothing and leaves the
+   counters clear. */
 .toast-container {
     position: fixed;
     z-index: 9999;
     left: 1rem;
-    top: calc(env(safe-area-inset-top, 0px) + 4rem);
+    top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
     max-width: 16rem;
 }
 
