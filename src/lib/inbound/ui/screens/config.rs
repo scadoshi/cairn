@@ -422,7 +422,7 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
     let discard = use_callback(move |()| {
         if draft.peek().to_owned() != saved {
             toast.info(
-                "Animation changes discarded".to_string(),
+                "Animation unchanged".to_string(),
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }
@@ -620,7 +620,7 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
     let discard = use_callback(move |()| {
         if draft.peek().to_owned() != saved {
             toast.info(
-                "Rest day changes discarded".to_string(),
+                "Rest days unchanged".to_string(),
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }
@@ -751,7 +751,7 @@ fn PreferencesSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 live.set(original());
                 if changed {
                     toast.info(
-                        "Theme changes discarded".to_string(),
+                        "Theme unchanged".to_string(),
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
                 }
@@ -764,7 +764,7 @@ fn PreferencesSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                         live.set(original());
                         if changed {
                             toast.info(
-                                "Theme changes discarded".to_string(),
+                                "Theme unchanged".to_string(),
                                 ToastOptions::default().duration(TOAST_QUICK),
                             );
                         }
