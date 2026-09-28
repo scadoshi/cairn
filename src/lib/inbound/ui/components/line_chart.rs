@@ -115,6 +115,37 @@ pub fn LineChart(
 
     // (x position, text, anchor). Either every nth point, or the three that
     // fit on a series too long to label.
+    //
+    // `label_every` is a floor, not the answer: forty weeks at every fifth
+    // still ran "12/29" into "02/02" with no gap between them. The stride
+    // widens until the labels have room, which is why no series has to
+    // carry a number tuned to its own longest label.
+    let step = if label_every > 0 {
+        let widest = points
+            .iter()
+            .map(|p| p.label.chars().count())
+            .max()
+            .unwrap_or(0);
+        // Measured against the real thing rather than from the font
+        // metrics: the viewBox is stretched horizontally to the card, so a
+        // character costs more than its 8px advance. One character of gap
+        // between neighbours on top.
+        #[allow(clippy::cast_precision_loss)]
+        let needed = (widest + 1) as f64 * 6.2;
+        let spacing = if n > 1 {
+            #[allow(clippy::cast_precision_loss)]
+            let gaps = (n - 1) as f64;
+            (W - PAD_L - PAD_R) / gaps
+        } else {
+            W
+        };
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let fits = (needed / spacing.max(0.1)).ceil() as usize;
+        label_every.max(fits).max(1)
+    } else {
+        0
+    };
+    let label_every = step;
     let ticks: Vec<(f64, String, &str)> = if label_every > 0 {
         points
             .iter()
