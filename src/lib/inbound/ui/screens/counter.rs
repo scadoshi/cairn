@@ -184,8 +184,9 @@ pub fn CounterScreen(id: i64) -> Element {
         // without needing a case of its own.
         let applied = stats::applied_delta(today_count, delta);
         if applied == 0 {
+            let name = counter().map(|c| c.name.to_string()).unwrap_or_default();
             toast.info(
-                "-0".to_string(),
+                format!("{name} -0"),
                 ToastOptions::default().duration(TOAST_QUICK),
             );
             return;

@@ -111,7 +111,7 @@ fn CounterCard(
         let applied = stats::applied_delta(today_count, delta);
         if applied == 0 {
             toast.info(
-                "-0".to_string(),
+                format!("{name} -0"),
                 ToastOptions::default().duration(TOAST_QUICK),
             );
             return;
