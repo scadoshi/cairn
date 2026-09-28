@@ -383,6 +383,16 @@ input {
     border-bottom: 1px solid var(--border-secondary);
 }
 
+/* A header whose tags sit on the name's own line and wrap into it, rather
+   than forming a block that drops below the name the moment it does not
+   fit. Left-aligned, because space-between on a wrapping row leaves a hole
+   between the name and the first tag. */
+.card-header-flow {
+    justify-content: flex-start;
+    align-items: center;
+    row-gap: 0.35rem;
+}
+
 .card-title {
     font-size: 1rem;
     letter-spacing: 0.1em;

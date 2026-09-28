@@ -159,24 +159,26 @@ fn CounterCard(
                 class: "card-tap",
                 role: "button",
                 onclick: move |_| on_open.call(id.0),
-                div { class: "card-header",
+                // The tags are siblings of the name, not a block beside it:
+                // as a block they wrapped whole, dropping every tag below
+                // the name as soon as one of them did not fit. Flat, they
+                // fill the row and wrap one at a time.
+                div { class: "card-header card-header-flow",
                     span { class: "card-title", "{counter.name}" }
                     if let Some(g) = counter.goal {
-                        div { class: "chip-tags",
-                            for part in g.parts(days) {
-                                span { class: "stat-chip stat-chip-goal", "{part}" }
-                            }
-                            // Red until the day's share is logged, green after.
-                            // It carries the number so one tag answers both
-                            // "am I done" and "how much is left".
-                            if let Some(left) = left_today {
-                                span { class: "stat-chip stat-chip-short", "{thousands(left)} to go" }
-                            } else {
-                                span { class: "stat-chip stat-chip-met", "goal met" }
-                            }
-                            if let Some(left) = pace_today {
-                                span { class: "stat-chip stat-chip-derived", "{thousands(left)} to pace" }
-                            }
+                        for part in g.parts(days) {
+                            span { class: "stat-chip stat-chip-goal", "{part}" }
+                        }
+                        // Red until the day's share is logged, green after.
+                        // It carries the number so one tag answers both
+                        // "am I done" and "how much is left".
+                        if let Some(left) = left_today {
+                            span { class: "stat-chip stat-chip-short", "{thousands(left)} to go" }
+                        } else {
+                            span { class: "stat-chip stat-chip-met", "goal met" }
+                        }
+                        if let Some(left) = pace_today {
+                            span { class: "stat-chip stat-chip-derived", "{thousands(left)} to pace" }
                         }
                     }
                 }
