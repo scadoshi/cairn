@@ -48,9 +48,14 @@ pub fn at_hour(hours: i64) -> Option<&'static Quote> {
     if len == 0 {
         return None;
     }
-    // rem_euclid rather than %: hours is negative before 1970, and a clock
-    // set wrong should still land on a quote instead of panicking.
-    let slot = usize::try_from(hours.rem_euclid(i64::try_from(len).ok()?)).ok()?;
+    // One extra tick per day, so the list does not advance in step with the
+    // clock. Walking it an hour at a time means a fixed hour of the day only
+    // ever reaches the slots `24 apart`, and at 72 quotes that is three of
+    // them, forever: someone who only ever logs at 8am would have seen the
+    // whole pool by Wednesday and never another. Adding the day count makes
+    // the step 25 an hour, which shares nothing with 24.
+    let ticks = hours.saturating_add(hours.div_euclid(24));
+    let slot = usize::try_from(ticks.rem_euclid(i64::try_from(len).ok()?)).ok()?;
     QUOTES.get(slot.wrapping_mul(STEP) % len)
 }
 
@@ -444,22 +449,38 @@ mod tests {
     use chrono::{TimeZone, Utc};
 
     #[test]
-    fn every_quote_is_reachable_before_any_repeats() {
-        let len = i64::try_from(QUOTES.len()).unwrap();
-        let mut seen = vec![false; QUOTES.len()];
-        for h in 0..len {
+    fn every_quote_shows_within_a_few_cycles() {
+        // The clock advances the list 25 times a day, not 24, so each day
+        // skips the slot it lands on at midnight. Those skipped slots move
+        // on by 25 a day and take a while to come round, which is why this
+        // scans three cycles rather than one.
+        let len = QUOTES.len();
+        let hours = i64::try_from(len).unwrap() * 3;
+        let mut seen = vec![false; len];
+        for h in 0..hours {
             let q = at_hour(h).expect("the list is not empty");
             let i = QUOTES
                 .iter()
                 .position(|x| x == q)
                 .expect("quote is in the list");
-            assert!(
-                !seen[i],
-                "quote {i} repeated within one cycle: STEP shares a factor with the list length"
-            );
             seen[i] = true;
         }
-        assert!(seen.into_iter().all(|s| s), "some quote never shows");
+        assert!(
+            seen.into_iter().all(|s| s),
+            "some quote never shows: STEP shares a factor with the list length"
+        );
+    }
+
+    #[test]
+    fn no_quote_comes_round_twice_in_a_day() {
+        let mut seen = std::collections::HashSet::new();
+        for h in 0..24 {
+            let q = at_hour(h).expect("the list is not empty");
+            assert!(
+                seen.insert(std::ptr::from_ref::<Quote>(q)),
+                "repeated inside one day"
+            );
+        }
     }
 
     #[test]
@@ -514,5 +535,20 @@ mod tests {
             assert!(!q.author.is_empty(), "a quote with no author");
             assert!(!q.source.is_empty(), "{} has no source", q.author);
         }
+    }
+
+    #[test]
+    fn one_hour_of_the_day_still_sees_every_quote() {
+        // The bug this guards: stepping one slot an hour ties the hour of
+        // the day to a fixed set of slots whenever the list length and 24
+        // share a factor. 72 quotes meant three of them at 8am, forever.
+        let mut seen = std::collections::HashSet::new();
+        for day in 0..(i64::try_from(QUOTES.len()).unwrap() * 2) {
+            let at_8am = day * 24 + 8;
+            seen.insert(std::ptr::from_ref::<Quote>(
+                at_hour(at_8am).expect("non-empty"),
+            ));
+        }
+        assert_eq!(seen.len(), QUOTES.len(), "some quote never shows at 8am");
     }
 }
