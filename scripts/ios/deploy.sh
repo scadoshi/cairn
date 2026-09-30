@@ -48,6 +48,15 @@ fi
 APP="$REPO_ROOT/target/dx/cairn/$PROFILE/ios/Cairn.app"
 [ -d "$APP" ] || { echo "no app bundle at $APP" >&2; exit 1; }
 
+# Refuses a bundle older than the newest source or asset file, so a build
+# that quietly did nothing cannot put yesterday's app on the phone.
+newest_source="$(find "$REPO_ROOT/src" "$REPO_ROOT/assets" "$REPO_ROOT/Cargo.lock" -type f -newer "$APP" | head -1)"
+if [ -n "$newest_source" ]; then
+  echo "bundle at $APP is older than $newest_source; not installing" >&2
+  exit 1
+fi
+echo "bundle built $(stat -f '%Sm' "$APP") from $(git -C "$REPO_ROOT" rev-parse --short HEAD)"
+
 # --id matters: with two phones attached ios-deploy otherwise picks one
 # of them on its own.
 ios-deploy --id "$UDID" --bundle "$APP"
