@@ -6263,7 +6263,7 @@ dependencies = [
 [[package]]
 name = "zwipe-components"
 version = "1.10.3"
-source = "git+https://github.com/scadoshi/zwipe#ddd8fe6b917fe9c54e2a6e068dc4258adcf84b1b"
+source = "git+https://github.com/scadoshi/zwipe#2c8ea0f03b3407f5e213174c4ff5c5d078e441e7"
 dependencies = [
  "dioxus",
  "uuid",
@@ -6273,7 +6273,7 @@ dependencies = [
 [[package]]
 name = "zwipe-core"
 version = "1.10.3"
-source = "git+https://github.com/scadoshi/zwipe#ddd8fe6b917fe9c54e2a6e068dc4258adcf84b1b"
+source = "git+https://github.com/scadoshi/zwipe#2c8ea0f03b3407f5e213174c4ff5c5d078e441e7"
 dependencies = [
  "chrono",
  "email_address",
