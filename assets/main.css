@@ -187,7 +187,7 @@ input {
 .stat-chip {
     display: inline-block;
     padding: 0.2rem 0.55rem;
-    border-radius: 0.6rem;
+    border-radius: 0.25rem;
     font-size: 0.75rem;
     max-width: 100%;
     text-align: center;
@@ -842,7 +842,7 @@ input {
     margin-left: 0.35rem;
     padding: 0;
     border: 1px solid var(--border-primary);
-    border-radius: 0.5rem;
+    border-radius: 0.6rem;
     background: var(--bg-primary);
     color: var(--text-muted);
     font-family: "JetBrains Mono", monospace;
