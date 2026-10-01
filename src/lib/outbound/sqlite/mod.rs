@@ -504,7 +504,7 @@ mod tests {
         assert_eq!(s.list_counters().unwrap(), vec![c.clone()]);
         assert_eq!(s.get_counter(c.id).unwrap(), Some(c.clone()));
         s.delete_counter(c.id).unwrap();
-        assert!(s.list_counters().unwrap().is_empty());
+        assert_eq!(s.list_counters().unwrap().len(), 0);
         assert_eq!(s.get_counter(c.id).unwrap(), None);
     }
 

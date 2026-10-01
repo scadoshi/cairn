@@ -801,7 +801,7 @@ mod tests {
 
     #[test]
     fn merging_nothing_is_empty() {
-        assert!(merge_days(std::iter::empty()).is_empty());
+        assert_eq!(merge_days(std::iter::empty()).len(), 0);
     }
 
     #[test]

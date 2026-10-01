@@ -503,7 +503,7 @@ mod tests {
 
     #[test]
     fn the_list_is_not_empty() {
-        assert!(!QUOTES.is_empty());
+        assert_ne!(QUOTES.len(), 0);
     }
 
     #[test]
