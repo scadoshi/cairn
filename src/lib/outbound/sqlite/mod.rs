@@ -595,7 +595,7 @@ mod tests {
         assert_eq!(s.adjust(c.id, today, today.date(), 2).unwrap(), 5);
         assert_eq!(s.adjust(c.id, today, today.date(), -10).unwrap(), 0);
         assert_eq!(s.events(c.id).unwrap().len(), 3);
-        assert!(s.entries(c.id).unwrap().is_empty());
+        assert_eq!(s.entries(c.id).unwrap().len(), 0);
         s.adjust(c.id, at(2026, 1, 2), d(2026, 1, 2), 7).unwrap();
         s.adjust(c.id, at(2026, 1, 1), d(2026, 1, 1), 1).unwrap();
         assert_eq!(
@@ -628,7 +628,7 @@ mod tests {
             .unwrap();
         s.adjust(c.id, at(2026, 1, 1), d(2026, 1, 1), 1).unwrap();
         s.delete_counter(c.id).unwrap();
-        assert!(s.entries(c.id).unwrap().is_empty());
+        assert_eq!(s.entries(c.id).unwrap().len(), 0);
         assert!(s.events(c.id).unwrap().is_empty());
     }
 
