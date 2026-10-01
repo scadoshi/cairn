@@ -333,7 +333,7 @@ input {
     align-self: center;
     padding: 1rem;
     margin: 1rem;
-    color: var(--text-primary);
+    color: var(--logo);
     animation: logo-enter 0.5s ease-out backwards;
 }
 
