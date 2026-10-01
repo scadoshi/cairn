@@ -74,6 +74,10 @@ See `development/commit_guidelines.md`. The short version: one-line messages,
 no emojis, never any AI-agent signature or Co-Authored-By trailer. Never push
 without being asked.
 
+## Comments
+
+A comment says what the code does, in the present tense, and only when the code does not say it itself. No history, no "without this", no restating the name. The full rules with examples are in `development/comment_guidelines.md`.
+
 ## Context Directory
 
 ```
@@ -81,7 +85,7 @@ context/
 ├── README.md         — start-here index + current focus
 ├── CLAUDE.md         — this file
 ├── architecture/     — structure.md (layout), decisions.md (why)
-├── development/      — commit_guidelines, versioning, documentation, ownership, dioxus cheatsheet
+├── development/      — commit_guidelines, comment_guidelines, versioning, documentation, ownership, dioxus cheatsheet
 ├── operations/       — ios/ (dev_deploy, testers, first_device, submission, history)
 ├── plans/            — specs for work not started yet (celebrations, big_step, watch)
 └── progress/         — overview.md (live), todo.md (next), backlog.md (someday), changelog.md
