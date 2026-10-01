@@ -629,7 +629,7 @@ mod tests {
         s.adjust(c.id, at(2026, 1, 1), d(2026, 1, 1), 1).unwrap();
         s.delete_counter(c.id).unwrap();
         assert_eq!(s.entries(c.id).unwrap().len(), 0);
-        assert!(s.events(c.id).unwrap().is_empty());
+        assert_eq!(s.events(c.id).unwrap().len(), 0);
     }
 
     #[test]
