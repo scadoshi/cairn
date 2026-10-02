@@ -282,7 +282,6 @@ input {
     padding: 0;
     margin: 0;
     flex-shrink: 0;
-    animation: none;
 }
 
 /* Hero rows: plain case, no tracking, unlike the profile's label style. */
@@ -334,20 +333,6 @@ input {
     padding: 1rem;
     margin: 1rem;
     color: var(--logo);
-    animation: logo-enter 0.5s ease-out backwards;
-}
-
-@keyframes logo-enter {
-    from {
-        letter-spacing: 10px;
-        opacity: 0;
-        transform: translateY(-12px);
-    }
-    to {
-        letter-spacing: 0;
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 /* ==================
