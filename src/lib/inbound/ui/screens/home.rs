@@ -31,7 +31,7 @@ use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, Decode};
 
 /// The C, the app's own mark.
 const LOGO_CAIRN: &str = include_str!("../../../../../assets/c.txt");
@@ -101,7 +101,11 @@ pub fn Home() -> Element {
             div { class: "profile-sections content-enter",
                 div { class: "home-hero",
                     div { class: "card-header home-hero-head",
-                        pre { class: "logo", "aria-label": "{logo_label}", "{logo}" }
+                        // The mark resolves from static as the screen opens.
+                        // Keyed on the mark so a change in Config decodes anew.
+                        for mark in [logo_label] {
+                            pre { key: "{mark}", class: "logo", "aria-label": "{logo_label}", Decode { text: logo } }
+                        }
                         div { class: "home-hero-when",
                             span { class: "card-title", "{date}" }
                             div { class: "chip-tags",

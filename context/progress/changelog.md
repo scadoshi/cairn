@@ -6,6 +6,10 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- The home mark resolves from static as the screen opens, and again when the
+  Mark setting switches between the C and the S.
+
+
 - Celebrations now fire on three things, not one: a counter finishing its
   day, the tap that finishes the last counter of the day, and passing
   another tenth of the year's goal. Same animation for all three, different
