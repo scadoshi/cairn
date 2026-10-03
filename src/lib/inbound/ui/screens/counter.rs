@@ -19,11 +19,13 @@ use crate::{
             alert_dialog::ConfirmDialog,
             celebration::{CelebrationHost, Saying, celebrate_saying},
             counter_form::EditSheet,
+            heatmap::Heatmap,
             hint::{
                 HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton, use_screen_hint,
             },
             line_chart::{LineChart, Point},
-            tile::{Tile, TileGrid, rate},
+            reveal::Reveal,
+            tile::{Num, Tile, TileGrid, rate},
         },
         now,
         router::Route,
@@ -59,6 +61,7 @@ struct CardHints {
 /// Which card's hint.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CounterHint {
+    Days,
     Year,
     Goal,
     Trends,
@@ -89,6 +92,12 @@ fn CounterHintDialog(open: Signal<bool>, which: Option<CounterHint>) -> Element 
         return rsx! {};
     };
     match which {
+        CounterHint::Days => rsx! {
+            HintDialog { open, title: "Every day",
+                HintLine { "The last year, a column per week, each day shaded by how it ranks against your other logged days" }
+                HintLine { "Tap a day for its count. The grid scrolls; it opens on the newest weeks" }
+            }
+        },
         CounterHint::Year => rsx! {
             HintDialog { open, title: "This year",
                 HintLine { "Totals for the calendar year, and where the current pace lands by December" }
@@ -305,11 +314,11 @@ pub fn CounterScreen(id: i64) -> Element {
                 if let Some(n) = notice() {
                     p { class: "pref-note", "{n}" }
                 }
-                div { class: "profile-list",
+                Reveal { class: "profile-list",
                     div { class: "odometer",
                         span {
                             class: if summary.lifetime >= 10_000_000 { "odometer-value odometer-value-xl" } else if summary.lifetime >= 100_000 { "odometer-value odometer-value-l" } else { "odometer-value" },
-                            "{thousands(summary.lifetime)}"
+                            Num { text: thousands(summary.lifetime) }
                         }
                         span { class: "odometer-label", "lifetime since {date_format().date(c.created_on)}" }
                     }
@@ -342,6 +351,15 @@ pub fn CounterScreen(id: i64) -> Element {
                         }
                     }
                 }
+                Reveal { class: "profile-list",
+                    div { class: "card-header",
+                        span { class: "row-label-with-hint",
+                            span { class: "card-title", "Every day" }
+                            CardHint { which: CounterHint::Days }
+                        }
+                    }
+                    Heatmap { entries: entries() }
+                }
                 YearCard { summary: summary.clone() }
                 if let Some(g) = c.goal {
                     GoalCard { summary: summary.clone(), goal: g }
@@ -349,7 +367,7 @@ pub fn CounterScreen(id: i64) -> Element {
                 TrendsCard { entries: entries(), events: events(), trend }
                 BestsCard { entries: entries(), summary: summary.clone(), best }
                 HabitCard { summary: summary.clone() }
-                div { class: "profile-list",
+                Reveal { class: "profile-list",
                     div { class: "card-header",
                         span { class: "row-label-with-hint",
                             span { class: "card-title", "By year" }
@@ -362,9 +380,9 @@ pub fn CounterScreen(id: i64) -> Element {
                             for y in summary.years.iter() {
                                 tr {
                                     td { "{y.year}" }
-                                    td { "{thousands(y.total)}" }
-                                    td { "{rate(y.per_day)}" }
-                                    td { "{y.active_days} / {y.days_elapsed}" }
+                                    td { Num { text: thousands(y.total) } }
+                                    td { Num { text: rate(y.per_day) } }
+                                    td { Num { text: y.active_days.to_string() } " / " Num { text: y.days_elapsed.to_string() } }
                                 }
                             }
                         }
@@ -626,7 +644,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
     let shape = series::shape(&values);
 
     rsx! {
-        div { class: "profile-list",
+        Reveal { class: "profile-list",
             div { class: "card-header",
                 span { class: "row-label-with-hint",
                     span { class: "card-title", "Trends" }
@@ -681,8 +699,8 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                             span { class: "chart-key chart-key-band" }
                             "1 sd"
                         }
-                        span { class: "stat-chip stat-chip-derived", "avg {f.mean:.0}" }
-                        span { class: "stat-chip stat-chip-derived", "sd {f.sd:.0}" }
+                        span { class: "stat-chip stat-chip-derived", "avg " Num { text: format!("{:.0}", f.mean) } }
+                        span { class: "stat-chip stat-chip-derived", "sd " Num { text: format!("{:.0}", f.sd) } }
                     }
                 }
             }
@@ -703,7 +721,7 @@ enum Best {
 fn YearCard(summary: Summary) -> Element {
     let y = &summary.this_year;
     rsx! {
-        div { class: "profile-list",
+        Reveal { class: "profile-list",
             div { class: "card-header",
                 span { class: "row-label-with-hint",
                     span { class: "card-title", "{y.year}, day {y.days_elapsed}" }
@@ -732,7 +750,7 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
         (compact_i64(p.delta), "behind pace")
     };
     rsx! {
-        div { class: "profile-list",
+        Reveal { class: "profile-list",
             div { class: "card-header",
                 span { class: "row-label-with-hint",
                     span { class: "card-title", "Goal" }
@@ -814,7 +832,7 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
             }),
     };
     rsx! {
-        div { class: "profile-list",
+        Reveal { class: "profile-list",
             div { class: "card-header",
                 span { class: "row-label-with-hint",
                     span { class: "card-title", "Bests" }
@@ -850,7 +868,7 @@ fn HabitCard(summary: Summary) -> Element {
         n => format!("{n} days ago"),
     });
     rsx! {
-        div { class: "profile-list",
+        Reveal { class: "profile-list",
             div { class: "card-header",
                 span { class: "row-label-with-hint",
                     span { class: "card-title", "Habit" }

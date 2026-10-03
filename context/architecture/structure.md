@@ -33,7 +33,7 @@ cairn/
         │       ├── quote_card.rs   # the quote and its countdown
         │       ├── dialog_host.rs  # one slot at the root so overlays escape
         │       ├── alert_dialog.rs, bottom_sheet.rs, hint.rs
-        │       ├── line_chart.rs, tile.rs
+        │       ├── heatmap.rs, line_chart.rs, reveal.rs, tile.rs
         │       └── navigation/     # back_handler.rs, overlay_stack.rs
         └── outbound/
             ├── paths.rs            # data dir, exports dir

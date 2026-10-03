@@ -21,7 +21,8 @@ use crate::{
             counter_list::CounterList,
             hint::{HintBullet, HintBullets, HintChip, HintDialog, HintLine, use_screen_hint},
             quote_card::QuoteCard,
-            tile::Tile,
+            reveal::Reveal,
+            tile::{Num, Tile},
         },
         router::Route,
         today, use_date_format, use_prefs, use_store,
@@ -99,7 +100,7 @@ pub fn Home() -> Element {
     rsx! {
         div { class: "screen-content",
             div { class: "profile-sections content-enter",
-                div { class: "home-hero",
+                Reveal { class: "home-hero",
                     div { class: "card-header home-hero-head",
                         // The mark resolves from static as the screen opens.
                         // Keyed on the mark so a change in Config decodes anew.
@@ -109,8 +110,8 @@ pub fn Home() -> Element {
                         div { class: "home-hero-when",
                             span { class: "card-title", "{date}" }
                             div { class: "chip-tags",
-                                span { class: "stat-chip stat-chip-goal", "day {day}" }
-                                span { class: "stat-chip", "week {week}" }
+                                span { class: "stat-chip stat-chip-goal", "day " Num { text: day.to_string() } }
+                                span { class: "stat-chip", "week " Num { text: week.to_string() } }
                             }
                         }
                     }
@@ -123,7 +124,7 @@ pub fn Home() -> Element {
                             Tile { label: "logged today", value: compact(across.logged_today) }
                             Tile {
                                 label: "goals met",
-                                value: "{across.goals_met}",
+                                value: across.goals_met.to_string(),
                                 hint: if across.with_goals == 0 { "no goals set".to_string() } else { format!("of {}", across.with_goals) },
                             }
                             Tile { label: "lifetime", value: compact(across.lifetime) }

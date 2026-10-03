@@ -6,6 +6,18 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- Every figure rolls its digits into place as its card comes into view, and
+  again when a tap changes it: the odometer, every tile, the goal chips, the
+  year table, the chart's average and spread. The mark and the charts hold
+  their entrance the same way, so a card below the fold arrives as you reach
+  it rather than unseen at load. The system's Reduce Motion setting turns all
+  of it off.
+
+- A counter's screen has a new card, Every day: the last year as a grid, a
+  column per week, each day shaded by how it ranks against the counter's
+  other logged days. Tap a day for its count. It scrolls sideways and opens
+  on the newest weeks.
+
 - The home mark resolves from static as the screen opens, and again when the
   Mark setting switches between the C and the S.
 

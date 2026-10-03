@@ -319,6 +319,32 @@ input {
     animation: content-enter 0.3s ease-out both;
 }
 
+/* A card arrives when the viewport reaches it. Pending, it and everything
+   animating inside it (chart line, heat cells) hold their first frame;
+   `reveal-in` lets them all go at once. Ends on `transform: none` for the
+   same containing-block reason as content-enter. */
+.reveal {
+    animation: reveal-in 0.45s ease-out both;
+}
+
+.reveal-pending,
+.reveal-pending .chart-line,
+.reveal-pending .chart-overlay,
+.reveal-pending .heat-cell {
+    animation-play-state: paused;
+}
+
+@keyframes reveal-in {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
 /* ==================
         logo
  ==================== */
@@ -1584,7 +1610,107 @@ input {
     }
 }
 
-/* Someone who has asked the OS for less motion gets none of this. */
+/* ==================
+      heatmap
+ ==================== */
+
+/* Wider than a phone, so it scrolls sideways and opens on the newest weeks. */
+.heat-scroll {
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0.25rem 1rem 0.5rem;
+}
+
+.heat-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+/* Holds the grid and its chip, and nothing else, so the chip's percentages
+   measure the grid. */
+.heat-plot {
+    position: relative;
+    min-width: 38rem;
+}
+
+.heat-grid {
+    display: block;
+    width: 100%;
+    height: auto;
+    font-family: inherit;
+}
+
+.heat-backdrop {
+    fill: transparent;
+}
+
+.heat-label {
+    fill: var(--text-muted);
+    font-size: 9px;
+}
+
+/* The five shades, in the primary accent: an empty day is a faint box, the
+   rest rise by quartile to the full color. Cells sweep in a column at a time,
+   on the delay each carries. */
+.heat-cell {
+    fill: var(--border-secondary);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: heat-sweep 0.4s ease-out both;
+}
+
+.heat-1 {
+    fill: color-mix(in srgb, var(--accent-primary) 30%, var(--bg-primary));
+}
+
+.heat-2 {
+    fill: color-mix(in srgb, var(--accent-primary) 55%, var(--bg-primary));
+}
+
+.heat-3 {
+    fill: color-mix(in srgb, var(--accent-primary) 80%, var(--bg-primary));
+}
+
+.heat-4 {
+    fill: var(--accent-primary);
+}
+
+@keyframes heat-sweep {
+    from {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* The tapped day's chip, hung just above its cell. Near an edge it hangs
+   from its start or end instead of its middle. */
+.heat-tip {
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 0.4rem));
+    background-color: var(--bg-primary);
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 1;
+    animation: content-enter 0.18s ease-out;
+}
+
+.heat-tip.tip-start {
+    transform: translate(-0.5rem, calc(-100% - 0.4rem));
+}
+
+.heat-tip.tip-end {
+    transform: translate(calc(-100% + 0.5rem), calc(-100% - 0.4rem));
+}
+
+.heat-note {
+    margin: 0 1rem 0.75rem;
+}
+
+/* Someone who has asked the OS for less motion gets none of this. The chart
+   line keeps its drawn state rather than the undrawn one it animates from. */
 @media (prefers-reduced-motion: reduce) {
     .celebrate-levelup,
     .celebrate-confetti,
@@ -1592,5 +1718,19 @@ input {
     .celebrate-pulse,
     .celebrate-text {
         display: none;
+    }
+
+    .reveal,
+    .heat-cell,
+    .heat-tip,
+    .content-enter,
+    .content-enter-delayed {
+        animation: none;
+    }
+
+    .chart-line,
+    .chart-overlay {
+        animation: none;
+        stroke-dashoffset: 0;
     }
 }

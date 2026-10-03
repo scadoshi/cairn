@@ -23,7 +23,8 @@ use crate::{
         components::{
             alert_dialog::ConfirmDialog,
             celebration::{CelebrationHost, Saying, celebrate_saying},
-            tile::{Tile, TileGrid, rate},
+            reveal::Reveal,
+            tile::{Num, Tile, TileGrid, rate},
         },
         now, today, use_prefs, use_store,
     },
@@ -171,7 +172,7 @@ fn CounterCard(
     });
 
     rsx! {
-        div { class: "profile-list",
+        Reveal { class: "profile-list",
             div {
                 class: "card-tap",
                 role: "button",
@@ -190,12 +191,12 @@ fn CounterCard(
                         // It carries the number so one tag answers both
                         // "am I done" and "how much is left".
                         if let Some(left) = left_today {
-                            span { class: "stat-chip stat-chip-short", "{thousands(left)} to go" }
+                            span { class: "stat-chip stat-chip-short", Num { text: thousands(left) } " to go" }
                         } else {
                             span { class: "stat-chip stat-chip-met", "goal met" }
                         }
                         if let Some(left) = pace_today {
-                            span { class: "stat-chip stat-chip-derived", "{thousands(left)} to pace" }
+                            span { class: "stat-chip stat-chip-derived", Num { text: thousands(left) } " to pace" }
                         }
                     }
                 }

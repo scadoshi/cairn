@@ -2,6 +2,7 @@
 
 pub mod csv;
 pub mod format;
+pub mod heat;
 pub mod models;
 pub mod ports;
 pub mod stats;
