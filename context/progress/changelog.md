@@ -15,8 +15,8 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 - A counter's screen has a new card, Every day: the last year as a grid, a
   column per week, each day shaded by how it ranks against the counter's
-  other logged days. Tap a day for its count. It scrolls sideways and opens
-  on the newest weeks.
+  other logged days, the biggest days lit. Tap a day for its count. It
+  scrolls sideways and opens on the newest weeks.
 
 - The home mark resolves from static as the screen opens, and again when the
   Mark setting switches between the C and the S.

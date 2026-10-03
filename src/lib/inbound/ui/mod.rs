@@ -18,6 +18,7 @@ use zwipe_components::{Button, ButtonVariant, COMPONENTS_CSS, THEMES_CSS, ThemeC
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TOAST_CSS: Asset = asset!("/assets/toast.css");
+const ENTRANCE_JS: Asset = asset!("/assets/entrance.js");
 const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
 const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
 
@@ -199,6 +200,9 @@ pub fn App() -> Element {
         document::Style { {COMPONENTS_CSS} }
         document::Stylesheet { href: MAIN_CSS }
         document::Stylesheet { href: TOAST_CSS }
+        // Reveals cards and rolls their figures from inside the page, where it
+        // keeps running while the page scrolls.
+        document::Script { src: ENTRANCE_JS, defer: true }
         // The theme class sits here as well as on the screen, so the toast
         // container, which mounts above the router, resolves the same
         // palette instead of falling through to unset variables.

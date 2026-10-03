@@ -2,19 +2,17 @@
 //! row. The counter's odometer in miniature, for the stats that are a single
 //! figure. Anything that needs a sentence stays a ruled row.
 
-use crate::inbound::ui::components::reveal::use_seen;
 use dioxus::prelude::*;
-use zwipe_components::Figure;
 
 /// Re-exported so screens keep one import for the tile and its number style.
 pub use crate::domain::counter::format::rate;
 
-/// A figure in running text or a chip: its digits roll into place when the
-/// card it sits in comes into view, and again whenever it changes.
+/// A figure in running text or a chip. The page rolls its digits into place
+/// when the card it sits in comes into view, and again whenever it changes
+/// (see `assets/entrance.js`); here it is only marked.
 #[component]
 pub fn Num(text: String) -> Element {
-    let seen = use_seen();
-    rsx! { Figure { text, start: seen } }
+    rsx! { span { class: "figure", "{text}" } }
 }
 
 /// One readout. `value` is preformatted by the caller so the tile stays dumb

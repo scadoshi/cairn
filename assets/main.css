@@ -319,18 +319,24 @@ input {
     animation: content-enter 0.3s ease-out both;
 }
 
-/* A card arrives when the viewport reaches it. Pending, it and everything
-   animating inside it (chart line, heat cells) hold their first frame;
-   `reveal-in` lets them all go at once. Ends on `transform: none` for the
-   same containing-block reason as content-enter. */
-.reveal {
+/* A card arrives when the viewport reaches it: entrance.js marks it pending
+   until then, and everything animating inside it (chart line, heat cells)
+   holds its first frame with it; `reveal-in` lets them all go at once. A card
+   the script never reaches is simply visible. Ends on `transform: none` for
+   the same containing-block reason as content-enter. */
+.reveal-pending {
+    opacity: 0;
+    transform: translateY(12px);
+}
+
+.reveal-in {
     animation: reveal-in 0.45s ease-out both;
 }
 
-.reveal-pending,
 .reveal-pending .chart-line,
 .reveal-pending .chart-overlay,
-.reveal-pending .heat-cell {
+.reveal-pending .heat-cell,
+.reveal-pending .heat-halo {
     animation-play-state: paused;
 }
 
@@ -1674,6 +1680,20 @@ input {
     fill: var(--accent-primary);
 }
 
+/* The year's outlier days: a lit edge, and a soft square of the accent behind
+   the cell, drawn as a shape so every browser shows it. */
+.heat-peak {
+    stroke: color-mix(in srgb, var(--accent-primary) 60%, #fff);
+    stroke-width: 1;
+}
+
+.heat-halo {
+    fill: color-mix(in srgb, var(--accent-primary) 45%, transparent);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: heat-sweep 0.4s ease-out both;
+}
+
 @keyframes heat-sweep {
     from {
         opacity: 0;
@@ -1720,8 +1740,9 @@ input {
         display: none;
     }
 
-    .reveal,
+    .reveal-in,
     .heat-cell,
+    .heat-halo,
     .heat-tip,
     .content-enter,
     .content-enter-delayed {

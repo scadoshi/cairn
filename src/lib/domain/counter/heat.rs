@@ -18,6 +18,9 @@ pub struct HeatCell {
     pub row: usize,
     /// 0 for nothing logged, then 1 to 4 by quartile of the logged days.
     pub level: u8,
+    /// One of the year's outlier days: at or past `PEAK_RATIO` times the
+    /// median logged day, among the `MAX_PEAKS` biggest.
+    pub peak: bool,
 }
 
 /// A month label and the column it sits over.
@@ -46,6 +49,10 @@ pub struct HeatGrid {
 
 /// Columns a month label needs before the next one, so two never touch.
 const LABEL_SPAN: usize = 3;
+/// A day at or past this many times the median logged day is a peak, and at
+/// most this many of them, the biggest.
+const PEAK_RATIO: u32 = 4;
+const MAX_PEAKS: usize = 12;
 
 const MONTHS: [&str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -63,6 +70,7 @@ pub fn heat_grid(
     let span = i64::try_from(weeks.max(1) * 7 - 1).unwrap_or(363);
     let first = week_start_of(today - Duration::days(span), week_start);
     let thresholds = quartiles(entries, first, today);
+    let peaks = peaks(entries, first, today);
     let mut cells = Vec::new();
     let mut months = Vec::new();
     let mut last_month = None;
@@ -100,6 +108,7 @@ pub fn heat_grid(
             column,
             row,
             level: level(count, thresholds),
+            peak: peaks.contains(&day),
         });
         match day.succ_opt() {
             Some(next) => day = next,
@@ -137,6 +146,27 @@ fn quartiles(entries: &[DayCount], from: NaiveDate, to: NaiveDate) -> [u32; 3] {
     logged.sort_unstable();
     let at = |q: usize| logged.get(logged.len() * q / 4).copied().unwrap_or(0);
     [at(1), at(2), at(3)]
+}
+
+/// The outlier days in range: at or past `PEAK_RATIO` times the median logged
+/// day, the largest `MAX_PEAKS` of them. A steady busy stretch never
+/// qualifies; a spike does.
+fn peaks(entries: &[DayCount], from: NaiveDate, to: NaiveDate) -> Vec<NaiveDate> {
+    let mut in_range: Vec<&DayCount> = entries
+        .iter()
+        .filter(|e| e.day >= from && e.day <= to && e.count > 0)
+        .collect();
+    if in_range.is_empty() {
+        return Vec::new();
+    }
+    let mut counts: Vec<u32> = in_range.iter().map(|e| e.count).collect();
+    counts.sort_unstable();
+    let median = counts.get(counts.len() / 2).copied().unwrap_or(0);
+    let floor = median.saturating_mul(PEAK_RATIO);
+    in_range.retain(|e| e.count >= floor);
+    in_range.sort_by_key(|e| std::cmp::Reverse(e.count));
+    in_range.truncate(MAX_PEAKS);
+    in_range.into_iter().map(|e| e.day).collect()
 }
 
 /// Where `count` lands against the cuts.
@@ -206,6 +236,28 @@ mod tests {
         assert_eq!(level_of("2026-10-01"), 0);
         assert_eq!(grid.total, 360);
         assert_eq!(grid.active_days, 8);
+    }
+
+    #[test]
+    fn a_spike_is_a_peak_and_a_steady_stretch_is_not() {
+        let mut entries: Vec<DayCount> = (1..=20u32)
+            .map(|i| DayCount {
+                day: d("2026-09-01") + Duration::days(i64::from(i)),
+                count: 10,
+            })
+            .collect();
+        entries.push(DayCount {
+            day: d("2026-09-25"),
+            count: 45,
+        });
+        let grid = heat_grid(&entries, d("2026-10-03"), Weekday::Mon, 52);
+        let peaks: Vec<NaiveDate> = grid
+            .cells
+            .iter()
+            .filter(|c| c.peak)
+            .map(|c| c.day)
+            .collect();
+        assert_eq!(peaks, [d("2026-09-25")]);
     }
 
     #[test]

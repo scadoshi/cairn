@@ -4,11 +4,10 @@
 
 use crate::{
     domain::counter::{DayCount, format::thousands, heat},
-    inbound::ui::{components::reveal::use_seen, today, use_date_format, use_prefs},
+    inbound::ui::{components::tile::Num, today, use_date_format, use_prefs},
 };
 use dioxus::prelude::*;
 use std::time::Duration;
-use zwipe_components::Figure;
 
 /// Cell size and the gap between cells, in SVG units.
 const CELL: f64 = 11.0;
@@ -42,7 +41,6 @@ fn px(n: usize) -> f64 {
 pub fn Heatmap(entries: Vec<DayCount>) -> Element {
     let prefs = use_prefs()();
     let df = use_date_format()();
-    let seen = use_seen();
     let mut tip: Signal<Option<Tip>> = use_signal(|| None);
     let grid = heat::heat_grid(&entries, today(), prefs.week_start, WEEKS);
     let labels = prefs.weekday_labels();
@@ -86,9 +84,22 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                             let text = format!("{} on {}", thousands(cell.count), df.date(cell.day));
                             let (cx, cy) = ((x + CELL / 2.0) / width * 100.0, y / height * 100.0);
                             rsx! {
+                                g { key: "{cell.day}",
+                                // The glow behind a peak day is a shape, since iOS
+                                // Safari applies no CSS filter to an SVG child.
+                                if cell.peak {
+                                    rect {
+                                        class: "heat-halo",
+                                        x: "{x - 2.5}",
+                                        y: "{y - 2.5}",
+                                        width: "{CELL + 5.0}",
+                                        height: "{CELL + 5.0}",
+                                        rx: "4",
+                                        style: "animation-delay: {cell.column * SWEEP_STEP_MS}ms",
+                                    }
+                                }
                                 rect {
-                                    key: "{cell.day}",
-                                    class: "heat-cell heat-{cell.level}",
+                                    class: if cell.peak { "heat-cell heat-{cell.level} heat-peak" } else { "heat-cell heat-{cell.level}" },
                                     x: "{x}",
                                     y: "{y}",
                                     width: "{CELL}",
@@ -96,6 +107,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                                     rx: "2",
                                     style: "animation-delay: {cell.column * SWEEP_STEP_MS}ms",
                                     onclick: move |_| tip.set(Some(Tip { text: text.clone(), left: cx, top: cy })),
+                                }
                                 }
                             }
                         }
@@ -112,9 +124,9 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
             }
         }
         p { class: "chart-note heat-note",
-            Figure { text: thousands(grid.total), start: seen }
+            Num { text: thousands(grid.total) }
             " across "
-            Figure { text: grid.active_days.to_string(), start: seen }
+            Num { text: grid.active_days.to_string() }
             " of {days} days"
         }
     }
