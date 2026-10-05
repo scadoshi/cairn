@@ -178,6 +178,10 @@ pub fn App() -> Element {
         let cfg = theme.read().clone();
         let _ = persist_store.set_theme(&cfg);
     });
+    // Whatever sets the theme (Config's live preview, its Save or Back), the
+    // app wipes over to it; the shell draws this one, not `theme`.
+    let shown = zwipe_components::use_theme_follow(theme, ".theme-root");
+    use_context_provider(|| DisplayedTheme(shown));
 
     rsx! {
         // user-scalable=no kills the double-tap zoom. This is an app, not a
@@ -206,7 +210,7 @@ pub fn App() -> Element {
         // The theme class sits here as well as on the screen, so the toast
         // container, which mounts above the router, resolves the same
         // palette instead of falling through to unset variables.
-        div { class: "theme-root {theme.read().css_class()}",
+        div { class: "theme-root {shown.read().css_class()}",
             ToastProvider {
                 max_toasts: 3_usize,
                 class: match (toasts_expanded(), toasts_animating()) {
@@ -246,11 +250,15 @@ pub fn App() -> Element {
     }
 }
 
+/// The theme the app draws, which follows the picked one through a wipe.
+#[derive(Clone, Copy)]
+pub struct DisplayedTheme(pub Signal<ThemeConfig>);
+
 /// The app shell, laid out like zwiper's: a header naming the screen, then whatever the screen renders
 /// (its content and its own action bar) as siblings in the column.
 #[component]
 pub fn Shell() -> Element {
-    let theme = use_context::<Signal<ThemeConfig>>();
+    let theme = use_context::<DisplayedTheme>().0;
     let css_class = theme.read().css_class();
     let route = use_route::<Route>();
     let store = use_store();
