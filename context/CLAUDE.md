@@ -4,17 +4,11 @@ Guidance for Claude Code and any other AI assistant working in this repository.
 
 ## Project Overview
 
-Cairn is a lifetime counter, named for the waymarker you build by walking the same path and adding a stone every time you pass. You name a thing you do (pull-ups,
-push-ups, pages read), log how many you did each day, and Cairn keeps the running
-total plus the rates and averages that make a total mean something: this year's
-total, average per day, where you stand against a yearly goal, and what today
-needs to be to stay on pace.
+Cairn is a lifetime counter, named for the waymarker you build by walking the same path and adding a stone every time you pass. You name a thing you do (pull-ups, push-ups, pages read), log how many you did each day, and Cairn keeps the running total plus the rates and averages that make a total mean something: this year's total, average per day, where you stand against a yearly goal, and what today needs to be to stay on pace.
 
-- Single Rust crate, Dioxus 0.7 desktop app first, iOS later, Apple Watch
-  eventually.
+- Single Rust crate, a Dioxus 0.7 app running on iOS and desktop, with Apple Watch planned.
 - Data lives on the device in SQLite. There is no server and no account.
-- The UI is built from `zwipe-components` (ActionBar, Button, Chip and the
-  theme palettes) so it looks like zwipe, zite, and the portfolio.
+- The UI is built from `zwipe-components` (ActionBar, Button, Chip and the theme palettes) so it looks like zwipe, zite, and the portfolio.
 - Exports are CSV with two columns, `day` and `count`, one file per counter.
 
 ## Layout
@@ -30,24 +24,17 @@ src/
     └── outbound/sqlite/  # rusqlite adapter implementing the ports
 ```
 
-`architecture/structure.md` walks the tree; `architecture/decisions.md` says
-why. `development/ownership.md` is the one-page mindset: every module has one
-owner and one job.
+`architecture/structure.md` walks the tree; `architecture/decisions.md` says why. `development/ownership.md` is the one-page mindset: every module has one owner and one job.
 
 ## Domain Purity Rules
 
 `domain/` is the part that will one day run on a watch, so it stays portable:
 
-- No `dioxus`, no `rusqlite`, no `dirs`, no platform crates. Allowed: `chrono`,
-  `serde`, `thiserror`.
+- No `dioxus`, no `rusqlite`, no `dirs`, no platform crates. Allowed: `chrono`, `serde`, `thiserror`, and `zwipe_components::ThemeConfig`, the one shared type the theme port stores.
 - No `#[cfg(feature = ...)]` anywhere in `domain/`.
-- All stats and goal math is a pure function over `&[DayCount]` plus a `today`
-  date passed in. Never read the clock inside the domain.
-- Newtypes validate at construction (`CounterName`, `Goal`). Consumers trust
-  them and never re-check.
-- Ports (`CounterStore`, `SettingsStore`) are written from the domain's side:
-  what the app needs, not what SQLite offers. SQL lives in `outbound/sqlite/`
-  and nowhere else.
+- All stats and goal math is a pure function over `&[DayCount]` plus a `today` date passed in. Never read the clock inside the domain.
+- Newtypes validate at construction (`CounterName`, `Goal`). Consumers trust them and never re-check.
+- Ports (`CounterStore`, `SettingsStore`) are written from the domain's side: what the app needs, not what SQLite offers. SQL lives in `outbound/sqlite/` and nowhere else.
 
 ## Common Commands
 
@@ -59,20 +46,15 @@ cargo +nightly fmt                        # rustfmt.toml uses an unstable option
 cargo clippy --all-targets -- -D warnings # what CI runs
 ```
 
-The database lives at the platform data dir, `~/Library/Application
-Support/scadoshi-count/count.db` on macOS. Delete it to start over.
+The database lives at the platform data dir, `~/Library/Application Support/scadoshi-count/count.db` on macOS. Delete it to start over.
 
 ## Linting
 
-Pedantic clippy with the panic family denied outside tests (`unwrap`, `expect`,
-`panic`, indexing, slicing), same lint set as chickadee. `clippy.toml` allows
-them inside tests. CI treats warnings as errors.
+Pedantic clippy with the panic family denied outside tests (`unwrap`, `expect`, `panic`, indexing, slicing), same lint set as chickadee. `clippy.toml` allows them inside tests. CI treats warnings as errors.
 
 ## Commit Guidelines
 
-See `development/commit_guidelines.md`. The short version: one-line messages,
-no emojis, never any AI-agent signature or Co-Authored-By trailer. Never push
-without being asked.
+See `development/commit_guidelines.md`. The short version: one-line messages, no emojis, never any AI-agent signature or Co-Authored-By trailer. Never push without being asked.
 
 ## Comments
 
