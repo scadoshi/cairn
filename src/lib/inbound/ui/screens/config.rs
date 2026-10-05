@@ -23,7 +23,9 @@ use chrono::Weekday;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{fmt::Write as _, path::PathBuf};
-use zwipe_components::{ALLOWED_THEMES, ActionBar, Button, ButtonVariant, Chip, ThemeConfig};
+use zwipe_components::{
+    ALLOWED_THEMES, ActionBar, Button, ButtonVariant, Chip, ThemeConfig, ThemeFollow,
+};
 
 /// Themes with adjusted palettes for color-vision deficiency, grouped at the
 /// bottom of the picker. Same list zwiper and the site picker use.
@@ -417,6 +419,7 @@ fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }
+        open.set(false);
     });
 
     rsx! {
@@ -428,10 +431,7 @@ fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| {
-                        discard.call(());
-                        open.set(false);
-                    },
+                    onclick: move |_| discard.call(()),
                     "Back"
                 }
                 Button {
@@ -494,6 +494,7 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }
+        open.set(false);
     });
 
     rsx! {
@@ -505,13 +506,10 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| {
-                        // Said out loud, because the pick is still on screen
-                        // as the sheet slides away and it otherwise looks
-                        // like it took.
-                        discard.call(());
-                        open.set(false);
-                    },
+                    // Said out loud, because the pick is still on screen
+                    // as the sheet slides away and it otherwise looks
+                    // like it took.
+                    onclick: move |_| discard.call(()),
                     "Back"
                 }
                 Button {
@@ -688,6 +686,7 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }
+        open.set(false);
     });
 
     rsx! {
@@ -699,10 +698,7 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| {
-                        discard.call(());
-                        open.set(false);
-                    },
+                    onclick: move |_| discard.call(()),
                     "Back"
                 }
                 Button {
@@ -775,10 +771,12 @@ fn ThemeRow(
 
 /// Bottom sheet for picking a theme. Selections live-preview against the
 /// whole app; Save keeps it, Back and the backdrop restore what was active
-/// when the sheet opened.
+/// when the sheet opened: the sheet holds still while that theme wipes back
+/// in, leaves inside the wipe, and the toast lands once the sweep is done.
 #[component]
 fn PreferencesSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
     let mut live = use_context::<Signal<ThemeConfig>>();
+    let follow = use_context::<ThemeFollow>();
     let toast = use_toast();
     let mut original = use_signal(|| live.peek().clone());
     let mut selected = use_signal(|| live.peek().name.clone());
@@ -791,6 +789,37 @@ fn PreferencesSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             let current = live.peek().clone();
             original.set(current.clone());
             selected.set(current.name);
+        }
+    });
+
+    // Back and the backdrop are the same act. With nothing to throw away the
+    // sheet just slides off. With a pick on screen, the original wipes back
+    // in and the sheet waits for it: sliding down under a wipe stutters, and
+    // the old theme would otherwise look like it took.
+    let mut restoring = use_signal(|| false);
+    let discard = use_callback(move |()| {
+        let changed = selected.peek().to_owned() != original.peek().name
+            || dark.peek().to_owned() != original.peek().is_dark;
+        if changed {
+            restoring.set(true);
+            live.set(original());
+        } else {
+            open.set(false);
+        }
+    });
+
+    // Once the shell shows the original again the wipe has taken its new
+    // snapshot's contents, so the sheet is pulled from the page here and the
+    // sweep reveals the screen without it. The toast waits for the sweep.
+    let hidden = use_memo(move || restoring() && *follow.shown.read() == *original.read());
+    use_effect(move || {
+        if restoring() && hidden() && !follow.wiping() {
+            open.set(false);
+            restoring.set(false);
+            toast.info(
+                "Theme unchanged".to_string(),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
         }
     });
 
@@ -809,31 +838,12 @@ fn PreferencesSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             open,
             title: "Themes",
             hint,
-            on_dismiss: move |()| {
-                let changed = selected.peek().to_owned() != original.peek().name
-                    || dark.peek().to_owned() != original.peek().is_dark;
-                live.set(original());
-                if changed {
-                    toast.info(
-                        "Theme unchanged".to_string(),
-                        ToastOptions::default().duration(TOAST_QUICK),
-                    );
-                }
-            },
+            on_dismiss: move |()| discard.call(()),
+            hidden: hidden(),
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| {
-                        let changed = selected() != original().name || dark() != original().is_dark;
-                        live.set(original());
-                        if changed {
-                            toast.info(
-                                "Theme unchanged".to_string(),
-                                ToastOptions::default().duration(TOAST_QUICK),
-                            );
-                        }
-                        open.set(false);
-                    },
+                    onclick: move |_| discard.call(()),
                     "Back"
                 }
                 Button {

@@ -8,8 +8,11 @@ use zwipe_components::{ActionBar, Button, ButtonVariant};
 /// A bottom sheet with backdrop, title, content slot, and footer.
 ///
 /// `footer` overrides the default single "Close" button (e.g. a Back/Save
-/// pair). `on_dismiss` fires when the backdrop is tapped, before the sheet
-/// closes, so a sheet that live-previews something can revert it.
+/// pair). `on_dismiss` fires when the backdrop is tapped or the OS back
+/// gesture lands, and owns the close: a sheet that sets it closes itself,
+/// which lets the theme sheet hold still through the wipe that restores a
+/// discarded pick. `hidden` drops the sheet and backdrop with no slide, for a
+/// sheet that leaves inside that wipe so the new snapshot is taken without it.
 #[component]
 pub fn BottomSheet(
     mut open: Signal<bool>,
@@ -17,18 +20,18 @@ pub fn BottomSheet(
     children: Element,
     footer: Option<Element>,
     on_dismiss: Option<EventHandler<()>>,
+    #[props(default)] hidden: bool,
     /// A hint's open signal. Given one, the sheet's header carries the same
     /// "?" the screen headers do; without one, the corner stays empty.
     hint: Option<Signal<bool>>,
 ) -> Element {
-    // The OS back gesture closes the sheet the way a backdrop tap does:
-    // `on_dismiss` first (the theme sheet relies on it to revert), then close.
+    // The OS back gesture closes the sheet the way a backdrop tap does.
     let dismiss = use_callback(move |()| {
         let mut open = open;
-        if let Some(h) = on_dismiss {
-            h.call(());
+        match on_dismiss {
+            Some(h) => h.call(()),
+            None => open.set(false),
         }
-        open.set(false);
     });
     use_overlay_back_action(open.into(), dismiss);
 
@@ -46,14 +49,19 @@ pub fn BottomSheet(
 
     rsx! {
         div {
-            class: if open() { "modal-backdrop show" } else { "modal-backdrop" },
-            onclick: move |_| {
-                if let Some(h) = on_dismiss { h.call(()); }
-                open.set(false);
+            class: if hidden {
+                "modal-backdrop snap"
+            } else if open() {
+                "modal-backdrop show"
+            } else {
+                "modal-backdrop"
             },
+            onclick: move |_| dismiss.call(()),
         }
         div {
-            class: if open() {
+            class: if hidden {
+                "bottom-sheet snap"
+            } else if open() {
                 "bottom-sheet show"
             } else if mounted() {
                 "bottom-sheet"

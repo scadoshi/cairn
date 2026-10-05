@@ -6301,8 +6301,8 @@ dependencies = [
 
 [[package]]
 name = "zwipe-components"
-version = "1.10.5"
-source = "git+https://github.com/scadoshi/zwipe#2d56d776b26b8808bd3aaab5de6ee48f99892485"
+version = "1.10.6"
+source = "git+https://github.com/scadoshi/zwipe#d403c0bda2768de652ee15e075bb51c07b361697"
 dependencies = [
  "dioxus",
  "gloo-timers 0.4.0",
@@ -6313,8 +6313,8 @@ dependencies = [
 
 [[package]]
 name = "zwipe-core"
-version = "1.10.5"
-source = "git+https://github.com/scadoshi/zwipe#2d56d776b26b8808bd3aaab5de6ee48f99892485"
+version = "1.10.6"
+source = "git+https://github.com/scadoshi/zwipe#d403c0bda2768de652ee15e075bb51c07b361697"
 dependencies = [
  "chrono",
  "email_address",
