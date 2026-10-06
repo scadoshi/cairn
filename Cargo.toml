@@ -71,6 +71,9 @@ string_slice = "deny"
 panic_in_result_fn = "deny"
 exit = "deny"
 
-# tao 0.34.8 vendored with one iOS edit. See vendor/tao/VENDOR.md.
+# tao from zwipe's vendored copy (tao 0.37.0 labeled 0.34.9, with the iOS
+# event loop running mid-scroll), locked to the same zwipe commit as
+# zwipe-components. Its UIScene support is what lets the app launch on iOS 27;
+# see zwipe/vendor/tao/VENDOR.md.
 [patch.crates-io]
-tao = { path = "vendor/tao" }
+tao = { git = "https://github.com/scadoshi/zwipe" }
