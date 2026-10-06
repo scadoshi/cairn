@@ -70,3 +70,7 @@ indexing_slicing = "deny"
 string_slice = "deny"
 panic_in_result_fn = "deny"
 exit = "deny"
+
+# tao 0.34.8 vendored with one iOS edit. See vendor/tao/VENDOR.md.
+[patch.crates-io]
+tao = { path = "vendor/tao" }
