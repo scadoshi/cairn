@@ -6,6 +6,10 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- iOS: buttons respond while a screen is still scrolling, rather than once the scroll comes to rest.
+
+- iOS: swiping back from the left edge works while a screen is still scrolling.
+
 - Every figure rolls its digits into place as its card comes into view, and
   again when a tap changes it: the odometer, every tile, the goal chips, the
   year table, the chart's average and spread. The mark and the charts hold
