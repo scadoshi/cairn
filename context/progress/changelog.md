@@ -6,6 +6,10 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- The quote's author, source and countdown are tags in one wrapping row, which arrives with its divider once the quote finishes typing.
+
+- New quotes from Yoda and Apollo Creed.
+
 - A "!" in the header's left corner opens About the developer, with a link to scottyfermo.com.
 
 - Tapping the mark on Home plays its decode again.

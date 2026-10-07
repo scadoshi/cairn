@@ -488,13 +488,28 @@ input {
     border-top: 1px solid var(--border-secondary);
 }
 
-/* Hidden but still laid out, so the card does not grow when they arrive. */
+/* Hidden but still laid out, rule included, so the card does not grow
+   when they arrive. */
+.quote-tags-pending {
+    border-top-color: transparent;
+}
+
 .quote-tags-pending > * {
     visibility: hidden;
 }
 
+.quote-tags-in {
+    animation: quote-rule-in 0.3s ease-out both;
+}
+
 .quote-tags-in > * {
     animation: quote-tag-in 0.3s ease-out both;
+}
+
+@keyframes quote-rule-in {
+    from {
+        border-top-color: transparent;
+    }
 }
 
 .quote-tags-in > :nth-child(2) {
@@ -1809,10 +1824,15 @@ input {
         display: none;
     }
 
+    .quote-tags-pending {
+        border-top-color: var(--border-secondary);
+    }
+
     .quote-tags-pending > * {
         visibility: visible;
     }
 
+    .quote-tags-in,
     .quote-tags-in > * {
         animation: none;
     }
