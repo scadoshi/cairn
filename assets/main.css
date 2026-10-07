@@ -476,33 +476,44 @@ input {
     background: var(--accent-primary);
 }
 
-.quote-foot {
+/* Author, source and countdown as one wrapping row of tags. Out by the
+   card's padding and back in, so the rule above runs edge to edge. */
+.quote-tags {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.4rem;
-    margin-top: 0.6rem;
-}
-
-.quote-author {
-    font-size: 0.8rem;
-    color: var(--accent-primary);
-}
-
-.quote-source {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-/* Out by the card's padding and back in, so the rule runs edge to edge. */
-.quote-tick {
-    display: flex;
-    justify-content: flex-end;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.3rem;
     margin: 0.75rem -1rem 0;
     padding: 0.6rem 1rem 0;
     border-top: 1px solid var(--border-secondary);
+}
+
+/* Hidden but still laid out, so the card does not grow when they arrive. */
+.quote-tags-pending > * {
+    visibility: hidden;
+}
+
+.quote-tags-in > * {
+    animation: quote-tag-in 0.3s ease-out both;
+}
+
+.quote-tags-in > :nth-child(2) {
+    animation-delay: 0.08s;
+}
+
+.quote-tags-in > :nth-child(3) {
+    animation-delay: 0.16s;
+}
+
+@keyframes quote-tag-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 /* Inside the tag, so it inherits the tag's size; tabular digits keep the
@@ -1796,6 +1807,14 @@ input {
 
     .typed-live {
         display: none;
+    }
+
+    .quote-tags-pending > * {
+        visibility: visible;
+    }
+
+    .quote-tags-in > * {
+        animation: none;
     }
 
     .reveal-in,

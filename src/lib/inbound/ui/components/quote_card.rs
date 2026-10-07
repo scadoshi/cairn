@@ -26,6 +26,10 @@ static TYPED: AtomicBool = AtomicBool::new(false);
 /// A quote, its attribution, and how long until it changes.
 #[component]
 pub fn QuoteCard() -> Element {
+    // Whether the line is out in full. Only the launch's first card starts it
+    // false; every later one shows its quote whole.
+    let typed = use_signal(|| TYPED.swap(true, Ordering::Relaxed));
+    let typed_here = use_hook(|| !*typed.peek());
     let mut tick = use_signal(now);
     use_future(move || async move {
         loop {
@@ -53,14 +57,19 @@ pub fn QuoteCard() -> Element {
     let left = quote::until_next(&at);
     let countdown = format!("{}:{:02}", left.num_minutes(), left.num_seconds() % 60);
 
+    // The tags hold their place while the line types, then follow it in.
+    let tags = match (typed(), typed_here) {
+        (false, _) => "quote-tags quote-tags-pending",
+        (true, true) => "quote-tags quote-tags-in",
+        (true, false) => "quote-tags",
+    };
+
     rsx! {
         div { class: "profile-list quote-card",
-            TypedText { key: "{text}", text }
-            div { class: "quote-foot",
-                span { class: "quote-author", "{author}" }
-                span { class: "quote-source", "{source}" }
-            }
-            div { class: "quote-tick",
+            TypedText { key: "{text}", text, typed }
+            div { class: tags,
+                span { class: "stat-chip stat-chip-goal", "{author}" }
+                span { class: "stat-chip stat-chip-derived", "{source}" }
                 span { class: "stat-chip",
                     "Next quote "
                     span { class: "quote-tick-value", "{countdown}" }
@@ -74,11 +83,12 @@ pub fn QuoteCard() -> Element {
 ///
 /// The full text sits underneath, hidden, so the card is its final height
 /// from the first frame and nothing below it moves while the line grows.
-/// Only the first one mounted after launch types; every later one, on
-/// coming back to Home or on the hour's new quote, shows the text whole.
+/// Types only when `typed` is false at mount, and sets it once the last key
+/// lands; otherwise it shows the text whole.
 #[component]
-fn TypedText(text: &'static str) -> Element {
-    let fresh = use_hook(|| !TYPED.swap(true, Ordering::Relaxed));
+fn TypedText(text: &'static str, typed: Signal<bool>) -> Element {
+    let fresh = use_hook(|| !*typed.peek());
+    let mut typed = typed;
     let mut shown = use_signal(|| {
         if fresh {
             String::new()
@@ -103,6 +113,7 @@ fn TypedText(text: &'static str) -> Element {
             }
         }
         typing.set(false);
+        typed.set(true);
     });
 
     rsx! {
