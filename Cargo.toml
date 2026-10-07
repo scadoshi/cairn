@@ -15,10 +15,12 @@ path = "src/bin/cairn.rs"
 
 [dependencies]
 dioxus = { version = "0.7.10", features = ["router"] }
-# Shared UI with zwipe.net, zite, and the portfolio (Panel, NavBar, Button,
-# ThemePicker, the theme palettes). Cargo.lock pins the exact commit;
+# Shared UI with zwipe.net, zite, the portfolio and zwiper (Button, Chip,
+# ActionBar, the theme palettes, and the app kit: BottomSheet, PageHeader,
+# ThemeSheet, the hint pieces, the overlay back stack; `toast` adds
+# ToastStack). Cargo.lock pins the exact commit;
 # `cargo update -p zwipe-components` pulls the latest deliberately.
-zwipe-components = { git = "https://github.com/scadoshi/zwipe" }
+zwipe-components = { git = "https://github.com/scadoshi/zwipe", features = ["toast"] }
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -28,10 +30,10 @@ thiserror = "2"
 rusqlite = { version = "0.37", features = ["bundled", "chrono"] }
 # Per-platform data and download directories for the database and CSV exports.
 dirs = "6"
-# Toasts, the same pinned build zwiper uses.
+# `use_toast`, the same pinned build zwiper and zwipe-components' ToastStack use.
 dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "02801f27e4b3e30606e5c77e435c9d955c708eb3", version = "0.0.1", default-features = false }
-# Only for the bottom sheet's post-mount timer (see components/bottom_sheet.rs);
-# dioxus-desktop already brings the runtime in.
+# Timers for the entrances and the back handler's channel; dioxus-desktop
+# already brings the runtime in.
 tokio = { version = "1", features = ["time", "sync"] }
 
 # iOS: the left-edge back swipe is a UIKit gesture recognizer attached to the
