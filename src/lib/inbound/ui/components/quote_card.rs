@@ -3,8 +3,8 @@
 //! Which quote shows is a pure function of the hour (`domain::quote`), so
 //! this holds no state beyond a clock that ticks once a second to move the
 //! countdown along. When the countdown reaches zero the hour has turned and
-//! the same tick picks up the new quote. The words type themselves out, with
-//! the stumbles of a person at a keyboard (`domain::typing`).
+//! the same tick picks up the new quote. At launch the words type themselves
+//! out, with the stumbles of a person at a keyboard (`domain::typing`).
 
 use crate::{
     domain::{
@@ -15,7 +15,13 @@ use crate::{
 };
 use chrono::{Local, TimeZone};
 use dioxus::prelude::*;
-use std::time::Duration;
+use std::{
+    sync::atomic::{AtomicBool, Ordering},
+    time::Duration,
+};
+
+/// Set once the launch's quote has started typing.
+static TYPED: AtomicBool = AtomicBool::new(false);
 
 /// A quote, its attribution, and how long until it changes.
 #[component]
@@ -68,12 +74,23 @@ pub fn QuoteCard() -> Element {
 ///
 /// The full text sits underneath, hidden, so the card is its final height
 /// from the first frame and nothing below it moves while the line grows.
-/// A new quote is a new key, so the parent remounts this and typing restarts.
+/// Only the first one mounted after launch types; every later one, on
+/// coming back to Home or on the hour's new quote, shows the text whole.
 #[component]
 fn TypedText(text: &'static str) -> Element {
-    let mut shown = use_signal(String::new);
-    let mut typing = use_signal(|| true);
+    let fresh = use_hook(|| !TYPED.swap(true, Ordering::Relaxed));
+    let mut shown = use_signal(|| {
+        if fresh {
+            String::new()
+        } else {
+            text.to_string()
+        }
+    });
+    let mut typing = use_signal(|| fresh);
     use_future(move || async move {
+        if !fresh {
+            return;
+        }
         // Each view types it a little differently.
         let seed = Local::now().timestamp_nanos_opt().unwrap_or_default();
         for stroke in typing::script(text, seed.cast_unsigned()) {

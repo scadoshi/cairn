@@ -27,19 +27,19 @@ pub struct Stroke {
 /// The wait before the first key, with the cursor already blinking.
 const LEAD_IN_MS: (u32, u32) = (450, 850);
 /// The gap between two keys inside a word, before the word's pace scales it.
-const KEY_MS: (u32, u32) = (28, 78);
+const KEY_MS: (u32, u32) = (14, 39);
 /// Each word's pace, in hundredths: under 100 is a quicker word.
 const WORD_PACE: (u32, u32) = (70, 125);
 /// Percent of words that start after a pause to think.
 const WORD_PAUSE_PCT: u32 = 18;
-const WORD_PAUSE_MS: (u32, u32) = (100, 300);
+const WORD_PAUSE_MS: (u32, u32) = (50, 150);
 /// After a comma, semicolon, colon or dash.
-const CLAUSE_PAUSE_MS: (u32, u32) = (160, 380);
+const CLAUSE_PAUSE_MS: (u32, u32) = (80, 190);
 /// After the end of a sentence.
-const SENTENCE_PAUSE_MS: (u32, u32) = (300, 600);
+const SENTENCE_PAUSE_MS: (u32, u32) = (150, 300);
 /// Percent of letters, past a word's first, preceded by a stall mid-word.
 const HESITATE_PCT: u32 = 3;
-const HESITATE_MS: (u32, u32) = (160, 420);
+const HESITATE_MS: (u32, u32) = (80, 210);
 /// Percent of letters that come out as a neighboring key.
 const TYPO_PCT: u32 = 2;
 /// Letters to type after a typo before another can happen.
@@ -47,10 +47,10 @@ const TYPO_GAP: usize = 12;
 /// Most correct letters typed past a typo before it is noticed.
 const TYPO_RUN_ON: u32 = 2;
 /// The stare at the mistake before backspacing.
-const NOTICE_MS: (u32, u32) = (220, 480);
-const BACKSPACE_MS: (u32, u32) = (55, 105);
+const NOTICE_MS: (u32, u32) = (110, 240);
+const BACKSPACE_MS: (u32, u32) = (27, 52);
 /// The beat after the last backspace before typing resumes.
-const RESUME_MS: (u32, u32) = (90, 220);
+const RESUME_MS: (u32, u32) = (45, 110);
 
 /// The keystrokes that type `text`, varied by `seed`.
 pub fn script(text: &str, seed: u64) -> Vec<Stroke> {
@@ -276,6 +276,6 @@ mod tests {
     fn a_median_quote_takes_seconds_not_minutes() {
         let text = "x".repeat(90);
         let total: u32 = script(&text, 1).iter().map(|s| s.wait_ms).sum();
-        assert!((3_000..12_000).contains(&total), "{total}ms");
+        assert!((1_500..6_000).contains(&total), "{total}ms");
     }
 }
