@@ -74,8 +74,9 @@ pub fn until_next<Tz: TimeZone>(at: &DateTime<Tz>) -> Duration {
 /// not appear in any published translation of Meditations. Anything added
 /// later should clear the same bar, because most of these people are alive.
 ///
-/// The Avatar lines are scripted dialogue rather than something someone said
-/// about their own life, so they carry the episode they are from.
+/// The Avatar and film lines are scripted dialogue rather than something
+/// someone said about their own life, so they carry the episode or film they
+/// are from.
 ///
 /// Anything translated names its translator, because Marcus in Long and
 /// Marcus in Hays read like two different men and the source is the only
@@ -440,6 +441,16 @@ pub const QUOTES: &[Quote] = &[
         text: "There are more things likely to frighten us than there are to crush us; we suffer more often in imagination than in reality.",
         author: "Seneca",
         source: "Letters to Lucilius 13, Gummere translation",
+    },
+    Quote {
+        text: "No! Try not. Do. Or do not. There is no try.",
+        author: "Yoda",
+        source: "The Empire Strikes Back",
+    },
+    Quote {
+        text: "There is no tomorrow!",
+        author: "Apollo Creed",
+        source: "Rocky III",
     },
 ];
 
