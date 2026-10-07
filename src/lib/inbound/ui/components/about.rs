@@ -16,13 +16,10 @@ pub fn AboutButton() -> Element {
     let mut open = use_signal(|| false);
     use_overlay_back(open);
     use_hosted_dialog(open, move |close| DialogSpec {
-        title: "Hey, I'm Scotty".to_string(),
+        title: "Hello!".to_string(),
         body: rsx! {
             div { class: "alert-dialog-description hint-body",
-                HintLine { "I made Cairn by myself. It started as an app just for me." }
-                HintLine {
-                    "There's no account and no server, so your counts never leave your phone. If you want to see what else I'm working on, it's all on my site."
-                }
+                HintLine { "I made Cairn as a personal tool. My other projects are at the link below." }
             }
         },
         confirm: None,
