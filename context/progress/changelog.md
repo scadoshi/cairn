@@ -6,6 +6,8 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- Picking a theme after flipping Dark mode in Config keeps the dark mode you set. It used to switch it back.
+
 - The quote's author, source and countdown are tags in one wrapping row, which arrives with its divider once the quote finishes typing.
 
 - New quotes from Yoda and Apollo Creed.

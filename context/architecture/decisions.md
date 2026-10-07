@@ -24,7 +24,11 @@ The use case is "how many pull-ups this year." A yearly goal derives today's tar
 
 ## 6. zwipe-components as a git dependency
 
-Same as the portfolio: the shared UI crate is pulled from the zwipe repo and its CSS is inlined through `THEMES_CSS` and `COMPONENTS_CSS`. `Cargo.lock` pins the commit. Upgrading is a deliberate `cargo update -p zwipe-components`.
+Same as the portfolio: the shared UI crate is pulled from the zwipe repo and its CSS is inlined through `THEMES_CSS` and `COMPONENTS_CSS`. `Cargo.lock` pins the commit, and `tao` is patched from the same zwipe source, so one `cargo update -p zwipe-components` moves all three zwipe packages together. Upgrading is deliberate.
+
+cairn also takes the app kit it shares with zwiper, with the `toast` feature on: `BottomSheet`, `PageHeader` (the Shell header), `ThemeSheet`, `ToastStack` (with `timed_fade`), `InfoButton` and the hint lines, the overlay back stack, `display_theme_name`, `COLORBLIND_THEMES`, and the heatmap's `peak_indices` and `tip_anchor`. The CSS loads as `THEMES_CSS`, `COMPONENTS_CSS`, `APP_CSS`, then `assets/main.css`, then `TOAST_CSS`; `main.css` keeps only where cairn differs (the sheet's grid background, the hint text size, the bolder hint key). What stays cairn's: the hint dialog, `ScreenHint` and `HintChip`, the dialog host, and the line chart's Catmull-Rom `smooth_path`, which draws differently from the shared monotone `curve`.
+
+The domain never calls the crate beyond `ThemeConfig`, so the heatmap's peak days are picked in `components/heatmap.rs` rather than in `domain/counter/heat.rs`.
 
 ## 7. Theme stored in SQLite
 

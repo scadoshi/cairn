@@ -8,7 +8,7 @@ Cairn is a lifetime counter, named for the waymarker you build by walking the sa
 
 - Single Rust crate, a Dioxus 0.7 app running on iOS and desktop, with Apple Watch planned.
 - Data lives on the device in SQLite. There is no server and no account.
-- The UI is built from `zwipe-components` (ActionBar, Button, Chip and the theme palettes) so it looks like zwipe, zite, and the portfolio.
+- The UI is built from `zwipe-components` (ActionBar, Button, Chip, the theme palettes, and the app kit it shares with zwiper: BottomSheet, PageHeader, ThemeSheet, ToastStack, the hint pieces and the overlay back stack) so it looks like zwipe, zite, and the portfolio.
 - Exports are CSV with two columns, `day` and `count`, one file per counter.
 
 ## Layout
