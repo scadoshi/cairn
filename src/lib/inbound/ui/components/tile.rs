@@ -8,8 +8,9 @@ use dioxus::prelude::*;
 pub use crate::domain::counter::format::rate;
 
 /// A figure in running text or a chip. The page rolls its digits into place
-/// when the card it sits in comes into view, and again whenever it changes
-/// (see `assets/entrance.js`); here it is only marked.
+/// when it first appears, as its card comes into view or as it is added to a
+/// card already on screen; a later change just shows the new number (see
+/// `assets/entrance.js`). Here it is only marked.
 #[component]
 pub fn Num(text: String) -> Element {
     rsx! { span { class: "figure", "{text}" } }

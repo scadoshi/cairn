@@ -67,33 +67,27 @@
         });
     }
 
-    // New cards (a screen change) get observed; a figure the app rewrites
-    // after it has arrived (a tap) rolls to its new value, and so does one
-    // added to a card that has already arrived (Home's tiles, drawn once the
-    // counters load).
+    // New cards (a screen change) get observed, and a figure added to a card
+    // that has already arrived (Home's tiles, drawn once the counters load)
+    // rolls in. A figure the app rewrites in place (a tap) does not: the
+    // number just changes, since a roll on every tap read as broken.
     new MutationObserver(function (muts) {
-        var changed = [];
+        var added = [];
         muts.forEach(function (m) {
-            if (m.type === "childList") {
-                m.addedNodes.forEach(function (n) {
-                    if (n.nodeType !== 1) return;
-                    scan(n);
-                    if (!n.closest(".reveal-in")) return;
-                    if (n.classList.contains("figure")) changed.push(n);
-                    n.querySelectorAll(".figure").forEach(function (f) { changed.push(f); });
-                });
-                if (m.target.classList && m.target.classList.contains("figure")) changed.push(m.target);
-            } else if (m.type === "characterData") {
-                var el = m.target.parentElement;
-                if (el && el.classList.contains("figure")) changed.push(el);
-            }
+            m.addedNodes.forEach(function (n) {
+                if (n.nodeType !== 1) return;
+                scan(n);
+                if (!n.closest(".reveal-in")) return;
+                if (n.classList.contains("figure")) added.push(n);
+                n.querySelectorAll(".figure").forEach(function (f) { added.push(f); });
+            });
         });
         if (reduce) return;
-        changed.forEach(function (el) {
+        added.forEach(function (el) {
             var card = el.closest(".reveal");
             if (!el.dataset.rolling && (!card || card.classList.contains("reveal-in"))) roll(el);
         });
-    }).observe(document.body, { subtree: true, childList: true, characterData: true });
+    }).observe(document.body, { subtree: true, childList: true });
 
     scan(document);
 })();
