@@ -464,7 +464,7 @@ input {
     visibility: hidden;
 }
 
-/* A block the height of a capital, solid while keys land. The negative
+/* A solid block the height of a capital, there only while keys land. The negative
    margin keeps it from taking width, so it cannot push a word onto a line
    the full text would not wrap to. */
 .typed-cursor {
@@ -474,16 +474,6 @@ input {
     margin-right: -0.55em;
     vertical-align: text-bottom;
     background: var(--accent-primary);
-}
-
-.typed-idle {
-    animation: typed-blink 1.06s steps(1) infinite;
-}
-
-@keyframes typed-blink {
-    50% {
-        opacity: 0;
-    }
 }
 
 .quote-foot {
@@ -504,13 +494,14 @@ input {
     color: var(--text-muted);
 }
 
+/* Out by the card's padding and back in, so the rule runs edge to edge. */
 .quote-tick {
     display: flex;
     justify-content: flex-end;
     align-items: center;
     gap: 0.4rem;
-    margin-top: 0.75rem;
-    padding-top: 0.6rem;
+    margin: 0.75rem -1rem 0;
+    padding: 0.6rem 1rem 0;
     border-top: 1px solid var(--border-secondary);
 }
 

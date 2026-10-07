@@ -70,7 +70,7 @@ pub fn QuoteCard() -> Element {
     }
 }
 
-/// `text`, typed out behind a block cursor that blinks once the typing stops.
+/// `text`, typed out behind a block cursor that goes away once the typing stops.
 ///
 /// The full text sits underneath, hidden, so the card is its final height
 /// from the first frame and nothing below it moves while the line grows.
@@ -110,7 +110,9 @@ fn TypedText(text: &'static str) -> Element {
             span { class: "typed-full", aria_hidden: "true", "{text}" }
             span { class: "typed-live", aria_hidden: "true",
                 "{shown}"
-                span { class: if typing() { "typed-cursor" } else { "typed-cursor typed-idle" } }
+                if typing() {
+                    span { class: "typed-cursor" }
+                }
             }
         }
     }
