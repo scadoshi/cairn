@@ -1,5 +1,6 @@
 //! App-specific pieces, ported from zwiper's so the two apps feel the same.
 
+pub mod about;
 pub mod alert_dialog;
 pub mod bottom_sheet;
 pub mod celebration;

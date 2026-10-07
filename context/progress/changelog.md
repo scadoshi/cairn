@@ -6,6 +6,10 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- A "!" in the header's left corner opens About the developer, with a link to scottyfermo.com.
+
+- Tapping the mark on Home plays its decode again.
+
 - The quote of the hour types itself out behind a block cursor, like a person at a keyboard: a varying pace, pauses between words and after punctuation, and the odd slip that gets backspaced and retyped. The system's Reduce Motion setting shows it whole.
 
 - iOS: buttons respond while a screen is still scrolling, rather than once the scroll comes to rest.

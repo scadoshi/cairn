@@ -19,6 +19,8 @@ pub struct DialogSpec {
     /// Label and handler for a destructive confirm; `None` for a plain
     /// Got it dialog.
     pub confirm: Option<(String, Callback<()>)>,
+    /// Label and https URL for a button that opens a page in the browser.
+    pub link: Option<(&'static str, &'static str)>,
     /// Closes the dialog on the owner's side.
     pub close: Callback<()>,
     /// Which owner set it, so a stale owner can't clear a newer one.
@@ -62,6 +64,17 @@ pub fn DialogHostView() -> Element {
                     class: "alert-dialog-cancel",
                     onclick: move |_| dismiss.call(()),
                     if spec.confirm.is_some() { "Cancel" } else { "Got it" }
+                }
+                // The webview hands a `_blank` https link to the system browser.
+                if let Some((label, url)) = spec.link {
+                    a {
+                        class: "alert-dialog-cancel",
+                        href: url,
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        onclick: move |_| dismiss.call(()),
+                        "{label}"
+                    }
                 }
                 if let Some((label, confirm)) = spec.confirm {
                     button {

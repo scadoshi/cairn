@@ -280,6 +280,7 @@ pub fn Shell() -> Element {
     rsx! {
         div { class: "screen theme-wrapper {css_class}",
             header { class: "page-header",
+                components::about::AboutButton {}
                 h2 { "{title}" }
                 if let Some(open) = hint() {
                     Button {

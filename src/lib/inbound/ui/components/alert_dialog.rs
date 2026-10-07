@@ -27,6 +27,7 @@ pub fn ConfirmDialog(
         body: rsx! { p { class: "alert-dialog-description", "{body}" } },
         confirm: Some((confirm_label.clone(), confirm)),
         close,
+        link: None,
         owner: 0,
     });
     rsx! {}

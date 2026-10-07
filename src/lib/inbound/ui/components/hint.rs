@@ -61,6 +61,7 @@ pub fn HintDialog(open: Signal<bool>, title: String, children: Element) -> Eleme
         body: rsx! { div { class: "alert-dialog-description hint-body", {children.clone()} } },
         confirm: None,
         close,
+        link: None,
         owner: 0,
     });
     rsx! {}

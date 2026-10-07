@@ -51,6 +51,7 @@ pub fn Home() -> Element {
     let mut edit_open = use_signal(|| false);
     let mut editing = use_signal(|| None::<Counter>);
     let hint_open = use_signal(|| false);
+    let mut logo_taps = use_signal(|| 0_u32);
     use_screen_hint(hint_open);
 
     // Hooks, read once. `use_prefs` and friends are context hooks, so calling
@@ -103,9 +104,16 @@ pub fn Home() -> Element {
                 Reveal { class: "home-hero",
                     div { class: "card-header home-hero-head",
                         // The mark resolves from static as the screen opens.
-                        // Keyed on the mark so a change in Config decodes anew.
+                        // Keyed on the mark and the tap count, so a change in
+                        // Config or a tap on it decodes anew.
                         for mark in [logo_label] {
-                            pre { key: "{mark}", class: "logo", "aria-label": "{logo_label}", Decode { text: logo } }
+                            pre {
+                                key: "{mark}-{logo_taps}",
+                                class: "logo",
+                                "aria-label": "{logo_label}",
+                                onclick: move |_| logo_taps += 1,
+                                Decode { text: logo }
+                            }
                         }
                         div { class: "home-hero-when",
                             span { class: "card-title", "{date}" }

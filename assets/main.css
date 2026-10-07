@@ -82,12 +82,13 @@ input {
     padding-bottom: 1rem;
 }
 
-/* zwiper's header "?": the shared util button keeps its squircle outline,
-   this only parks it in the corner and quiets it. Absolute so the title
-   stays centered on the header rather than being pushed off by its width. */
+/* zwiper's header "!" and "?": the shared util button keeps its squircle
+   outline, this only parks it in a corner and quiets it. Absolute so the
+   title stays centered on the header rather than being pushed off by its
+   width. */
+.page-header-support,
 .page-header-corner {
     position: absolute;
-    right: 1rem;
     top: 50%;
     transform: translateY(-50%);
     display: inline-flex;
@@ -98,6 +99,15 @@ input {
     padding: 0.2rem 0.6rem;
 }
 
+.page-header-support {
+    left: 1rem;
+}
+
+.page-header-corner {
+    right: 1rem;
+}
+
+.page-header-support:active,
 .page-header-corner:active {
     opacity: 1;
 }
@@ -365,6 +375,7 @@ input {
     padding: 1rem;
     margin: 1rem;
     color: var(--logo);
+    cursor: pointer;
 }
 
 /* ==================
