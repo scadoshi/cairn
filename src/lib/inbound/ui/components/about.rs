@@ -1,5 +1,5 @@
 //! The "!" in the header's left corner, zwiper's support button, opening a
-//! dialog about who makes Cairn with a link to their site.
+//! note from the developer with a link to scottyfermo.com.
 
 use super::{
     dialog_host::{DialogSpec, use_hosted_dialog},
@@ -16,12 +16,13 @@ pub fn AboutButton() -> Element {
     let mut open = use_signal(|| false);
     use_overlay_back(open);
     use_hosted_dialog(open, move |close| DialogSpec {
-        title: "About the developer".to_string(),
+        title: "Hey, I'm Scotty".to_string(),
         body: rsx! {
             div { class: "alert-dialog-description hint-body",
-                HintLine { "Cairn is made by one developer." }
-                HintLine { "No account and no server: every count stays on this device." }
-                HintLine { "Their other projects, and how to get in touch, are at scottyfermo.com." }
+                HintLine { "I made Cairn by myself. It started as an app just for me." }
+                HintLine {
+                    "There's no account and no server, so your counts never leave your phone. If you want to see what else I'm working on, it's all on my site."
+                }
             }
         },
         confirm: None,
