@@ -13,7 +13,7 @@ use crate::{
     },
     inbound::ui::now,
 };
-use chrono::{Local, TimeZone};
+use chrono::{Local, NaiveDateTime, TimeZone};
 use dioxus::prelude::*;
 use std::{
     sync::atomic::{AtomicBool, Ordering},
@@ -27,14 +27,24 @@ static TYPED: AtomicBool = AtomicBool::new(false);
 #[component]
 pub fn QuoteCard() -> Element {
     // Whether the line is out in full. Only the launch's first card starts it
-    // false; every later one shows its quote whole.
-    let typed = use_signal(|| TYPED.swap(true, Ordering::Relaxed));
-    let typed_here = use_hook(|| !*typed.peek());
+    // false; every later one shows its quote whole, unless the hour turns
+    // while it is on screen.
+    let mut typed = use_signal(|| TYPED.swap(true, Ordering::Relaxed));
+    // Whether the tags animate in once the line is out.
+    let mut arriving = use_signal(|| !*typed.peek());
     let mut tick = use_signal(now);
     use_future(move || async move {
+        let mut current = quote_at(&now());
         loop {
             tokio::time::sleep(Duration::from_secs(1)).await;
-            tick.set(now());
+            let at = now();
+            let next = quote_at(&at);
+            if next != current {
+                current = next;
+                typed.set(false);
+                arriving.set(true);
+            }
+            tick.set(at);
         }
     });
 
@@ -58,7 +68,7 @@ pub fn QuoteCard() -> Element {
     let countdown = format!("{}:{:02}", left.num_minutes(), left.num_seconds() % 60);
 
     // The tags hold their place while the line types, then follow it in.
-    let tags = match (typed(), typed_here) {
+    let tags = match (typed(), arriving()) {
         (false, _) => "quote-tags quote-tags-pending",
         (true, true) => "quote-tags quote-tags-in",
         (true, false) => "quote-tags",
@@ -77,6 +87,11 @@ pub fn QuoteCard() -> Element {
             }
         }
     }
+}
+
+/// The quote for a naive local time, `None` across a daylight saving gap.
+fn quote_at(at: &NaiveDateTime) -> Option<&'static Quote> {
+    quote::for_time(&Local.from_local_datetime(at).single()?)
 }
 
 /// `text`, typed out behind a block cursor that goes away once the typing stops.
