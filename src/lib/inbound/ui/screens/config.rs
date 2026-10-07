@@ -19,36 +19,9 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{fmt::Write as _, path::PathBuf};
 use zwipe_components::{
-    ALLOWED_THEMES, ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets,
-    HintKey, HintLine, InfoButton, ThemeConfig, ThemeFollow,
+    ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey,
+    HintLine, InfoButton, ThemeConfig, ThemeSheet, display_theme_name,
 };
-
-/// Themes with adjusted palettes for color-vision deficiency, grouped at the
-/// bottom of the picker. Same list zwiper and the site picker use.
-const COLORBLIND_THEMES: &[&str] = &["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
-
-/// Title-cased theme name, with the brand casings title-casing can't produce.
-fn display_theme_name(slug: &str) -> String {
-    match slug {
-        "rose-pine" => return "Rosé Pine".to_string(),
-        "vscode" => return "VS Code".to_string(),
-        "github" => return "GitHub".to_string(),
-        "synthwave-84" => return "Synthwave '84".to_string(),
-        "powershell" => return "PowerShell".to_string(),
-        "docs-rs" => return "docs.rs".to_string(),
-        _ => {}
-    }
-    slug.split('-')
-        .map(|w| {
-            let mut chars = w.chars();
-            match chars.next() {
-                Some(c) => c.to_uppercase().collect::<String>() + chars.as_str(),
-                None => String::new(),
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(" ")
-}
 
 /// The config screen.
 #[component]
@@ -382,7 +355,23 @@ pub fn Config() -> Element {
                 "Back"
             }
         }
-        PreferencesSheet { open: preferences_open, hint: hint_open }
+        ThemeSheet {
+            open: preferences_open,
+            theme,
+            hint: Some(hint_open),
+            on_save: move |_| {
+                toast.success(
+                    "Theme saved".to_string(),
+                    ToastOptions::default().duration(TOAST_NORMAL),
+                );
+            },
+            on_unchanged: move |()| {
+                toast.info(
+                    "Theme unchanged".to_string(),
+                    ToastOptions::default().duration(TOAST_QUICK),
+                );
+            },
+        }
         RestDaysSheet { open: rest_open, hint: hint_open }
         CelebrationSheet { open: celebration_open, hint: hint_open }
         MarkSheet { open: mark_open, hint: hint_open }
@@ -725,145 +714,6 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                         "{name}"
                     }
                 }
-            }
-        }
-    }
-}
-
-/// One selectable theme row: name on the left, swatch dots on the right. The
-/// dots take their colors from the theme's own class, so colors stay defined
-/// only in themes.css.
-#[component]
-fn ThemeRow(
-    theme: String,
-    mode: String,
-    mut selected: Signal<String>,
-    mut live: Signal<ThemeConfig>,
-    dark: Signal<bool>,
-) -> Element {
-    let is_selected = selected() == theme;
-    let click_theme = theme.clone();
-    rsx! {
-        button {
-            class: if is_selected { "pref-row selected" } else { "pref-row" },
-            onclick: move |_| {
-                selected.set(click_theme.clone());
-                live.set(ThemeConfig { name: click_theme.clone(), is_dark: dark() });
-            },
-            div { class: "pref-row-inner",
-                span { "{display_theme_name(&theme)}" }
-                div { class: "theme-swatches theme-{theme}-{mode}",
-                    span { class: "theme-dot", style: "background:var(--bg-primary)" }
-                    span { class: "theme-dot", style: "background:var(--text-primary)" }
-                    span { class: "theme-dot", style: "background:var(--accent-primary)" }
-                    span { class: "theme-dot", style: "background:var(--accent-secondary)" }
-                    span { class: "theme-dot", style: "background:var(--accent-tertiary)" }
-                    span { class: "theme-dot", style: "background:var(--color-error)" }
-                }
-            }
-        }
-    }
-}
-
-/// Bottom sheet for picking a theme. Selections live-preview against the
-/// whole app; Save keeps it, Back and the backdrop restore what was active
-/// when the sheet opened: the sheet holds still while that theme wipes back
-/// in, leaves inside the wipe, and the toast lands once the sweep is done.
-#[component]
-fn PreferencesSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
-    let mut live = use_context::<Signal<ThemeConfig>>();
-    let follow = use_context::<ThemeFollow>();
-    let toast = use_toast();
-    let mut original = use_signal(|| live.peek().clone());
-    let mut selected = use_signal(|| live.peek().name.clone());
-    let dark = use_signal(|| live.peek().is_dark);
-
-    // Snapshot the active theme each time the sheet opens so every open
-    // starts from the live theme.
-    use_effect(move || {
-        if open() {
-            let current = live.peek().clone();
-            original.set(current.clone());
-            selected.set(current.name);
-        }
-    });
-
-    // Back and the backdrop are the same act. With nothing to throw away the
-    // sheet just slides off. With a pick on screen, the original wipes back
-    // in and the sheet waits for it: sliding down under a wipe stutters, and
-    // the old theme would otherwise look like it took.
-    let mut restoring = use_signal(|| false);
-    let discard = use_callback(move |()| {
-        let changed = selected.peek().to_owned() != original.peek().name
-            || dark.peek().to_owned() != original.peek().is_dark;
-        if changed {
-            restoring.set(true);
-            live.set(original());
-        } else {
-            open.set(false);
-        }
-    });
-
-    // Once the shell shows the original again the wipe has taken its new
-    // snapshot's contents, so the sheet is pulled from the page here and the
-    // sweep reveals the screen without it. The toast waits for the sweep.
-    let hidden = use_memo(move || restoring() && *follow.shown.read() == *original.read());
-    use_effect(move || {
-        if restoring() && hidden() && !follow.wiping() {
-            open.set(false);
-            restoring.set(false);
-            toast.info(
-                "Theme unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        }
-    });
-
-    let mode = if dark() { "dark" } else { "light" }.to_string();
-    let regular = ALLOWED_THEMES
-        .iter()
-        .copied()
-        .filter(|t| !COLORBLIND_THEMES.contains(t));
-    let colorblind = ALLOWED_THEMES
-        .iter()
-        .copied()
-        .filter(|t| COLORBLIND_THEMES.contains(t));
-
-    rsx! {
-        BottomSheet {
-            open,
-            title: "Themes",
-            hint,
-            on_dismiss: move |()| discard.call(()),
-            hidden: hidden(),
-            footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Util,
-                    onclick: move |_| discard.call(()),
-                    "Back"
-                }
-                Button {
-                    variant: ButtonVariant::Util,
-                    // Nothing to save until the pick differs from the theme
-                    // the sheet opened on. The palette is already live, so
-                    // Save is only confirming that it stays.
-                    disabled: selected() == original().name && dark() == original().is_dark,
-                    onclick: move |_| {
-                        open.set(false);
-                        toast.success(
-                            "Theme saved".to_string(),
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        );
-                    },
-                    "Save"
-                }
-            },
-            for t in regular {
-                ThemeRow { theme: t.to_string(), mode: mode.clone(), selected, live, dark }
-            }
-            div { class: "pref-section-label", "Color blind" }
-            for t in colorblind {
-                ThemeRow { theme: t.to_string(), mode: mode.clone(), selected, live, dark }
             }
         }
     }
