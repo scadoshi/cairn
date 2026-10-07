@@ -14,7 +14,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{Toast, ToastPropsWithOwner, ToastProvider};
 use router::Route;
 use std::{sync::Arc, time::Duration};
-use zwipe_components::{Button, ButtonVariant, COMPONENTS_CSS, THEMES_CSS};
+use zwipe_components::{APP_CSS, COMPONENTS_CSS, PageHeader, THEMES_CSS};
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TOAST_CSS: Asset = asset!("/assets/toast.css");
@@ -198,10 +198,11 @@ pub fn App() -> Element {
             "@font-face{{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url({FONT_JBM_400}) format('woff2');}}\
              @font-face{{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url({FONT_JBM_700}) format('woff2');}}"
         }
-        // Order matters: themes -> components -> app, so app rules can
-        // override component rules at equal specificity.
+        // Order matters: themes -> components -> the shared app sheet ->
+        // cairn's, so later rules override earlier ones at equal specificity.
         document::Style { {THEMES_CSS} }
         document::Style { {COMPONENTS_CSS} }
+        document::Style { {APP_CSS} }
         document::Stylesheet { href: MAIN_CSS }
         document::Stylesheet { href: TOAST_CSS }
         // Reveals cards and rolls their figures from inside the page, where it
@@ -279,17 +280,12 @@ pub fn Shell() -> Element {
 
     rsx! {
         div { class: "screen theme-wrapper {css_class}",
-            header { class: "page-header",
-                components::about::AboutButton {}
-                h2 { "{title}" }
-                if let Some(open) = hint() {
-                    Button {
-                        variant: ButtonVariant::Util,
-                        class: "page-header-corner",
-                        onclick: move |_| open.call(()),
-                        "?"
-                    }
-                }
+            PageHeader {
+                title,
+                leading: rsx! {
+                    components::about::AboutButton {}
+                },
+                on_hint: hint(),
             }
             Outlet::<Route> {}
         }
