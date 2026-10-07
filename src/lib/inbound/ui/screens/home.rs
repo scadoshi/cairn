@@ -18,7 +18,7 @@ use crate::{
         components::{
             counter_form::{CounterForm, CounterFormState, EditSheet},
             counter_list::CounterList,
-            hint::{HintBullet, HintBullets, HintChip, HintDialog, HintLine, use_screen_hint},
+            hint::{HintChip, HintDialog, use_screen_hint},
             quote_card::QuoteCard,
             reveal::Reveal,
             tile::{Num, Tile},
@@ -31,7 +31,9 @@ use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_components::{ActionBar, BottomSheet, Button, ButtonVariant, Decode};
+use zwipe_components::{
+    ActionBar, BottomSheet, Button, ButtonVariant, Decode, HintBullet, HintBullets, HintLine,
+};
 
 /// The C, the app's own mark.
 const LOGO_CAIRN: &str = include_str!("../../../../../assets/c.txt");

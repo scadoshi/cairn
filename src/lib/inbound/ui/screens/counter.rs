@@ -20,9 +20,7 @@ use crate::{
             celebration::{CelebrationHost, Saying, celebrate_saying},
             counter_form::EditSheet,
             heatmap::Heatmap,
-            hint::{
-                HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton, use_screen_hint,
-            },
+            hint::{HintDialog, use_screen_hint},
             line_chart::{LineChart, Point},
             reveal::Reveal,
             tile::{Num, Tile, TileGrid, rate},
@@ -35,7 +33,9 @@ use crate::{
 use chrono::{Datelike, Duration as ChronoDuration};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{ActionBar, Button, ButtonVariant, Chip};
+use zwipe_components::{
+    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey, HintLine, InfoButton,
+};
 
 /// Which series the trends card draws.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
