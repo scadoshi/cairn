@@ -68,12 +68,20 @@
     }
 
     // New cards (a screen change) get observed; a figure the app rewrites
-    // after it has arrived (a tap) rolls to its new value.
+    // after it has arrived (a tap) rolls to its new value, and so does one
+    // added to a card that has already arrived (Home's tiles, drawn once the
+    // counters load).
     new MutationObserver(function (muts) {
         var changed = [];
         muts.forEach(function (m) {
             if (m.type === "childList") {
-                m.addedNodes.forEach(function (n) { if (n.nodeType === 1) scan(n); });
+                m.addedNodes.forEach(function (n) {
+                    if (n.nodeType !== 1) return;
+                    scan(n);
+                    if (!n.closest(".reveal-in")) return;
+                    if (n.classList.contains("figure")) changed.push(n);
+                    n.querySelectorAll(".figure").forEach(function (f) { changed.push(f); });
+                });
                 if (m.target.classList && m.target.classList.contains("figure")) changed.push(m.target);
             } else if (m.type === "characterData") {
                 var el = m.target.parentElement;
