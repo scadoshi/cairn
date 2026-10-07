@@ -3,11 +3,9 @@
 //! bullets, and a single Got it. Body text names on-screen buttons with
 //! [`HintKey`] so the reader recognizes what to press.
 
-use super::{
-    dialog_host::{DialogSpec, use_hosted_dialog},
-    navigation::overlay_stack::use_overlay_back,
-};
+use super::dialog_host::{DialogSpec, use_hosted_dialog};
 use dioxus::prelude::*;
+use zwipe_components::use_overlay_back;
 
 /// The screen's own hint, published upward so the shell's header can offer
 /// it. The header is drawn above the router, so it cannot reach into the

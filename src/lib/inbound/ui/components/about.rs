@@ -4,9 +4,9 @@
 use super::{
     dialog_host::{DialogSpec, use_hosted_dialog},
     hint::HintLine,
-    navigation::overlay_stack::use_overlay_back,
 };
 use dioxus::prelude::*;
+use zwipe_components::use_overlay_back;
 
 const SITE_URL: &str = "https://scottyfermo.com";
 

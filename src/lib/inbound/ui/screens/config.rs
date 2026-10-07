@@ -8,11 +8,8 @@ use crate::{
     },
     inbound::ui::{
         TOAST_NORMAL, TOAST_QUICK,
-        components::{
-            bottom_sheet::BottomSheet,
-            hint::{
-                HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton, use_screen_hint,
-            },
+        components::hint::{
+            HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton, use_screen_hint,
         },
         router::Route,
         use_date_format, use_prefs, use_store,
@@ -24,7 +21,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{fmt::Write as _, path::PathBuf};
 use zwipe_components::{
-    ALLOWED_THEMES, ActionBar, Button, ButtonVariant, Chip, ThemeConfig, ThemeFollow,
+    ALLOWED_THEMES, ActionBar, BottomSheet, Button, ButtonVariant, Chip, ThemeConfig, ThemeFollow,
 };
 
 /// Themes with adjusted palettes for color-vision deficiency, grouped at the

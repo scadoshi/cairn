@@ -1,11 +1,9 @@
 //! Confirmation for destructive actions, zwiper's look, drawn by the
 //! app-root dialog host so the dim covers the whole screen.
 
-use super::{
-    dialog_host::{DialogSpec, use_hosted_dialog},
-    navigation::overlay_stack::use_overlay_back,
-};
+use super::dialog_host::{DialogSpec, use_hosted_dialog};
 use dioxus::prelude::*;
+use zwipe_components::use_overlay_back;
 
 /// A yes/no dialog. `open` is host-owned so the caller keeps the state that
 /// drives it.

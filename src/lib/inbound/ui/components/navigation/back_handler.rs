@@ -27,7 +27,7 @@ pub fn BackHandlerLayout() -> Element {
     #[cfg(all(target_os = "ios", feature = "mobile"))]
     {
         let nav = use_navigator();
-        let mut overlays: super::overlay_stack::OverlayBackStack = use_context();
+        let mut overlays: zwipe_components::OverlayBackStack = use_context();
         use_effect(move || {
             let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<()>();
             spawn(async move {
@@ -44,7 +44,7 @@ pub fn BackHandlerLayout() -> Element {
     #[cfg(all(target_os = "android", feature = "mobile"))]
     {
         let nav = use_navigator();
-        let mut overlays: super::overlay_stack::OverlayBackStack = use_context();
+        let mut overlays: zwipe_components::OverlayBackStack = use_context();
         use_future(move || async move {
             let mut eval =
                 document::eval("window.addEventListener('cairn:back', () => dioxus.send(1));");

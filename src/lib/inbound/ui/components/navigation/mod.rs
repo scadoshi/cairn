@@ -2,4 +2,3 @@
 //! gesture and button. Ported from zwiper.
 
 pub mod back_handler;
-pub mod overlay_stack;

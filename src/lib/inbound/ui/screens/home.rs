@@ -16,7 +16,6 @@ use crate::{
     inbound::ui::{
         TOAST_NORMAL, bump_store_version,
         components::{
-            bottom_sheet::BottomSheet,
             counter_form::{CounterForm, CounterFormState, EditSheet},
             counter_list::CounterList,
             hint::{HintBullet, HintBullets, HintChip, HintDialog, HintLine, use_screen_hint},
@@ -32,7 +31,7 @@ use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_components::{ActionBar, Button, ButtonVariant, Decode};
+use zwipe_components::{ActionBar, BottomSheet, Button, ButtonVariant, Decode};
 
 /// The C, the app's own mark.
 const LOGO_CAIRN: &str = include_str!("../../../../../assets/c.txt");

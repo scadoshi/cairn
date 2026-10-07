@@ -162,7 +162,7 @@ pub fn App() -> Element {
     use_effect(move || {
         let _ = format_store.set_date_format(date_format());
     });
-    let overlays = components::navigation::overlay_stack::use_overlay_back_stack();
+    let overlays = zwipe_components::use_overlay_back_stack();
     use_context_provider(|| overlays);
     let dialogs = components::dialog_host::DialogHost(use_signal(|| None));
     use_context_provider(|| dialogs);
