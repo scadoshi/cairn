@@ -3,11 +3,16 @@
 //! Tapping a cell names the day and its count.
 
 use crate::{
-    domain::counter::{DayCount, format::thousands, heat},
+    domain::counter::{
+        DayCount,
+        format::thousands,
+        heat::{self, HeatCell},
+    },
     inbound::ui::{components::tile::Num, today, use_date_format, use_prefs},
 };
 use dioxus::prelude::*;
 use std::time::Duration;
+use zwipe_components::{peak_indices, tip_anchor};
 
 /// Cell size and the gap between cells, in SVG units.
 const CELL: f64 = 11.0;
@@ -20,6 +25,10 @@ const TOP: f64 = 14.0;
 const SWEEP_STEP_MS: usize = 12;
 /// How many weeks the grid shows.
 const WEEKS: usize = 52;
+/// A day at or past this many times the median logged day is a peak, and at
+/// most this many of them, the biggest.
+const PEAK_RATIO: u32 = 4;
+const MAX_PEAKS: usize = 12;
 
 /// What the tapped cell says and where the chip sits, as percentages of the
 /// grid so it follows the grid at any width.
@@ -36,6 +45,19 @@ fn px(n: usize) -> f64 {
     n as f64
 }
 
+/// Which cells are the year's outlier days, in cell order: at or past
+/// `PEAK_RATIO` times the median logged day, among the `MAX_PEAKS` biggest.
+fn peaks(cells: &[HeatCell]) -> Vec<bool> {
+    let counts: Vec<u32> = cells.iter().map(|c| c.count).collect();
+    let mut peak = vec![false; cells.len()];
+    for i in peak_indices(&counts, PEAK_RATIO, MAX_PEAKS) {
+        if let Some(slot) = peak.get_mut(i) {
+            *slot = true;
+        }
+    }
+    peak
+}
+
 /// The grid, its caption, and the tap chip.
 #[component]
 pub fn Heatmap(entries: Vec<DayCount>) -> Element {
@@ -47,6 +69,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
     let width = LEFT + px(grid.columns) * STEP;
     let height = TOP + 7.0 * STEP;
     let days = grid.cells.len();
+    let peak = peaks(&grid.cells);
 
     // Opens on the newest weeks: the grid is wider than a phone, and the
     // interesting end is the right one.
@@ -77,7 +100,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                             text { class: "heat-label", x: "{LEFT - 4.0}", y: "{TOP + px(row) * STEP + CELL - 2.0}", text_anchor: "end", "{label}" }
                         }
                     }
-                    for cell in grid.cells.iter() {
+                    for (cell, peak) in grid.cells.iter().zip(peak) {
                         {
                             let x = LEFT + px(cell.column) * STEP;
                             let y = TOP + px(cell.row) * STEP;
@@ -87,7 +110,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                                 g { key: "{cell.day}",
                                 // The glow behind a peak day is a shape, since iOS
                                 // Safari applies no CSS filter to an SVG child.
-                                if cell.peak {
+                                if peak {
                                     rect {
                                         class: "heat-halo",
                                         x: "{x - 2.5}",
@@ -99,7 +122,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                                     }
                                 }
                                 rect {
-                                    class: if cell.peak { "heat-cell heat-{cell.level} heat-peak" } else { "heat-cell heat-{cell.level}" },
+                                    class: if peak { "heat-cell heat-{cell.level} heat-peak" } else { "heat-cell heat-{cell.level}" },
                                     x: "{x}",
                                     y: "{y}",
                                     width: "{CELL}",
@@ -115,8 +138,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                 }
                 if let Some(t) = tip() {
                     span {
-                        class: "stat-chip heat-tip",
-                        class: if t.left < 15.0 { "tip-start" } else if t.left > 85.0 { "tip-end" } else { "" },
+                        class: "stat-chip heat-tip {tip_anchor(t.left)}",
                         style: "left: {t.left}%; top: {t.top}%;",
                         "{t.text}"
                     }
@@ -129,5 +151,38 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
             Num { text: grid.active_days.to_string() }
             " of {days} days"
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{Duration as Days, NaiveDate, Weekday};
+
+    fn d(s: &str) -> NaiveDate {
+        NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap()
+    }
+
+    #[test]
+    fn a_spike_is_a_peak_and_a_steady_stretch_is_not() {
+        let mut entries: Vec<DayCount> = (1..=20u32)
+            .map(|i| DayCount {
+                day: d("2026-09-01") + Days::days(i64::from(i)),
+                count: 10,
+            })
+            .collect();
+        entries.push(DayCount {
+            day: d("2026-09-25"),
+            count: 45,
+        });
+        let grid = heat::heat_grid(&entries, d("2026-10-03"), Weekday::Mon, WEEKS);
+        let peak_days: Vec<NaiveDate> = grid
+            .cells
+            .iter()
+            .zip(peaks(&grid.cells))
+            .filter(|(_, peak)| *peak)
+            .map(|(c, _)| c.day)
+            .collect();
+        assert_eq!(peak_days, [d("2026-09-25")]);
     }
 }
