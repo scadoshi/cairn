@@ -3,10 +3,14 @@
 //! Which quote shows is a pure function of the hour (`domain::quote`), so
 //! this holds no state beyond a clock that ticks once a second to move the
 //! countdown along. When the countdown reaches zero the hour has turned and
-//! the same tick picks up the new quote.
+//! the same tick picks up the new quote. The words type themselves out, with
+//! the stumbles of a person at a keyboard (`domain::typing`).
 
 use crate::{
-    domain::quote::{self, Quote},
+    domain::{
+        quote::{self, Quote},
+        typing::{self, Key},
+    },
     inbound::ui::now,
 };
 use chrono::{Local, TimeZone};
@@ -45,7 +49,7 @@ pub fn QuoteCard() -> Element {
 
     rsx! {
         div { class: "profile-list quote-card",
-            p { class: "quote-text", "{text}" }
+            TypedText { key: "{text}", text }
             div { class: "quote-foot",
                 span { class: "quote-author", "{author}" }
                 span { class: "quote-source", "{source}" }
@@ -55,6 +59,41 @@ pub fn QuoteCard() -> Element {
                     "Next quote "
                     span { class: "quote-tick-value", "{countdown}" }
                 }
+            }
+        }
+    }
+}
+
+/// `text`, typed out behind a block cursor that blinks once the typing stops.
+///
+/// The full text sits underneath, hidden, so the card is its final height
+/// from the first frame and nothing below it moves while the line grows.
+/// A new quote is a new key, so the parent remounts this and typing restarts.
+#[component]
+fn TypedText(text: &'static str) -> Element {
+    let mut shown = use_signal(String::new);
+    let mut typing = use_signal(|| true);
+    use_future(move || async move {
+        // Each view types it a little differently.
+        let seed = Local::now().timestamp_nanos_opt().unwrap_or_default();
+        for stroke in typing::script(text, seed.cast_unsigned()) {
+            tokio::time::sleep(Duration::from_millis(u64::from(stroke.wait_ms))).await;
+            match stroke.key {
+                Key::Char(c) => shown.write().push(c),
+                Key::Backspace => {
+                    shown.write().pop();
+                }
+            }
+        }
+        typing.set(false);
+    });
+
+    rsx! {
+        p { class: "quote-text typed", aria_label: text,
+            span { class: "typed-full", aria_hidden: "true", "{text}" }
+            span { class: "typed-live", aria_hidden: "true",
+                "{shown}"
+                span { class: if typing() { "typed-cursor" } else { "typed-cursor typed-idle" } }
             }
         }
     }

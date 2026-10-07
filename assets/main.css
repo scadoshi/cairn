@@ -438,6 +438,43 @@ input {
     color: var(--text-primary);
 }
 
+/* The typed line and the full line share one grid cell, the full one
+   invisible, so the paragraph is its final size before a key is pressed. */
+.typed {
+    display: grid;
+}
+
+.typed-full,
+.typed-live {
+    grid-area: 1 / 1;
+}
+
+.typed-full {
+    visibility: hidden;
+}
+
+/* A block the height of a capital, solid while keys land. The negative
+   margin keeps it from taking width, so it cannot push a word onto a line
+   the full text would not wrap to. */
+.typed-cursor {
+    display: inline-block;
+    width: 0.55em;
+    height: 1.1em;
+    margin-right: -0.55em;
+    vertical-align: text-bottom;
+    background: var(--accent-primary);
+}
+
+.typed-idle {
+    animation: typed-blink 1.06s steps(1) infinite;
+}
+
+@keyframes typed-blink {
+    50% {
+        opacity: 0;
+    }
+}
+
 .quote-foot {
     display: flex;
     flex-wrap: wrap;
@@ -1748,6 +1785,14 @@ input {
     .celebrate-poppers,
     .celebrate-pulse,
     .celebrate-text {
+        display: none;
+    }
+
+    .typed-full {
+        visibility: visible;
+    }
+
+    .typed-live {
         display: none;
     }
 

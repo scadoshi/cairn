@@ -4,3 +4,4 @@ pub mod counter;
 pub mod date_format;
 pub mod preferences;
 pub mod quote;
+pub mod typing;
