@@ -1632,6 +1632,10 @@ input {
     overflow-x: auto;
     scrollbar-width: none;
     padding: 0.25rem 1rem 0.5rem;
+    /* Weeks fade out under the side gutters as they scroll past. The fade is
+       the gutter's width, so the first and last weeks rest clear of it. */
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
 }
 
 .heat-scroll::-webkit-scrollbar {
