@@ -4,13 +4,10 @@
 //! this holds no state beyond a clock that ticks once a second to move the
 //! countdown along. When the countdown reaches zero the hour has turned and
 //! the same tick picks up the new quote. At launch the words type themselves
-//! out, with the stumbles of a person at a keyboard (`domain::typing`).
+//! out, one letter at a steady pace.
 
 use crate::{
-    domain::{
-        quote::{self, Quote},
-        typing::{self, Key},
-    },
+    domain::quote::{self, Quote},
     inbound::ui::now,
 };
 use chrono::{Local, NaiveDateTime, TimeZone};
@@ -19,6 +16,9 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
     time::Duration,
 };
+
+/// The gap between two letters while a quote types out.
+const LETTER_MS: u64 = 20;
 
 /// Set once the launch's quote has started typing.
 static TYPED: AtomicBool = AtomicBool::new(false);
@@ -116,16 +116,9 @@ fn TypedText(text: &'static str, typed: Signal<bool>) -> Element {
         if !fresh {
             return;
         }
-        // Each view types it a little differently.
-        let seed = Local::now().timestamp_nanos_opt().unwrap_or_default();
-        for stroke in typing::script(text, seed.cast_unsigned()) {
-            tokio::time::sleep(Duration::from_millis(u64::from(stroke.wait_ms))).await;
-            match stroke.key {
-                Key::Char(c) => shown.write().push(c),
-                Key::Backspace => {
-                    shown.write().pop();
-                }
-            }
+        for c in text.chars() {
+            tokio::time::sleep(Duration::from_millis(LETTER_MS)).await;
+            shown.write().push(c);
         }
         typing.set(false);
         typed.set(true);

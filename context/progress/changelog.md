@@ -18,7 +18,7 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 - Tapping the mark on Home plays its decode again.
 
-- On app open, the quote of the hour types itself out behind a block cursor, like a person at a keyboard: a varying pace, pauses between words and after punctuation, and the odd slip that gets backspaced and retyped. The system's Reduce Motion setting shows it whole.
+- On app open, the quote of the hour types itself out behind a block cursor, one steady letter at a time.
 
 - iOS: buttons respond while a screen is still scrolling, rather than once the scroll comes to rest.
 
