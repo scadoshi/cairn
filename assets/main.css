@@ -302,7 +302,7 @@ input {
 .profile-sections {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--panel-gap);
     width: calc(100% - 2rem);
     max-width: 40rem;
     padding-bottom: 1rem;

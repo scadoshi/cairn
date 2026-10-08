@@ -6,6 +6,8 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- Cards sit 1rem apart on every screen, matching Zwipe.
+
 - Labels, titles, counts and chart lines each have their own color in every theme, and titles, selections and labels use the colors each theme's own editor scheme gives them.
 
 - Goal animations stack. Firing one while another is playing layers it on top instead of cutting the first short, up to eight at once.
