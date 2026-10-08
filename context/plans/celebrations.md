@@ -3,7 +3,9 @@
 Built 2026-09-24. Seven animations rather than two, a Random option, and a
 per-counter override on top of the app-wide setting, which schema v7 carries.
 The firing rule below is the part that survived unchanged, and it is the part
-that mattered.
+that mattered. Typewriter and stamp were dropped 2026-10-08, leaving level up,
+confetti, poppers and pulse; the Goal animation sheet has a Test button that
+plays the picked one.
 
 A counter crossing its daily goal should say so. Seven ways it can, one at a time, or none. Plus a toast with a rotating success line.
 
@@ -38,7 +40,7 @@ Every one of them sits behind `prefers-reduced-motion`.
 
 A `Celebration` enum in `domain/preferences.rs`, cycled like `Logo` and `CounterOrder`. `Random` rotates rather than rolling dice: chance repeats, and the same animation twice running is what choosing Random is meant to avoid.
 
-Typewriter and stamp draw the line themselves, so `celebrate` returns the line to toast or nothing when the animation is already saying it. The two cannot then disagree about which line this is.
+`celebrate` picks the line and returns it for the toast, or nothing when the setting is Off, so the toast and the animation cannot disagree about which line this is.
 
 Single-colour animations take one of the theme's three accents in rotation. All of them in the success green read as variations of one effect.
 

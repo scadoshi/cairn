@@ -6,6 +6,8 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- The Goal animation sheet has a Test button that plays the picked animation, over the sheet, before you save it.
+
 - Typewriter and Stamp are gone from the goal animations. A counter that had one plays the default.
 
 - Line charts stay at zero on rest days next to a big day, instead of dipping below the axis.

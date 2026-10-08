@@ -8,7 +8,10 @@ use crate::{
     },
     inbound::ui::{
         TOAST_NORMAL, TOAST_QUICK,
-        components::hint::{HintDialog, use_screen_hint},
+        components::{
+            celebration::{CelebrationHost, celebrate},
+            hint::{HintDialog, use_screen_hint},
+        },
         router::Route,
         use_date_format, use_prefs, use_store,
     },
@@ -460,6 +463,7 @@ fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
 fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
     let mut prefs = use_prefs();
     let toast = use_toast();
+    let host = use_context::<CelebrationHost>();
     let saved = prefs().celebration;
     let mut draft = use_signal(|| saved);
 
@@ -496,6 +500,18 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                     // like it took.
                     onclick: move |_| discard.call(()),
                     "Back"
+                }
+                // Plays the pick as a goal would, toast and all, before it
+                // is saved. Random steps through its rotation on each tap.
+                Button {
+                    variant: ButtonVariant::Util,
+                    disabled: draft() == Celebration::Off,
+                    onclick: move |_| {
+                        if let Some(line) = celebrate(host, draft()) {
+                            toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
+                        }
+                    },
+                    "Test"
                 }
                 Button {
                     variant: ButtonVariant::Util,
@@ -564,6 +580,7 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
             HintDialog { open, title: "Goal animation",
                 HintLine { "What plays when a counter finishes its day, clears the whole day, or passes another tenth of its year" }
                 HintLine { "A counter can pick its own in its " HintKey { color: "--accent-primary", "Edit" } " sheet" }
+                HintLine { HintKey { color: "--accent-primary", "Test" } " plays the one picked, before you save it" }
             }
         },
         ConfigHint::DarkMode => rsx! {

@@ -991,7 +991,7 @@ input {
 .celebrate-confetti {
     position: fixed;
     inset: 0;
-    z-index: 60;
+    z-index: 202;
     pointer-events: none;
     overflow: hidden;
 }
@@ -1168,7 +1168,7 @@ input {
 .celebrate-poppers {
     position: fixed;
     inset: 0;
-    z-index: 60;
+    z-index: 202;
     pointer-events: none;
     overflow: hidden;
 }
@@ -1265,7 +1265,7 @@ input {
     /* Held off the edge and rounded hard, so the glow sits inside the
        phone's own corner radius instead of being sliced by it. */
     inset: 0.45rem;
-    z-index: 60;
+    z-index: 202;
     pointer-events: none;
 }
 
