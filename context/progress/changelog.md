@@ -6,6 +6,8 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- Typewriter and Stamp are gone from the goal animations. A counter that had one plays the default.
+
 - Line charts stay at zero on rest days next to a big day, instead of dipping below the axis.
 
 - Picking a theme after flipping Dark mode in Config keeps the dark mode you set. It used to switch it back.

@@ -91,12 +91,8 @@ pub enum Celebration {
     Confetti,
     /// Two party poppers going off from the bottom corners.
     Poppers,
-    /// The success line typed out in monospace with a cursor.
-    Typewriter,
     /// The screen edge flashing the success color. The quiet one.
     Pulse,
-    /// The success line slamming in oversized and settling.
-    Stamp,
     /// A different one of the above each time.
     Random,
     /// Nothing.
@@ -105,13 +101,11 @@ pub enum Celebration {
 
 impl Celebration {
     /// Every option, for cycling.
-    pub const ALL: [Self; 8] = [
+    pub const ALL: [Self; 6] = [
         Self::LevelUp,
         Self::Confetti,
         Self::Poppers,
-        Self::Typewriter,
         Self::Pulse,
-        Self::Stamp,
         Self::Random,
         Self::Off,
     ];
@@ -119,16 +113,7 @@ impl Celebration {
     /// The ones that actually draw something, which is what [`Self::Random`]
     /// chooses between. Off is not a surprise worth having, and Random
     /// picking itself would not terminate.
-    pub const ANIMATIONS: [Self; 5] = [
-        Self::LevelUp,
-        Self::Confetti,
-        Self::Poppers,
-        Self::Typewriter,
-        Self::Stamp,
-    ];
-
-    /// Stride through [`Self::ANIMATIONS`]; 3 is coprime with 5.
-    const RANDOM_STRIDE: usize = 3;
+    pub const ANIMATIONS: [Self; 3] = [Self::LevelUp, Self::Confetti, Self::Poppers];
 
     /// The animation to actually play, resolving [`Self::Random`] against a
     /// counter that the caller bumps.
@@ -145,15 +130,9 @@ impl Celebration {
         let len = Self::ANIMATIONS.len();
         let i = usize::try_from(nth % len as u64).unwrap_or(0);
         Self::ANIMATIONS
-            .get(i.wrapping_mul(Self::RANDOM_STRIDE) % len)
+            .get(i % len)
             .copied()
             .unwrap_or(Self::LevelUp)
-    }
-
-    /// Whether the animation shows the success line itself, in which case
-    /// the caller should not also raise a toast saying the same thing.
-    pub fn shows_line(self) -> bool {
-        matches!(self, Self::Typewriter | Self::Stamp)
     }
 
     /// Short label.
@@ -162,9 +141,7 @@ impl Celebration {
             Self::LevelUp => "Level up",
             Self::Confetti => "Confetti",
             Self::Poppers => "Poppers",
-            Self::Typewriter => "Typewriter",
             Self::Pulse => "Pulse",
-            Self::Stamp => "Stamp",
             Self::Random => "Random",
             Self::Off => "Off",
         }
@@ -179,9 +156,7 @@ impl Celebration {
             Self::LevelUp => "sheen",
             Self::Confetti => "confetti",
             Self::Poppers => "poppers",
-            Self::Typewriter => "typewriter",
             Self::Pulse => "pulse",
-            Self::Stamp => "stamp",
             Self::Random => "random",
             Self::Off => "off",
         }
@@ -522,20 +497,12 @@ mod tests {
     }
 
     #[test]
-    fn only_the_text_animations_claim_the_line() {
-        assert!(Celebration::Typewriter.shows_line());
-        assert!(Celebration::Stamp.shows_line());
-        for c in [
-            Celebration::LevelUp,
-            Celebration::Confetti,
-            Celebration::Poppers,
-            Celebration::Pulse,
-        ] {
-            assert!(
-                !c.shows_line(),
-                "{c:?} would suppress the toast for nothing"
-            );
-        }
+    fn a_removed_animation_reads_back_as_unknown() {
+        assert_eq!(Celebration::from_key("typewriter"), None);
+        assert_eq!(Celebration::from_key("stamp"), None);
+        let stored = r#"{"week_start":"Sun","rest_days":5,"celebration":"Stamp"}"#;
+        let p: Preferences = serde_json::from_str(stored).expect("parses");
+        assert_eq!(p.celebration, Celebration::default());
     }
 
     #[test]

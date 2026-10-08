@@ -147,8 +147,6 @@ fn CounterCard(
                 if done || mark.is_some() {
                     // The counter's own choice wins; None follows Config.
                     let how = card_celebration.unwrap_or(prefs.celebration);
-                    // Typewriter and Stamp put the words on screen themselves,
-                    // so there is nothing left for a toast to add.
                     if let Some(line) = celebrate_saying(host, how, saying) {
                         toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
                     }

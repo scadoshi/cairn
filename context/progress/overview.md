@@ -27,7 +27,7 @@ reps across push-ups, pull-ups and squats.
   day's share is in. Tapping the name or numbers opens the counter. A counter
   can carry a second, larger step, which puts a wider pair outside the first.
 - Something plays when a counter's day is finished: a level up, confetti,
-  poppers, a typed line, a stamp, or rings pulsing inward,
+  poppers, or rings pulsing inward,
   chosen per counter or app-wide, or turned off. It fires from the tap that
   crosses: a counter's day, the last counter of the day, or another tenth of
   the year's goal. Nowhere else, so no state is stored to remember that a day

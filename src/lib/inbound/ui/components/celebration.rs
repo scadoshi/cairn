@@ -23,8 +23,6 @@ const fn linger(how: Celebration) -> Duration {
         Celebration::LevelUp => Duration::from_millis(1100),
         // Three rings, the last starting 340ms in and running 700ms.
         Celebration::Pulse => Duration::from_millis(1150),
-        Celebration::Stamp => Duration::from_millis(1400),
-        Celebration::Typewriter => Duration::from_millis(1900),
         Celebration::Poppers => Duration::from_millis(2400),
         _ => Duration::from_millis(2200),
     }
@@ -131,9 +129,6 @@ const SPARKS: [(u32, u32, u32, i32); 12] = [
 pub struct Playing {
     /// Never `Random`; that is resolved before it gets here.
     pub how: Celebration,
-    /// The line for this crossing. Owned, because some of them carry a
-    /// figure worked out at the tap, like "40% of the year".
-    pub line: String,
     /// Which of the theme's three accents this one is drawn in, 0 to 2.
     /// The success green on everything made the animations look like
     /// variations of one effect rather than different effects.
@@ -161,8 +156,8 @@ pub struct CelebrationHost(pub Signal<Option<Playing>>);
 
 /// Fires a celebration, if the setting wants one.
 ///
-/// Returns the line to raise in a toast, or `None` when the animation is
-/// already showing those words, or when the setting is `Off`. Picking the
+/// Returns the line to raise in a toast, or `None` when the setting is
+/// `Off`. Picking the
 /// line here rather than at the call sites is what keeps the toast and the
 /// animation saying the same thing.
 ///
@@ -195,16 +190,11 @@ pub fn celebrate_saying(
     // Stride 2 against 3 accents: every tint before any repeat.
     let tint = u8::try_from(nth.wrapping_mul(2) % 3).unwrap_or(0);
     let mut slot = host.0;
-    slot.set(Some(Playing {
-        how,
-        line: line.clone(),
-        tint,
-        id: nth,
-    }));
+    slot.set(Some(Playing { how, tint, id: nth }));
     // The timer belongs to the host, not here. Spawning it from a tap
     // handler tied it to whichever card was tapped, and a re-render or a
     // reorder of the list could drop the task mid-animation.
-    (!how.shows_line()).then_some(line)
+    Some(line)
 }
 
 /// Draws whatever is in the slot.
@@ -232,38 +222,12 @@ pub fn CelebrationHostView() -> Element {
         }
     }));
 
-    let Some(Playing {
-        how,
-        line,
-        tint,
-        id,
-    }) = playing
-    else {
+    let Some(Playing { how, tint, id }) = playing else {
         return rsx! {};
     };
     match how {
         // Resolved before it reaches the slot, so neither can appear here.
         Celebration::Off | Celebration::Random => rsx! {},
-        Celebration::Typewriter => rsx! {
-            div { key: "{id}", class: "celebrate-text tint-{tint}", aria_hidden: "true",
-                // The cursor is a sibling, not a border: inside the clipping
-                // span it would eat into the animated width and swallow the
-                // last character.
-                span { class: "type-line",
-                    span {
-                        class: "type-text",
-                        style: "--chars: {line.chars().count()};",
-                        "{line}"
-                    }
-                    span { class: "type-cursor" }
-                }
-            }
-        },
-        Celebration::Stamp => rsx! {
-            div { key: "{id}", class: "celebrate-text tint-{tint}", aria_hidden: "true",
-                span { class: "stamp-line", "{line}" }
-            }
-        },
         Celebration::Pulse => rsx! {
             div { key: "{id}", class: "celebrate-pulse tint-{tint}", aria_hidden: "true",
                 // Staggered so they read as one wave moving in, not three
