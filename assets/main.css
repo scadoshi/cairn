@@ -1139,10 +1139,10 @@ input {
 }
 
 /* The theme's own colors, so confetti follows the palette. */
-.confetti-color-0 { background-color: var(--accent-primary); }
-.confetti-color-1 { background-color: var(--accent-secondary); }
-.confetti-color-2 { background-color: var(--accent-tertiary); }
-.confetti-color-3 { background-color: var(--color-success); }
+.confetti-color-0 { background-color: var(--palette-1); }
+.confetti-color-1 { background-color: var(--palette-2); }
+.confetti-color-2 { background-color: var(--palette-3); }
+.confetti-color-3 { background-color: var(--palette-4); }
 
 @keyframes confetti-fall {
     from {
