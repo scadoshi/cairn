@@ -96,7 +96,7 @@ input {
     display: block;
     font-size: 1rem;
     letter-spacing: 0.1em;
-    color: var(--accent-primary);
+    color: var(--accent-tertiary);
     margin-bottom: 0.4rem;
 }
 
@@ -163,15 +163,15 @@ input {
 
 /* The fitted line's own color, so the chip naming it matches it. */
 .stat-chip-trend {
-    color: var(--accent-secondary);
-    background-color: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
-    border-color: color-mix(in srgb, var(--accent-secondary) 35%, transparent);
+    color: var(--palette-2);
+    background-color: color-mix(in srgb, var(--palette-2) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-2) 35%, transparent);
 }
 
 .stat-chip-goal {
-    color: var(--accent-tertiary);
-    background-color: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
-    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, transparent);
+    color: var(--palette-4);
+    background-color: color-mix(in srgb, var(--palette-4) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-4) 35%, transparent);
 }
 
 .home-hero {
@@ -341,7 +341,7 @@ input {
 .card-title {
     font-size: 1rem;
     letter-spacing: 0.1em;
-    color: var(--accent-tertiary);
+    color: var(--accent-primary);
     /* Counter names sit here and are often one unbroken word. */
     overflow-wrap: break-word;
     min-width: 0;
@@ -549,7 +549,7 @@ input {
     font-weight: 700;
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
-    color: var(--accent-primary);
+    color: var(--palette-5);
     overflow-wrap: anywhere;
 }
 
@@ -580,7 +580,7 @@ input {
     line-height: 1;
     letter-spacing: 0.05em;
     font-variant-numeric: tabular-nums;
-    color: var(--accent-primary);
+    color: var(--palette-5);
 }
 
 /* Six-plus digits: step the type down so the full figure still fits. */
@@ -775,7 +775,7 @@ input {
 
 .alert-dialog-title {
     margin: 0;
-    color: var(--accent-tertiary);
+    color: var(--accent-primary);
     font-size: 1.25rem;
     font-weight: 400;
     letter-spacing: 0.1em;
@@ -893,7 +893,7 @@ input {
 }
 
 .chart-overlay {
-    stroke: var(--accent-tertiary);
+    stroke: var(--palette-4);
     stroke-width: 2.2;
     animation-duration: 1.3s;
     animation-delay: 0.15s;
@@ -914,7 +914,7 @@ input {
 }
 
 .chart-trend {
-    stroke: var(--accent-secondary);
+    stroke: var(--palette-2);
     stroke-width: 1.4;
     stroke-dasharray: 5 4;
     opacity: 0.9;
@@ -1244,19 +1244,19 @@ input {
     }
 }
 
-/* One of the theme's three accents per celebration, so repeated goals do
+/* One of three palette colors per celebration, so repeated goals do
    not all look like the same effect. Confetti and poppers already spread
    across all four colors of their own. */
 .tint-0 {
-    --tint: var(--accent-primary);
+    --tint: var(--palette-1);
 }
 
 .tint-1 {
-    --tint: var(--accent-secondary);
+    --tint: var(--palette-4);
 }
 
 .tint-2 {
-    --tint: var(--accent-tertiary);
+    --tint: var(--palette-6);
 }
 
 /* The quiet one: the screen edge lights up and lets go. */

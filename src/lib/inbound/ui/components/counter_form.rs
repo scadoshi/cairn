@@ -355,7 +355,7 @@ fn FormHintDialog(open: Signal<bool>, which: Option<FormHint>) -> Element {
         FormHint::Celebration => rsx! {
             HintDialog { open, title: "Goal animation",
                 HintLine { "What plays when this counter finishes its day" }
-                HintLine { HintKey { color: "--accent-primary", "Default" } " follows the animation set in Config" }
+                HintLine { HintKey { "Default" } " follows the animation set in Config" }
             }
         },
     }

@@ -381,7 +381,7 @@ pub fn Config() -> Element {
         ConfigHintDialog { open: hint_open, which: hint() }
         HintDialog { open: screen_hint_open, title: "Config",
             HintLine { "Settings only. Nothing here edits your counts" }
-            HintLine { "Tap any row's " HintKey { color: "--accent-primary", "?" } " to learn what it does" }
+            HintLine { "Tap any row's " HintKey { color: "--palette-6", "?" } " to learn what it does" }
         }
     }
 }
@@ -579,8 +579,8 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
         ConfigHint::Celebration => rsx! {
             HintDialog { open, title: "Goal animation",
                 HintLine { "What plays when a counter finishes its day, clears the whole day, or passes another tenth of its year" }
-                HintLine { "A counter can pick its own in its " HintKey { color: "--accent-primary", "Edit" } " sheet" }
-                HintLine { HintKey { color: "--accent-primary", "Test" } " plays the one picked, before you save it" }
+                HintLine { "A counter can pick its own in its " HintKey { "Edit" } " sheet" }
+                HintLine { HintKey { "Test" } " plays the one picked, before you save it" }
             }
         },
         ConfigHint::DarkMode => rsx! {
@@ -636,7 +636,7 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
         },
         ConfigHint::Export => rsx! {
             HintDialog { open, title: "Export",
-                HintLine { HintKey { color: "--accent-primary", "CSV" } " writes one file per counter: day and count" }
+                HintLine { HintKey { "CSV" } " writes one file per counter: day and count" }
                 HintBullets {
                     HintBullet { "iPhone: Files app, On My iPhone, Cairn" }
                     HintBullet { "Desktop: Downloads" }

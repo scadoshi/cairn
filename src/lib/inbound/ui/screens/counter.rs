@@ -414,7 +414,7 @@ pub fn CounterScreen(id: i64) -> Element {
         HintDialog { open: hint_open, title: "One counter",
             HintLine { "The big number is everything you have ever logged here" }
             HintBullets {
-                HintBullet { "Tap a card's " HintKey { color: "--accent-primary", "?" } " for what it shows" }
+                HintBullet { "Tap a card's " HintKey { color: "--palette-6", "?" } " for what it shows" }
                 HintBullet { "Subtracting stops at zero" }
                 HintBullet { HintKey { color: "--color-error", "Delete" } " takes the whole history with it" }
             }
