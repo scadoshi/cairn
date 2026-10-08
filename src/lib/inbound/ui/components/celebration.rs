@@ -150,9 +150,16 @@ pub enum Saying {
     Rotating(fn(u64) -> &'static str),
 }
 
-/// The slot. Provided by the app root.
+/// The most layers on screen at once. Spamming the Test button past this
+/// drops the oldest rather than piling up hundreds of pieces in the WebView.
+const MAX_LAYERS: usize = 8;
+
+/// What is playing, oldest first. Provided by the app root.
+///
+/// A celebration fired while another is still running plays on top of it,
+/// each running out its own time.
 #[derive(Clone, Copy)]
-pub struct CelebrationHost(pub Signal<Option<Playing>>);
+pub struct CelebrationHost(pub Signal<Vec<Playing>>);
 
 /// Fires a celebration, if the setting wants one.
 ///
@@ -189,44 +196,52 @@ pub fn celebrate_saying(
     };
     // Stride 2 against 3 accents: every tint before any repeat.
     let tint = u8::try_from(nth.wrapping_mul(2) % 3).unwrap_or(0);
-    let mut slot = host.0;
-    slot.set(Some(Playing { how, tint, id: nth }));
-    // The timer belongs to the host, not here. Spawning it from a tap
+    let mut layers = host.0;
+    let mut playing = layers.write();
+    if playing.len() >= MAX_LAYERS {
+        playing.remove(0);
+    }
+    playing.push(Playing { how, tint, id: nth });
+    // The timer belongs to the layer, not here. Spawning it from a tap
     // handler tied it to whichever card was tapped, and a re-render or a
     // reorder of the list could drop the task mid-animation.
     Some(line)
 }
 
-/// Draws whatever is in the slot.
+/// Draws everything that is playing, each in its own layer.
 #[component]
 pub fn CelebrationHostView() -> Element {
     let host = use_context::<CelebrationHost>();
-    let mut slot = host.0;
-
-    // Clears the slot once the animation has had its time. Keyed on the
-    // crossing's id, so a new celebration restarts the clock and a mere
-    // re-render does not. This component lives at the app root and never
-    // unmounts, so the timer cannot be cancelled out from under it.
-    let playing = slot.read().to_owned();
-    let current = playing.as_ref().map(|p| (p.id, p.how));
-    use_effect(use_reactive(&current, move |current| {
-        if let Some((id, how)) = current {
-            spawn(async move {
-                tokio::time::sleep(linger(how)).await;
-                // Only clear this one. A later crossing has already
-                // replaced it and owns the slot now.
-                if slot.peek().as_ref().is_some_and(|p| p.id == id) {
-                    slot.set(None);
-                }
-            });
+    let playing = host.0.read().to_owned();
+    rsx! {
+        for p in playing {
+            Layer { key: "{p.id}", playing: p }
         }
-    }));
+    }
+}
 
-    let Some(Playing { how, tint, id }) = playing else {
-        return rsx! {};
-    };
+/// One celebration, which takes itself off the list once it has had its
+/// time.
+///
+/// The timer starts when the layer mounts and lives as long as it does. The
+/// host sits at the app root and never unmounts, and each layer is keyed on
+/// its crossing's id, so a re-render or a newer layer cannot restart or
+/// cancel it. Only being pushed off the front of a full list can, and then
+/// there is nothing left to clear.
+#[component]
+fn Layer(playing: Playing) -> Element {
+    let host = use_context::<CelebrationHost>();
+    let Playing { how, tint, id } = playing;
+    use_hook(move || {
+        let mut layers = host.0;
+        spawn(async move {
+            tokio::time::sleep(linger(how)).await;
+            layers.write().retain(|p| p.id != id);
+        });
+    });
+
     match how {
-        // Resolved before it reaches the slot, so neither can appear here.
+        // Resolved before it reaches the list, so neither can appear here.
         Celebration::Off | Celebration::Random => rsx! {},
         Celebration::Pulse => rsx! {
             div { key: "{id}", class: "celebrate-pulse tint-{tint}", aria_hidden: "true",

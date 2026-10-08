@@ -6,6 +6,8 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- Goal animations stack. Firing one while another is playing layers it on top instead of cutting the first short, up to eight at once.
+
 - The Goal animation sheet has a Test button that plays the picked animation, over the sheet, before you save it.
 
 - Typewriter and Stamp are gone from the goal animations. A counter that had one plays the default.
