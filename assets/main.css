@@ -1305,6 +1305,9 @@ input {
 /* Wider than a phone, so it scrolls sideways and opens on the newest weeks. */
 .heat-scroll {
     overflow-x: auto;
+    /* Stops at either end rather than rubber-banding the newest week into
+       empty space. */
+    overscroll-behavior-x: none;
     scrollbar-width: none;
     padding: 0.25rem 1rem 0.5rem;
     /* Weeks fade out under the side gutters as they scroll past. The fade is
@@ -1329,6 +1332,9 @@ input {
     width: 100%;
     height: auto;
     font-family: inherit;
+    /* A peak's halo on the last column or bottom row reaches past the
+       viewBox and draws whole. */
+    overflow: visible;
 }
 
 .heat-backdrop {

@@ -18,6 +18,8 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 - Line charts stay at zero on rest days next to a big day, instead of dipping below the axis.
 
+- The heatmap stops at its newest week instead of rubber-banding past it, and a glowing day on the edge shows its whole glow.
+
 - Picking a theme after flipping Dark mode in Config keeps the dark mode you set. It used to switch it back.
 
 - The quote's author, source and countdown are tags in one wrapping row, which arrives with its divider once the quote finishes typing.
