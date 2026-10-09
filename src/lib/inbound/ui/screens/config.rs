@@ -22,8 +22,8 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{fmt::Write as _, path::PathBuf};
 use zwipe_components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey,
-    HintLine, InfoButton, MOON, SUN, ThemeConfig, ThemeSheet, display_theme_name,
+    ActionBar, BottomSheet, Button, ButtonVariant, Chip, DarkModeButton, HintBullet, HintBullets,
+    HintKey, HintLine, InfoButton, MOON, SUN, ThemeConfig, ThemeSheet, display_theme_name,
 };
 
 /// The config screen.
@@ -145,6 +145,7 @@ pub fn Config() -> Element {
                     }
                     div { class: "profile-row-value",
                         span { {display_theme_name(&theme.read().name)} }
+                        DarkModeButton { is_dark: theme.read().is_dark, onclick: toggle_dark }
                         Button {
                             variant: ButtonVariant::Util,
                             onclick: move |_| {
@@ -169,19 +170,6 @@ pub fn Config() -> Element {
                                 mark_open.set(true);
                             },
                             "Change"
-                        }
-                    }
-                }
-                div { class: "profile-row",
-                    span { class: "row-label-with-hint",
-                        span { class: "profile-row-label", "Dark mode" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::DarkMode)); hint_open.set(true); } }
-                    }
-                    div { class: "profile-row-value",
-                        Button {
-                            variant: ButtonVariant::Util,
-                            onclick: toggle_dark,
-                            if theme.read().is_dark { "{MOON} On" } else { "{SUN} Off" }
                         }
                     }
                 }
@@ -547,7 +535,6 @@ enum ConfigHint {
     Theme,
     Mark,
     Celebration,
-    DarkMode,
     Dates,
     DayStarts,
     WeekStarts,
@@ -568,6 +555,7 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
             HintDialog { open, title: "Theme",
                 HintLine { "The app's palette. It previews as you tap" }
                 HintLine { "The last four are color blind modes" }
+                HintLine { HintKey { "{SUN}" } " " HintKey { "{MOON}" } " flips it between light and dark" }
             }
         },
         ConfigHint::Mark => rsx! {
@@ -581,11 +569,6 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
                 HintLine { "What plays when a counter finishes its day, clears the whole day, or passes another tenth of its year" }
                 HintLine { "A counter can pick its own in its " HintKey { "Edit" } " sheet" }
                 HintLine { HintKey { "Test" } " plays the one picked, before you save it" }
-            }
-        },
-        ConfigHint::DarkMode => rsx! {
-            HintDialog { open, title: "Dark mode",
-                HintLine { "Every theme has a light and a dark side. This flips between them" }
             }
         },
         ConfigHint::Dates => rsx! {
