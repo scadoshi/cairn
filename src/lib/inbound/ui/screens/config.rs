@@ -23,7 +23,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{fmt::Write as _, path::PathBuf};
 use zwipe_components::{
     ActionBar, BottomSheet, Button, ButtonVariant, Chip, DarkModeButton, HintBullet, HintBullets,
-    HintKey, HintLine, InfoButton, MOON, SUN, ThemeConfig, ThemeSheet, display_theme_name,
+    HintKey, HintLine, InfoButton, ModeIcon, ThemeConfig, ThemeSheet, display_theme_name,
 };
 
 /// The config screen.
@@ -555,7 +555,7 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
             HintDialog { open, title: "Theme",
                 HintLine { "The app's palette. It previews as you tap" }
                 HintLine { "The last four are color blind modes" }
-                HintLine { HintKey { "{SUN}" } " " HintKey { "{MOON}" } " flips it between light and dark" }
+                HintLine { HintKey { ModeIcon { dark: false } " light" } " " HintKey { ModeIcon { dark: true } " dark" } " switches between the theme's two palettes" }
             }
         },
         ConfigHint::Mark => rsx! {
