@@ -3,26 +3,19 @@
 //! Tapping a cell names the day and its count.
 
 use crate::{
-    domain::counter::{
-        DayCount,
-        format::thousands,
-        heat::{self, HeatCell},
-    },
+    domain::counter::{DayCount, format::thousands, heat},
     inbound::ui::{components::tile::Num, today, use_date_format, use_prefs},
 };
 use dioxus::prelude::*;
-use std::time::Duration;
-use zwipe_components::{peak_indices, tip_anchor};
+use std::rc::Rc;
+use zwipe_components::{
+    HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, heat_span, peak_indices, tip_anchor,
+    use_scroll_to_end,
+};
 
-/// Cell size and the gap between cells, in SVG units.
-const CELL: f64 = 11.0;
-const GAP: f64 = 2.0;
-const STEP: f64 = CELL + GAP;
 /// Room on the left for the weekday labels and on top for the months.
 const LEFT: f64 = 26.0;
 const TOP: f64 = 14.0;
-/// How far apart the columns arrive in the sweep.
-const SWEEP_STEP_MS: usize = 12;
 /// How many weeks the grid shows.
 const WEEKS: usize = 52;
 /// A day at or past this many times the median logged day is a peak, and at
@@ -39,15 +32,9 @@ struct Tip {
     top: f64,
 }
 
-/// Cell counts are tiny, so the conversion is exact.
-#[allow(clippy::cast_precision_loss)]
-fn px(n: usize) -> f64 {
-    n as f64
-}
-
 /// Which cells are the year's outlier days, in cell order: at or past
 /// `PEAK_RATIO` times the median logged day, among the `MAX_PEAKS` biggest.
-fn peaks(cells: &[HeatCell]) -> Vec<bool> {
+fn peaks(cells: &[heat::HeatCell]) -> Vec<bool> {
     let counts: Vec<u32> = cells.iter().map(|c| c.count).collect();
     let mut peak = vec![false; cells.len()];
     for i in peak_indices(&counts, PEAK_RATIO, MAX_PEAKS) {
@@ -66,25 +53,34 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
     let mut tip: Signal<Option<Tip>> = use_signal(|| None);
     let grid = heat::heat_grid(&entries, today(), prefs.week_start, WEEKS);
     let labels = prefs.weekday_labels();
-    let width = LEFT + px(grid.columns) * STEP;
-    let height = TOP + 7.0 * STEP;
+    let width = LEFT + heat_span(grid.columns);
+    let height = TOP + heat_span(HEAT_ROWS);
     let days = grid.cells.len();
-    let peak = peaks(&grid.cells);
+    // What each cell's chip says, by the cell's index.
+    let texts: Rc<[String]> = grid
+        .cells
+        .iter()
+        .map(|cell| format!("{} on {}", thousands(cell.count), df.date(cell.day)))
+        .collect();
+    let cells: Vec<HeatCell> = grid
+        .cells
+        .iter()
+        .zip(peaks(&grid.cells))
+        .map(|(cell, peak)| HeatCell {
+            column: cell.column,
+            row: cell.row,
+            level: cell.level,
+            peak,
+            key: cell.day.to_string(),
+        })
+        .collect();
 
     // Opens on the newest weeks: the grid is wider than a phone, and the
     // interesting end is the right one.
-    use_effect(move || {
-        spawn(async move {
-            tokio::time::sleep(Duration::from_millis(60)).await;
-            let _ = document::eval(
-                "for (const el of document.querySelectorAll('.heat-scroll')) el.scrollLeft = el.scrollWidth;",
-            )
-            .await;
-        });
-    });
+    use_scroll_to_end();
 
     rsx! {
-        div { class: "heat-scroll",
+        div { class: "chart-scroll scroll-end heat-scroll",
             div { class: "heat-plot",
                 svg {
                     class: "heat-grid",
@@ -93,47 +89,24 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                     // Clears the chip when the tap lands on nothing.
                     rect { class: "heat-backdrop", x: "0", y: "0", width: "{width}", height: "{height}", onclick: move |_| tip.set(None) }
                     for m in grid.months.iter() {
-                        text { class: "heat-label", x: "{LEFT + px(m.column) * STEP}", y: "{TOP - 4.0}", "{m.name}" }
+                        text { class: "heat-label", x: "{LEFT + heat_span(m.column)}", y: "{TOP - 4.0}", "{m.name}" }
                     }
                     for (row, label) in labels.iter().enumerate() {
                         if row % 2 == 1 {
-                            text { class: "heat-label", x: "{LEFT - 4.0}", y: "{TOP + px(row) * STEP + CELL - 2.0}", text_anchor: "end", "{label}" }
+                            text { class: "heat-label", x: "{LEFT - 4.0}", y: "{TOP + heat_span(row) + HEAT_CELL - 2.0}", text_anchor: "end", "{label}" }
                         }
                     }
-                    for (cell, peak) in grid.cells.iter().zip(peak) {
-                        {
-                            let x = LEFT + px(cell.column) * STEP;
-                            let y = TOP + px(cell.row) * STEP;
-                            let text = format!("{} on {}", thousands(cell.count), df.date(cell.day));
-                            let (cx, cy) = ((x + CELL / 2.0) / width * 100.0, y / height * 100.0);
-                            rsx! {
-                                g { key: "{cell.day}",
-                                // The glow behind a peak day is a shape, since iOS
-                                // Safari applies no CSS filter to an SVG child.
-                                if peak {
-                                    rect {
-                                        class: "heat-halo",
-                                        x: "{x - 2.5}",
-                                        y: "{y - 2.5}",
-                                        width: "{CELL + 5.0}",
-                                        height: "{CELL + 5.0}",
-                                        rx: "4",
-                                        style: "animation-delay: {cell.column * SWEEP_STEP_MS}ms",
-                                    }
-                                }
-                                rect {
-                                    class: if peak { "heat-cell heat-{cell.level} heat-peak" } else { "heat-cell heat-{cell.level}" },
-                                    x: "{x}",
-                                    y: "{y}",
-                                    width: "{CELL}",
-                                    height: "{CELL}",
-                                    rx: "2",
-                                    style: "animation-delay: {cell.column * SWEEP_STEP_MS}ms",
-                                    onclick: move |_| tip.set(Some(Tip { text: text.clone(), left: cx, top: cy })),
-                                }
-                                }
+                    HeatGrid {
+                        cells,
+                        left: LEFT,
+                        top: TOP,
+                        on_tap: move |hit: HeatHit| {
+                            if let Some(text) = texts.get(hit.index) {
+                                let left = (hit.x + HEAT_CELL / 2.0) / width * 100.0;
+                                let top = hit.y / height * 100.0;
+                                tip.set(Some(Tip { text: text.clone(), left, top }));
                             }
-                        }
+                        },
                     }
                 }
                 if let Some(t) = tip() {

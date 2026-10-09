@@ -1302,12 +1302,9 @@ input {
       heatmap
  ==================== */
 
-/* Wider than a phone, so it scrolls sideways and opens on the newest weeks. */
+/* Wider than a phone, so it scrolls sideways (the shared .chart-scroll) and
+   opens on the newest weeks. */
 .heat-scroll {
-    overflow-x: auto;
-    /* Stops at either end rather than rubber-banding the newest week into
-       empty space. */
-    overscroll-behavior-x: none;
     scrollbar-width: none;
     padding: 0.25rem 1rem 0.5rem;
     /* Weeks fade out under the side gutters as they scroll past. The fade is
@@ -1327,74 +1324,8 @@ input {
     min-width: 38rem;
 }
 
-.heat-grid {
-    display: block;
-    width: 100%;
-    height: auto;
-    font-family: inherit;
-    /* A peak's halo on the last column or bottom row reaches past the
-       viewBox and draws whole. */
-    overflow: visible;
-}
-
 .heat-backdrop {
     fill: transparent;
-}
-
-.heat-label {
-    fill: var(--text-muted);
-    font-size: 9px;
-}
-
-/* The five shades, in the primary accent: an empty day is a faint box, the
-   rest rise by quartile to the full color. Cells sweep in a column at a time,
-   on the delay each carries. */
-.heat-cell {
-    fill: var(--border-secondary);
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: heat-sweep 0.4s ease-out both;
-}
-
-.heat-1 {
-    fill: color-mix(in srgb, var(--accent-primary) 30%, var(--bg-primary));
-}
-
-.heat-2 {
-    fill: color-mix(in srgb, var(--accent-primary) 55%, var(--bg-primary));
-}
-
-.heat-3 {
-    fill: color-mix(in srgb, var(--accent-primary) 80%, var(--bg-primary));
-}
-
-.heat-4 {
-    fill: var(--accent-primary);
-}
-
-/* The year's outlier days: a lit edge, and a soft square of the accent behind
-   the cell, drawn as a shape so every browser shows it. */
-.heat-peak {
-    stroke: color-mix(in srgb, var(--accent-primary) 60%, #fff);
-    stroke-width: 1;
-}
-
-.heat-halo {
-    fill: color-mix(in srgb, var(--accent-primary) 45%, transparent);
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: heat-sweep 0.4s ease-out both;
-}
-
-@keyframes heat-sweep {
-    from {
-        opacity: 0;
-        transform: scale(0.6);
-    }
-    to {
-        opacity: 1;
-        transform: none;
-    }
 }
 
 /* The tapped day's chip, hung just above its cell. Near an edge it hangs

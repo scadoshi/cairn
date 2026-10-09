@@ -6472,8 +6472,8 @@ dependencies = [
 
 [[package]]
 name = "zwipe-components"
-version = "1.11.0"
-source = "git+https://github.com/scadoshi/zwipe#57dfb300bdc2316b8a40c7d1edbf973bd17b476d"
+version = "1.11.1"
+source = "git+https://github.com/scadoshi/zwipe?rev=0c079531268fcbe1665064ea0d3454232a352b57#0c079531268fcbe1665064ea0d3454232a352b57"
 dependencies = [
  "dioxus",
  "dioxus-primitives",
@@ -6487,8 +6487,8 @@ dependencies = [
 
 [[package]]
 name = "zwipe-core"
-version = "1.11.0"
-source = "git+https://github.com/scadoshi/zwipe#57dfb300bdc2316b8a40c7d1edbf973bd17b476d"
+version = "1.11.1"
+source = "git+https://github.com/scadoshi/zwipe?rev=0c079531268fcbe1665064ea0d3454232a352b57#0c079531268fcbe1665064ea0d3454232a352b57"
 dependencies = [
  "chrono",
  "email_address",
