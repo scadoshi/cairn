@@ -23,7 +23,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{fmt::Write as _, path::PathBuf};
 use zwipe_components::{
     ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey,
-    HintLine, InfoButton, ThemeConfig, ThemeSheet, display_theme_name,
+    HintLine, InfoButton, MOON, SUN, ThemeConfig, ThemeSheet, display_theme_name,
 };
 
 /// The config screen.
@@ -181,7 +181,7 @@ pub fn Config() -> Element {
                         Button {
                             variant: ButtonVariant::Util,
                             onclick: toggle_dark,
-                            if theme.read().is_dark { "On" } else { "Off" }
+                            if theme.read().is_dark { "{MOON} On" } else { "{SUN} Off" }
                         }
                     }
                 }
