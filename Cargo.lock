@@ -5000,7 +5000,7 @@ dependencies = [
 [[package]]
 name = "tao"
 version = "0.34.9"
-source = "git+https://github.com/scadoshi/zwipe#45e94ba2ae1e692b016f241032617168f8ecb30a"
+source = "git+https://github.com/scadoshi/zwipe#cca32e01ca4f1d15dd181ad5efb23d2d7204e8bd"
 dependencies = [
  "bitflags 2.13.2",
  "block2",
@@ -6473,7 +6473,7 @@ dependencies = [
 [[package]]
 name = "zwipe-components"
 version = "1.11.2"
-source = "git+https://github.com/scadoshi/zwipe#45e94ba2ae1e692b016f241032617168f8ecb30a"
+source = "git+https://github.com/scadoshi/zwipe#cca32e01ca4f1d15dd181ad5efb23d2d7204e8bd"
 dependencies = [
  "dioxus",
  "dioxus-primitives",
@@ -6488,7 +6488,7 @@ dependencies = [
 [[package]]
 name = "zwipe-core"
 version = "1.11.2"
-source = "git+https://github.com/scadoshi/zwipe#45e94ba2ae1e692b016f241032617168f8ecb30a"
+source = "git+https://github.com/scadoshi/zwipe#cca32e01ca4f1d15dd181ad5efb23d2d7204e8bd"
 dependencies = [
  "chrono",
  "email_address",
