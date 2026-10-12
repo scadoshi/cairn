@@ -33,7 +33,7 @@ use crate::{
 use chrono::{Datelike, Duration as ChronoDuration};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{
+use orangui::{
     ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey, HintLine, InfoButton,
 };
 

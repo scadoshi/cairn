@@ -9,7 +9,7 @@ use crate::domain::counter::{
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{BottomSheet, Button, ButtonVariant, Chip, HintKey, HintLine, InfoButton};
+use orangui::{BottomSheet, Button, ButtonVariant, Chip, HintKey, HintLine, InfoButton};
 
 use crate::{
     domain::preferences::Celebration,

@@ -11,9 +11,9 @@ use crate::domain::{
 };
 use chrono::{Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
+use orangui::{APP_CSS, COMPONENTS_CSS, PageHeader, THEMES_CSS, TOAST_CSS, ToastStack};
 use router::Route;
 use std::sync::Arc;
-use zwipe_components::{APP_CSS, COMPONENTS_CSS, PageHeader, THEMES_CSS, TOAST_CSS, ToastStack};
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const ENTRANCE_JS: Asset = asset!("/assets/entrance.js");
@@ -65,7 +65,7 @@ pub struct StoreVersion(pub Signal<u32>);
 /// Info toasts use `TOAST_QUICK` and the rest `TOAST_NORMAL`: the toast
 /// stack's timed fade reads each toast's life off its type on those two
 /// durations.
-pub use zwipe_components::{TOAST_NORMAL, TOAST_QUICK};
+pub use orangui::{TOAST_NORMAL, TOAST_QUICK};
 
 /// Whether every counter that has a goal has met it for `day`.
 ///
@@ -134,7 +134,7 @@ pub fn App() -> Element {
     use_effect(move || {
         let _ = format_store.set_date_format(date_format());
     });
-    let overlays = zwipe_components::use_overlay_back_stack();
+    let overlays = orangui::use_overlay_back_stack();
     use_context_provider(|| overlays);
     let dialogs = components::dialog_host::DialogHost(use_signal(|| None));
     use_context_provider(|| dialogs);
@@ -152,7 +152,7 @@ pub fn App() -> Element {
     });
     // Whatever sets the theme (Config's live preview, its Save or Back), the
     // app wipes over to it; the shell draws this one, not `theme`.
-    let follow = zwipe_components::use_theme_follow(theme, ".theme-root");
+    let follow = orangui::use_theme_follow(theme, ".theme-root");
     use_context_provider(|| follow);
 
     rsx! {
@@ -201,7 +201,7 @@ pub fn App() -> Element {
 /// (its content and its own action bar) as siblings in the column.
 #[component]
 pub fn Shell() -> Element {
-    let theme = use_context::<zwipe_components::ThemeFollow>().shown;
+    let theme = use_context::<orangui::ThemeFollow>().shown;
     let css_class = theme.read().css_class();
     let route = use_route::<Route>();
     let store = use_store();

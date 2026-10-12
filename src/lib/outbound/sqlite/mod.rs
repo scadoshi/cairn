@@ -12,12 +12,12 @@ use crate::domain::{
     preferences::{Celebration, Preferences},
 };
 use chrono::{NaiveDate, NaiveDateTime};
+use orangui::ThemeConfig;
 use rusqlite::{Connection, OptionalExtension, params};
 use std::{
     path::Path,
     sync::{Mutex, MutexGuard},
 };
-use zwipe_components::ThemeConfig;
 
 /// Schema version written to SQLite's `user_version` pragma. Bump it and add
 /// a step in `migrate` for each schema change.

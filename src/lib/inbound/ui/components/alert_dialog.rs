@@ -3,7 +3,7 @@
 
 use super::dialog_host::{DialogSpec, use_hosted_dialog};
 use dioxus::prelude::*;
-use zwipe_components::use_overlay_back;
+use orangui::use_overlay_back;
 
 /// A yes/no dialog. `open` is host-owned so the caller keeps the state that
 /// drives it.

@@ -9,8 +9,8 @@
 
 use crate::domain::counter::series::Shape;
 use dioxus::prelude::*;
+use orangui::curve;
 use std::hash::{Hash, Hasher};
-use zwipe_components::curve;
 
 /// One point: the label shown for it and its value.
 #[derive(Debug, Clone, PartialEq)]

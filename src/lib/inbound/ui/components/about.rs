@@ -3,7 +3,7 @@
 
 use super::dialog_host::{DialogSpec, use_hosted_dialog};
 use dioxus::prelude::*;
-use zwipe_components::{HintLine, use_overlay_back};
+use orangui::{HintLine, use_overlay_back};
 
 const SITE_URL: &str = "https://scottyfermo.com";
 

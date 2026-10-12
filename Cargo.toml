@@ -19,8 +19,8 @@ dioxus = { version = "0.7.10", features = ["router"] }
 # ActionBar, the theme palettes, and the app kit: BottomSheet, PageHeader,
 # ThemeSheet, the hint pieces, the overlay back stack; `toast` adds
 # ToastStack). Cargo.lock pins the exact commit;
-# `cargo update -p zwipe-components` pulls the latest deliberately.
-zwipe-components = { git = "https://github.com/scadoshi/zwipe", features = ["toast"] }
+# `cargo update -p orangui` pulls the latest deliberately.
+orangui = { git = "https://github.com/scadoshi/orangui", features = ["toast"] }
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -30,7 +30,7 @@ thiserror = "2"
 rusqlite = { version = "0.37", features = ["bundled", "chrono"] }
 # Per-platform data and download directories for the database and CSV exports.
 dirs = "6"
-# `use_toast`, the same pinned build zwiper and zwipe-components' ToastStack use.
+# `use_toast`, the same pinned build zwiper and orangui's ToastStack use.
 dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "02801f27e4b3e30606e5c77e435c9d955c708eb3", version = "0.0.1", default-features = false }
 # Timers for the entrances and the back handler's channel; dioxus-desktop
 # already brings the runtime in.
@@ -74,8 +74,8 @@ panic_in_result_fn = "deny"
 exit = "deny"
 
 # tao from zwipe's vendored copy (tao 0.37.0 labeled 0.34.9, with the iOS
-# event loop running mid-scroll), locked to the same zwipe commit as
-# zwipe-components. Its UIScene support is what lets the app launch on iOS 27;
-# see zwipe/vendor/tao/VENDOR.md.
+# event loop running mid-scroll). Cargo.lock pins the zwipe commit;
+# `cargo update -p tao` moves it. Its UIScene support is what lets the app
+# launch on iOS 27; see zwipe/vendor/tao/VENDOR.md.
 [patch.crates-io]
 tao = { git = "https://github.com/scadoshi/zwipe" }

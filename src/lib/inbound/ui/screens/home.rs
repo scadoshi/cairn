@@ -30,10 +30,10 @@ use crate::{
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
-use zwipe_components::{
+use orangui::{
     ActionBar, BottomSheet, Button, ButtonVariant, Decode, HintBullet, HintBullets, HintLine,
 };
+use std::time::Duration;
 
 /// The C, the app's own mark.
 const LOGO_CAIRN: &str = include_str!("../../../../../assets/c.txt");

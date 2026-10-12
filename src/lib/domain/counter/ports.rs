@@ -7,8 +7,8 @@ use crate::domain::{
     preferences::{Celebration, Preferences},
 };
 use chrono::{NaiveDate, NaiveDateTime};
+use orangui::ThemeConfig;
 use thiserror::Error;
-use zwipe_components::ThemeConfig;
 
 /// Storage failure, already reduced to a message. Screens show it; they never
 /// branch on it.

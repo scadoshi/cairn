@@ -32,7 +32,7 @@ use crate::{
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use orangui::{ActionBar, Button, ButtonVariant};
 
 /// Every counter as a card, in the preferred order.
 #[component]

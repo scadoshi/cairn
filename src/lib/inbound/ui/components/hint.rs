@@ -1,13 +1,13 @@
 //! Hint dialogs and the "?" that opens them, zwiper's teaching-moment
 //! pattern. A hint is a centered dialog with a title, a few lines or
 //! bullets, and a single Got it. The "?" and the lines inside come from
-//! zwipe-components (`InfoButton`, `HintLine`, `HintBullets`, `HintBullet`,
+//! orangui (`InfoButton`, `HintLine`, `HintBullets`, `HintBullet`,
 //! `HintKey`); the dialog, the screen's header hint and [`HintChip`] are
 //! cairn's.
 
 use super::dialog_host::{DialogSpec, use_hosted_dialog};
 use dioxus::prelude::*;
-use zwipe_components::use_overlay_back;
+use orangui::use_overlay_back;
 
 /// The screen's own hint, published upward so the shell's header can offer
 /// it. The header is drawn above the router, so it cannot reach into the

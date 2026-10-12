@@ -7,11 +7,11 @@ use crate::{
     inbound::ui::{components::tile::Num, today, use_date_format, use_prefs},
 };
 use dioxus::prelude::*;
-use std::rc::Rc;
-use zwipe_components::{
+use orangui::{
     HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, heat_span, peak_indices, tip_anchor,
     use_scroll_to_end,
 };
+use std::rc::Rc;
 
 /// Room on the left for the weekday labels and on top for the months.
 const LEFT: f64 = 26.0;

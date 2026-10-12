@@ -20,11 +20,11 @@ use crate::{
 use chrono::Weekday;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::{fmt::Write as _, path::PathBuf};
-use zwipe_components::{
+use orangui::{
     ActionBar, BottomSheet, Button, ButtonVariant, Chip, DarkModeButton, HintBullet, HintBullets,
     HintKey, HintLine, InfoButton, ModeIcon, ThemeConfig, ThemeSheet, display_theme_name,
 };
+use std::{fmt::Write as _, path::PathBuf};
 
 /// The config screen.
 #[component]
