@@ -57,6 +57,6 @@ Nothing points into `inbound/` or `outbound/` from `domain/`.
 
 ## One coupling to know about
 
-The toasts come from zwipe-components' `ToastStack` with `timed_fade` on, and `TOAST_CSS` fades each one in and out across its own lifetime, read off `data-type`: info lives 3 seconds, the rest 5. The toast library removes the node outright with no closing state to hook, so the fade has to finish before removal, which means the stylesheet has to know how long a toast lives.
+The toasts come from orangui's `ToastStack` with `timed_fade` on, and `TOAST_CSS` fades each one in and out across its own lifetime, read off `data-type`: info lives 3 seconds, the rest 5. The toast library removes the node outright with no closing state to hook, so the fade has to finish before removal, which means the stylesheet has to know how long a toast lives.
 
 So every info toast passes `TOAST_QUICK` and every other one `TOAST_NORMAL`, which is also the stack's default when a call passes none. A toast on any other duration either pops out while still opaque, or sits invisible waiting to be removed. Nothing catches it.

@@ -55,6 +55,10 @@ holds taps that exist nowhere else. Backups live outside the repo at
 `operations/ios/dev_deploy.md` has the whole thing, `testers.md` covers
 getting it onto someone else's phone.
 
+## Branches
+
+- `orangui` (2026-10-12, not merged): swaps the UI dependency from `zwipe-components` in the zwipe repo to [orangui](https://github.com/scadoshi/orangui), the same components lifted into their own crate. Every `zwipe_components::` import becomes `orangui::`, the lockfile drops `zwipe-components` and `zwipe-core`, and `tao` stays on zwipe's vendored copy. Merges once the simulator build and the before-and-after screenshots check out.
+
 ## Known gaps
 
 - No App Store listing. TestFlight and review are next.

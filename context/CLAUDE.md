@@ -8,7 +8,7 @@ Cairn is a lifetime counter, named for the waymarker you build by walking the sa
 
 - Single Rust crate, a Dioxus 0.7 app running on iOS and desktop, with Apple Watch planned.
 - Data lives on the device in SQLite. There is no server and no account.
-- The UI is built from `zwipe-components` (ActionBar, Button, Chip, the theme palettes, and the app kit it shares with zwiper: BottomSheet, PageHeader, ThemeSheet, ToastStack, the hint pieces and the overlay back stack) so it looks like zwipe, zite, and the portfolio.
+- The UI is built from [orangui](https://github.com/scadoshi/orangui) (ActionBar, Button, Chip, the theme palettes, and the app kit it shares with zwiper: BottomSheet, PageHeader, ThemeSheet, ToastStack, the hint pieces and the overlay back stack) so it looks like zwipe, zite, and the portfolio.
 - Exports are CSV with two columns, `day` and `count`, one file per counter.
 
 ## Layout
@@ -30,7 +30,7 @@ src/
 
 `domain/` is the part that will one day run on a watch, so it stays portable:
 
-- No `dioxus`, no `rusqlite`, no `dirs`, no platform crates. Allowed: `chrono`, `serde`, `thiserror`, and `zwipe_components::ThemeConfig`, the one shared type the theme port stores.
+- No `dioxus`, no `rusqlite`, no `dirs`, no platform crates. Allowed: `chrono`, `serde`, `thiserror`, and `orangui::ThemeConfig`, the one shared type the theme port stores.
 - No `#[cfg(feature = ...)]` anywhere in `domain/`.
 - All stats and goal math is a pure function over `&[DayCount]` plus a `today` date passed in. Never read the clock inside the domain.
 - Newtypes validate at construction (`CounterName`, `Goal`). Consumers trust them and never re-check.
