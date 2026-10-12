@@ -169,12 +169,12 @@ pub fn Home() -> Element {
         }
         ActionBar {
             Button {
-                variant: ButtonVariant::Util,
+                variant: ButtonVariant::Action,
                 onclick: move |_| create_open.set(true),
                 "Create"
             }
             Button {
-                variant: ButtonVariant::Util,
+                variant: ButtonVariant::Action,
                 onclick: move |_| {
                     nav.push(Route::Config {});
                 },
@@ -247,8 +247,8 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
             open,
             title: "Create counter",
             footer: rsx! {
-                Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
-                Button { variant: ButtonVariant::Util, onclick: save, "Save" }
+                Button { variant: ButtonVariant::Action, onclick: move |_| open.set(false), "Back" }
+                Button { variant: ButtonVariant::Action, onclick: save, "Save" }
             },
             CounterForm { state: form }
         }

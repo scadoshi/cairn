@@ -331,20 +331,20 @@ pub fn CounterScreen(id: i64) -> Element {
                         // Big on the outside, matching the card's bar.
                         if let Some(big) = big {
                             Button {
-                                variant: ButtonVariant::Util,
+                                variant: ButtonVariant::Action,
                                 onclick: move |_| if prefs.confirm_minus { confirm_big.set(true) } else { adjust.call(-big) },
                                 "-{big}"
                             }
                         }
                         Button {
-                            variant: ButtonVariant::Util,
+                            variant: ButtonVariant::Action,
                             onclick: move |_| if prefs.confirm_minus { confirm_minus.set(true) } else { adjust.call(-step) },
                             "-{step}"
                         }
-                        Button { variant: ButtonVariant::Util, onclick: move |_| adjust.call(step), "+{step}" }
+                        Button { variant: ButtonVariant::Action, onclick: move |_| adjust.call(step), "+{step}" }
                         if let Some(big) = big {
                             Button {
-                                variant: ButtonVariant::Util,
+                                variant: ButtonVariant::Action,
                                 onclick: move |_| adjust.call(big),
                                 "+{big}"
                             }
@@ -392,7 +392,7 @@ pub fn CounterScreen(id: i64) -> Element {
         }
         ActionBar {
             Button {
-                variant: ButtonVariant::Util,
+                variant: ButtonVariant::Action,
                 onclick: move |_| {
                     if nav.can_go_back() {
                         nav.go_back();
@@ -402,9 +402,9 @@ pub fn CounterScreen(id: i64) -> Element {
                 },
                 "Back"
             }
-            Button { variant: ButtonVariant::Util, onclick: move |_| rename_open.set(true), "Edit" }
+            Button { variant: ButtonVariant::Action, onclick: move |_| rename_open.set(true), "Edit" }
             Button {
-                variant: ButtonVariant::Util,
+                variant: ButtonVariant::Action,
                 danger: true,
                 onclick: move |_| confirm_delete.set(true),
                 "Delete"

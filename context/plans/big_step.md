@@ -28,7 +28,7 @@ Nullable, so no default and no backfill. This is the first migration since `open
 
 ## The bar wraps, and that is the thing to decide
 
-`.util-bar` is `flex-wrap: wrap`, so five buttons will not overflow. They will go to two rows on a phone once the labels get wide, and the card height jumps when they do. `-100` and `+100` are the cases that push it.
+`.action-bar` is `flex-wrap: wrap`, so five buttons will not overflow. They will go to two rows on a phone once the labels get wide, and the card height jumps when they do. `-100` and `+100` are the cases that push it.
 
 Three ways out, undecided:
 

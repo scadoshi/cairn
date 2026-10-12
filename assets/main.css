@@ -76,8 +76,8 @@ input {
     opacity: 1;
 }
 
-/* The shared .util-bar has no notion of the home indicator. */
-.screen > .util-bar {
+/* The shared .action-bar has no notion of the home indicator. */
+.screen > .action-bar {
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 }
 
@@ -466,7 +466,7 @@ input {
     transition: opacity 0.06s;
 }
 
-.profile-list > .util-bar {
+.profile-list > .action-bar {
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
 }
@@ -488,7 +488,7 @@ input {
     padding: 1rem 1rem 1rem;
 }
 
-.profile-row-value {
+.settings-row-value {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -633,11 +633,11 @@ input {
     bottom sheet
  ==================== */
 
-.modal-title {
+.sheet-title {
     letter-spacing: 0.1em;
 }
 
-.modal-content {
+.sheet-content {
     background-color: var(--bg-sink);
     background-image:
         linear-gradient(var(--grid-line) 1px, transparent 1px),

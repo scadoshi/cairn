@@ -213,30 +213,30 @@ fn CounterCard(
                 // magnitude is what makes the bar readable without labels.
                 if let Some(big) = big {
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| if confirm_minus { confirm_big.set(true) } else { bump.call(-big) },
                         "-{big}"
                     }
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| if confirm_minus { confirm_open.set(true) } else { bump.call(-step) },
                     "-{step}"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| bump.call(step),
                     "+{step}"
                 }
                 if let Some(big) = big {
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| bump.call(big),
                         "+{big}"
                     }
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| on_edit.call(()),
                     "Edit"
                 }

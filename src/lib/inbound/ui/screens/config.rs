@@ -138,16 +138,16 @@ pub fn Config() -> Element {
                 div { class: "card-header",
                     span { class: "card-title", "Appearance" }
                 }
-                div { class: "profile-row",
+                div { class: "settings-row",
                     span { class: "row-label-with-hint",
-                        span { class: "profile-row-label", "Theme" }
+                        span { class: "settings-row-label", "Theme" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Theme)); hint_open.set(true); } }
                     }
-                    div { class: "profile-row-value",
+                    div { class: "settings-row-value",
                         span { {display_theme_name(&theme.read().name)} }
                         DarkModeButton { is_dark: theme.read().is_dark, onclick: toggle_dark }
                         Button {
-                            variant: ButtonVariant::Util,
+                            variant: ButtonVariant::Action,
                             onclick: move |_| {
                                 hint.set(Some(ConfigHint::Theme));
                                 preferences_open.set(true);
@@ -156,15 +156,15 @@ pub fn Config() -> Element {
                         }
                     }
                 }
-                div { class: "profile-row",
+                div { class: "settings-row",
                     span { class: "row-label-with-hint",
-                        span { class: "profile-row-label", "Mark" }
+                        span { class: "settings-row-label", "Mark" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Mark)); hint_open.set(true); } }
                     }
-                    div { class: "profile-row-value",
+                    div { class: "settings-row-value",
                         span { {prefs().logo.label()} }
                         Button {
-                            variant: ButtonVariant::Util,
+                            variant: ButtonVariant::Action,
                             onclick: move |_| {
                                 hint.set(Some(ConfigHint::Mark));
                                 mark_open.set(true);
@@ -173,14 +173,14 @@ pub fn Config() -> Element {
                         }
                     }
                 }
-                div { class: "profile-row",
+                div { class: "settings-row",
                     span { class: "row-label-with-hint",
-                        span { class: "profile-row-label", "Dates" }
+                        span { class: "settings-row-label", "Dates" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Dates)); hint_open.set(true); } }
                     }
-                    div { class: "profile-row-value",
+                    div { class: "settings-row-value",
                         Button {
-                            variant: ButtonVariant::Util,
+                            variant: ButtonVariant::Action,
                             onclick: move |_| {
                                 let next = date_format().next();
                                 date_format.set(next);
@@ -195,14 +195,14 @@ pub fn Config() -> Element {
                 div { class: "card-header",
                     span { class: "card-title", "When to count" }
                 }
-                div { class: "profile-row",
+                div { class: "settings-row",
                     span { class: "row-label-with-hint",
-                        span { class: "profile-row-label", "Day starts" }
+                        span { class: "settings-row-label", "Day starts" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::DayStarts)); hint_open.set(true); } }
                     }
-                    div { class: "profile-row-value",
+                    div { class: "settings-row-value",
                         Button {
-                            variant: ButtonVariant::Util,
+                            variant: ButtonVariant::Action,
                             onclick: move |_| {
                                 let i = Preferences::ROLLOVER_HOURS
                                     .iter()
@@ -219,14 +219,14 @@ pub fn Config() -> Element {
                         }
                     }
                 }
-                div { class: "profile-row",
+                div { class: "settings-row",
                     span { class: "row-label-with-hint",
-                        span { class: "profile-row-label", "Week starts" }
+                        span { class: "settings-row-label", "Week starts" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::WeekStarts)); hint_open.set(true); } }
                     }
-                    div { class: "profile-row-value",
+                    div { class: "settings-row-value",
                         Button {
-                            variant: ButtonVariant::Util,
+                            variant: ButtonVariant::Action,
                             onclick: move |_| {
                                 let next = if prefs.peek().week_start == Weekday::Mon {
                                     Weekday::Sun
@@ -240,15 +240,15 @@ pub fn Config() -> Element {
                         }
                     }
                 }
-                div { class: "profile-row",
+                div { class: "settings-row",
                     span { class: "row-label-with-hint",
-                        span { class: "profile-row-label", "Rest days" }
+                        span { class: "settings-row-label", "Rest days" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::RestDays)); hint_open.set(true); } }
                     }
-                    div { class: "profile-row-value",
+                    div { class: "settings-row-value",
                         span { "{rest_label}" }
                         Button {
-                            variant: ButtonVariant::Util,
+                            variant: ButtonVariant::Action,
                             onclick: move |_| {
                                 hint.set(Some(ConfigHint::RestDays));
                                 rest_open.set(true);
@@ -262,14 +262,14 @@ pub fn Config() -> Element {
                 div { class: "card-header",
                     span { class: "card-title", "Counter behavior" }
                 }
-                div { class: "profile-row",
+                div { class: "settings-row",
                     span { class: "row-label-with-hint",
-                        span { class: "profile-row-label", "Sort counters" }
+                        span { class: "settings-row-label", "Sort counters" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::SortCounters)); hint_open.set(true); } }
                     }
-                    div { class: "profile-row-value",
+                    div { class: "settings-row-value",
                         Button {
-                            variant: ButtonVariant::Util,
+                            variant: ButtonVariant::Action,
                             onclick: move |_| {
                                 let next = prefs.peek().counter_order.next();
                                 prefs.with_mut(|q| q.counter_order = next);
@@ -279,15 +279,15 @@ pub fn Config() -> Element {
                         }
                     }
                 }
-                div { class: "profile-row",
+                div { class: "settings-row",
                     span { class: "row-label-with-hint",
-                        span { class: "profile-row-label", "Goal animation" }
+                        span { class: "settings-row-label", "Goal animation" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Celebration)); hint_open.set(true); } }
                     }
-                    div { class: "profile-row-value",
+                    div { class: "settings-row-value",
                         span { {prefs().celebration.label()} }
                         Button {
-                            variant: ButtonVariant::Util,
+                            variant: ButtonVariant::Action,
                             onclick: move |_| {
                                 hint.set(Some(ConfigHint::Celebration));
                                 celebration_open.set(true);
@@ -296,14 +296,14 @@ pub fn Config() -> Element {
                         }
                     }
                 }
-                div { class: "profile-row",
+                div { class: "settings-row",
                     span { class: "row-label-with-hint",
-                        span { class: "profile-row-label", "Confirm minus" }
+                        span { class: "settings-row-label", "Confirm minus" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::ConfirmMinus)); hint_open.set(true); } }
                     }
-                    div { class: "profile-row-value",
+                    div { class: "settings-row-value",
                         Button {
-                            variant: ButtonVariant::Util,
+                            variant: ButtonVariant::Action,
                             onclick: move |_| {
                                 let on = !prefs.peek().confirm_minus;
                                 prefs.with_mut(|q| q.confirm_minus = on);
@@ -318,13 +318,13 @@ pub fn Config() -> Element {
                 div { class: "card-header",
                     span { class: "card-title", "Data" }
             }
-                div { class: "profile-row",
+                div { class: "settings-row",
                     span { class: "row-label-with-hint",
-                        span { class: "profile-row-label", "Export" }
+                        span { class: "settings-row-label", "Export" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Export)); hint_open.set(true); } }
                     }
-                    div { class: "profile-row-value",
-                        Button { variant: ButtonVariant::Util, onclick: export, "CSV" }
+                    div { class: "settings-row-value",
+                        Button { variant: ButtonVariant::Action, onclick: export, "CSV" }
                 if let Some(n) = notice() {
                     p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
                 }
@@ -335,7 +335,7 @@ pub fn Config() -> Element {
         }
         ActionBar {
             Button {
-                variant: ButtonVariant::Util,
+                variant: ButtonVariant::Action,
                 onclick: move |_| {
                     if nav.can_go_back() {
                         nav.go_back();
@@ -406,12 +406,12 @@ fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             on_dismiss: move |()| discard.call(()),
             footer: rsx! {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| discard.call(()),
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: draft() == saved,
                     onclick: move |_| {
                         let picked = draft();
@@ -482,7 +482,7 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             on_dismiss: move |()| discard.call(()),
             footer: rsx! {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     // Said out loud, because the pick is still on screen
                     // as the sheet slides away and it otherwise looks
                     // like it took.
@@ -492,7 +492,7 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 // Plays the pick as a goal would, toast and all, before it
                 // is saved. Random steps through its rotation on each tap.
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: draft() == Celebration::Off,
                     onclick: move |_| {
                         if let Some(line) = celebrate(host, draft()) {
@@ -502,7 +502,7 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                     "Test"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: draft() == saved,
                     onclick: move |_| {
                         let picked = draft();
@@ -682,12 +682,12 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             on_dismiss: move |()| discard.call(()),
             footer: rsx! {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| discard.call(()),
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: draft() == saved,
                     onclick: move |_| {
                         let picked = draft();

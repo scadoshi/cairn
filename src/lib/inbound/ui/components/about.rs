@@ -27,7 +27,7 @@ pub fn AboutButton() -> Element {
 
     rsx! {
         button {
-            class: "util-btn page-header-support",
+            class: "btn-action page-header-support",
             r#type: "button",
             aria_label: "About the developer",
             onclick: move |_| open.set(true),

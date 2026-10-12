@@ -418,8 +418,8 @@ pub fn EditSheet(
             open,
             title: "Edit counter",
             footer: rsx! {
-                Button { variant: ButtonVariant::Util, onclick: move |_| open.set(false), "Back" }
-                Button { variant: ButtonVariant::Util, onclick: save, "Save" }
+                Button { variant: ButtonVariant::Action, onclick: move |_| open.set(false), "Back" }
+                Button { variant: ButtonVariant::Action, onclick: save, "Save" }
             },
             CounterForm { state: form }
         }
