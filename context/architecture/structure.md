@@ -34,7 +34,7 @@ cairn/
         │       ├── dialog_host.rs  # one slot at the root so overlays escape
         │       ├── alert_dialog.rs, hint.rs
         │       ├── heatmap.rs, line_chart.rs, reveal.rs, tile.rs
-        │       └── navigation/     # back_handler.rs
+        │       └── navigation/     # back_handler.rs: the layout that calls orangui's use_os_back
         └── outbound/
             ├── paths.rs            # data dir, exports dir
             └── sqlite/mod.rs       # SqliteStore: migrations + both port impls

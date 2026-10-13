@@ -6,8 +6,9 @@
 # The router is in-memory, so the OS back never reaches it on its own; wry's
 # Activity would finish the app. The unified OnBackPressedDispatcher catches
 # both the gesture and the button and forwards it to the app as a `cairn:back`
-# DOM event; the Rust side (components/navigation/back_handler.rs) decides:
-# go_back, or finish the Activity at a root screen.
+# DOM event; the Rust side (orangui's use_os_back, called from
+# components/navigation/back_handler.rs) decides: go_back, or finish the
+# Activity at a root screen.
 #
 # dx regenerates MainActivity.kt on every `dx bundle`, so run this after
 # `dx bundle` and before the Gradle repackage.
