@@ -170,7 +170,7 @@ fn CounterCard(
     });
 
     rsx! {
-        Reveal { class: "profile-list",
+        Reveal { class: "settings-list",
             div {
                 class: "card-tap",
                 role: "button",
@@ -179,22 +179,22 @@ fn CounterCard(
                 // as a block they wrapped whole, dropping every tag below
                 // the name as soon as one of them did not fit. Flat, they
                 // fill the row and wrap one at a time.
-                div { class: "card-header card-header-flow",
-                    span { class: "card-title", "{counter.name}" }
+                div { class: "settings-list-header card-header-flow",
+                    span { class: "settings-list-title", "{counter.name}" }
                     if let Some(g) = counter.goal {
                         for part in g.parts(days) {
-                            span { class: "stat-chip stat-chip-goal", "{part}" }
+                            span { class: "stat-chip stat-chip-p4", "{part}" }
                         }
                         // Red until the day's share is logged, green after.
                         // It carries the number so one tag answers both
                         // "am I done" and "how much is left".
                         if let Some(left) = left_today {
-                            span { class: "stat-chip stat-chip-short", Num { text: thousands(left) } " to go" }
+                            span { class: "stat-chip stat-chip-error", Num { text: thousands(left) } " to go" }
                         } else {
-                            span { class: "stat-chip stat-chip-met", "goal met" }
+                            span { class: "stat-chip stat-chip-success", "goal met" }
                         }
                         if let Some(left) = pace_today {
-                            span { class: "stat-chip stat-chip-derived", Num { text: thousands(left) } " to pace" }
+                            span { class: "stat-chip stat-chip-muted", Num { text: thousands(left) } " to pace" }
                         }
                     }
                 }

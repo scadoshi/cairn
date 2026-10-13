@@ -50,7 +50,7 @@ pub fn HintDialog(open: Signal<bool>, title: String, children: Element) -> Eleme
 /// A real tag, dropped into hint text as its own example.
 ///
 /// The same markup the screen uses, so what the hint shows and what the
-/// counter shows cannot drift: pass the modifier class ("stat-chip-short"
+/// counter shows cannot drift: pass the modifier class ("stat-chip-error"
 /// for the red one) rather than restating its colors here.
 #[component]
 pub fn HintChip(#[props(default = String::new())] class: String, children: Element) -> Element {

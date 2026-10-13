@@ -2,10 +2,10 @@
 //! changes.
 //!
 //! No chart library: a polyline over a viewBox, styled by the theme
-//! variables. `pathLength` pins the line's length to 1000 units so one CSS
-//! keyframe draws any line end to end. The svg is keyed on a hash of the data,
-//! so a change remounts it and replays the draw, which is what makes a +1 on
-//! the counter visibly move the trend.
+//! variables. `pathLength` pins the line's length to 1 so the kit's
+//! `chart-draw` keyframe draws any line end to end. The svg is keyed on a
+//! hash of the data, so a change remounts it and replays the draw, which is
+//! what makes a +1 on the counter visibly move the trend.
 
 use crate::domain::counter::series::Shape;
 use dioxus::prelude::*;
@@ -225,10 +225,10 @@ pub fn LineChart(
                 line { class: "chart-trend", x1: "{PAD_L}", y1: "{y1}", x2: "{W - PAD_R}", y2: "{y2}" }
             }
             for seg in line_segments.iter() {
-                path { class: "chart-line", d: "{seg}", path_length: "1000" }
+                path { class: "chart-line", d: "{seg}", path_length: "1" }
             }
             for seg in overlay_segments.iter() {
-                path { class: "chart-line chart-overlay", d: "{seg}", path_length: "1000" }
+                path { class: "chart-line chart-overlay", d: "{seg}", path_length: "1" }
             }
         }
     }

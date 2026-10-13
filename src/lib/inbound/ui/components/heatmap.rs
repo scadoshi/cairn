@@ -8,7 +8,7 @@ use crate::{
 };
 use dioxus::prelude::*;
 use orangui::{
-    HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, heat_span, peak_indices, tip_anchor,
+    ChartTip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, heat_span, peak_indices,
     use_scroll_to_end,
 };
 use std::rc::Rc;
@@ -110,10 +110,11 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                     }
                 }
                 if let Some(t) = tip() {
-                    span {
-                        class: "stat-chip heat-tip {tip_anchor(t.left)}",
-                        style: "left: {t.left}%; top: {t.top}%;",
-                        "{t.text}"
+                    ChartTip {
+                        text: t.text,
+                        left: t.left,
+                        top: t.top,
+                        class: "stat-chip",
                     }
                 }
             }

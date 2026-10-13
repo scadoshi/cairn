@@ -256,7 +256,7 @@ pub fn CounterScreen(id: i64) -> Element {
     let Some(c) = counter() else {
         return rsx! {
             div { class: "screen-content",
-                div { class: "profile-sections",
+                div { class: "settings-sections",
                     p { class: "pref-note", "No counter with id {id}." }
                 }
             }
@@ -310,11 +310,11 @@ pub fn CounterScreen(id: i64) -> Element {
 
     rsx! {
         div { class: "screen-content",
-            div { class: "profile-sections content-enter",
+            div { class: "settings-sections content-enter",
                 if let Some(n) = notice() {
                     p { class: "pref-note", "{n}" }
                 }
-                Reveal { class: "profile-list",
+                Reveal { class: "settings-list",
                     div { class: "odometer",
                         span {
                             class: if summary.lifetime >= 10_000_000 { "odometer-value odometer-value-xl" } else if summary.lifetime >= 100_000 { "odometer-value odometer-value-l" } else { "odometer-value" },
@@ -351,10 +351,10 @@ pub fn CounterScreen(id: i64) -> Element {
                         }
                     }
                 }
-                Reveal { class: "profile-list",
-                    div { class: "card-header",
+                Reveal { class: "settings-list",
+                    div { class: "settings-list-header",
                         span { class: "row-label-with-hint",
-                            span { class: "card-title", "Every day" }
+                            span { class: "settings-list-title", "Every day" }
                             CardHint { which: CounterHint::Days }
                         }
                     }
@@ -367,10 +367,10 @@ pub fn CounterScreen(id: i64) -> Element {
                 TrendsCard { entries: entries(), events: events(), trend }
                 BestsCard { entries: entries(), summary: summary.clone(), best }
                 HabitCard { summary: summary.clone() }
-                Reveal { class: "profile-list",
-                    div { class: "card-header",
+                Reveal { class: "settings-list",
+                    div { class: "settings-list-header",
                         span { class: "row-label-with-hint",
-                            span { class: "card-title", "By year" }
+                            span { class: "settings-list-title", "By year" }
                             CardHint { which: CounterHint::ByYear }
                         }
                     }
@@ -644,10 +644,10 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
     let shape = series::shape(&values);
 
     rsx! {
-        Reveal { class: "profile-list",
-            div { class: "card-header",
+        Reveal { class: "settings-list",
+            div { class: "settings-list-header",
                 span { class: "row-label-with-hint",
-                    span { class: "card-title", "Trends" }
+                    span { class: "settings-list-title", "Trends" }
                     CardHint { which: CounterHint::Trends }
                 }
                 div { class: "chip-row chip-row-tight",
@@ -683,24 +683,24 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                             span { class: "chart-key" }
                             "each day"
                         }
-                        span { class: "stat-chip stat-chip-goal stat-chip-key",
+                        span { class: "stat-chip stat-chip-p4 stat-chip-key",
                             span { class: "chart-key chart-key-overlay" }
                             "7-day average"
                         }
                     }
                     if let Some(f) = shape {
                         if over_time {
-                            span { class: "stat-chip stat-chip-trend stat-chip-key",
+                            span { class: "stat-chip stat-chip-p2 stat-chip-key",
                                 span { class: "chart-key chart-key-trend" }
                                 "trend"
                             }
                         }
-                        span { class: "stat-chip stat-chip-derived stat-chip-key",
+                        span { class: "stat-chip stat-chip-muted stat-chip-key",
                             span { class: "chart-key chart-key-band" }
                             "1 sd"
                         }
-                        span { class: "stat-chip stat-chip-derived", "avg " Num { text: format!("{:.0}", f.mean) } }
-                        span { class: "stat-chip stat-chip-derived", "sd " Num { text: format!("{:.0}", f.sd) } }
+                        span { class: "stat-chip stat-chip-muted", "avg " Num { text: format!("{:.0}", f.mean) } }
+                        span { class: "stat-chip stat-chip-muted", "sd " Num { text: format!("{:.0}", f.sd) } }
                     }
                 }
             }
@@ -721,10 +721,10 @@ enum Best {
 fn YearCard(summary: Summary) -> Element {
     let y = &summary.this_year;
     rsx! {
-        Reveal { class: "profile-list",
-            div { class: "card-header",
+        Reveal { class: "settings-list",
+            div { class: "settings-list-header",
                 span { class: "row-label-with-hint",
-                    span { class: "card-title", "{y.year}, day {y.days_elapsed}" }
+                    span { class: "settings-list-title", "{y.year}, day {y.days_elapsed}" }
                     CardHint { which: CounterHint::Year }
                 }
             }
@@ -750,15 +750,15 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
         (compact_i64(p.delta), "behind pace")
     };
     rsx! {
-        Reveal { class: "profile-list",
-            div { class: "card-header",
+        Reveal { class: "settings-list",
+            div { class: "settings-list-header",
                 span { class: "row-label-with-hint",
-                    span { class: "card-title", "Goal" }
+                    span { class: "settings-list-title", "Goal" }
                     CardHint { which: CounterHint::Goal }
                 }
                 div { class: "chip-tags",
                     for part in goal.parts(year_len) {
-                        span { class: "stat-chip stat-chip-goal", "{part}" }
+                        span { class: "stat-chip stat-chip-p4", "{part}" }
                     }
                 }
             }
@@ -832,10 +832,10 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
             }),
     };
     rsx! {
-        Reveal { class: "profile-list",
-            div { class: "card-header",
+        Reveal { class: "settings-list",
+            div { class: "settings-list-header",
                 span { class: "row-label-with-hint",
-                    span { class: "card-title", "Bests" }
+                    span { class: "settings-list-title", "Bests" }
                     CardHint { which: CounterHint::Bests }
                 }
                 div { class: "chip-row chip-row-tight",
@@ -868,10 +868,10 @@ fn HabitCard(summary: Summary) -> Element {
         n => format!("{n} days ago"),
     });
     rsx! {
-        Reveal { class: "profile-list",
-            div { class: "card-header",
+        Reveal { class: "settings-list",
+            div { class: "settings-list-header",
                 span { class: "row-label-with-hint",
-                    span { class: "card-title", "Habit" }
+                    span { class: "settings-list-title", "Habit" }
                     CardHint { which: CounterHint::Habit }
                 }
             }

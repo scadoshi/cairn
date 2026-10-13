@@ -133,10 +133,10 @@ pub fn Config() -> Element {
 
     rsx! {
         div { class: "screen-content",
-        div { class: "profile-sections content-enter",
-            div { class: "profile-list",
-                div { class: "card-header",
-                    span { class: "card-title", "Appearance" }
+        div { class: "settings-sections content-enter",
+            div { class: "settings-list",
+                div { class: "settings-list-header",
+                    span { class: "settings-list-title", "Appearance" }
                 }
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
@@ -191,9 +191,9 @@ pub fn Config() -> Element {
                     }
                 }
             }
-            div { class: "profile-list",
-                div { class: "card-header",
-                    span { class: "card-title", "When to count" }
+            div { class: "settings-list",
+                div { class: "settings-list-header",
+                    span { class: "settings-list-title", "When to count" }
                 }
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
@@ -258,9 +258,9 @@ pub fn Config() -> Element {
                     }
                 }
             }
-            div { class: "profile-list",
-                div { class: "card-header",
-                    span { class: "card-title", "Counter behavior" }
+            div { class: "settings-list",
+                div { class: "settings-list-header",
+                    span { class: "settings-list-title", "Counter behavior" }
                 }
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
@@ -314,9 +314,9 @@ pub fn Config() -> Element {
                     }
                 }
             }
-            div { class: "profile-list",
-                div { class: "card-header",
-                    span { class: "card-title", "Data" }
+            div { class: "settings-list",
+                div { class: "settings-list-header",
+                    span { class: "settings-list-title", "Data" }
             }
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",

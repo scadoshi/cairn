@@ -51,9 +51,6 @@ input {
  ==================== */
 
 .screen {
-    --grid-line: color-mix(in srgb, var(--text-primary) 4%, transparent);
-    --grid-size: 28px;
-    --bg-sink: color-mix(in srgb, var(--bg-primary), #000 15%);
     position: fixed;
     inset: 0;
     padding-top: env(safe-area-inset-top, 0px);
@@ -62,12 +59,6 @@ input {
     width: 100%;
     background-color: var(--bg-primary);
     color: var(--text-primary);
-}
-
-/* Light themes lift the sink toward white instead of darkening, which
-   reads muddy on cream palettes. The class is theme-{name}-{mode}. */
-.screen[class$="-light"] {
-    --bg-sink: color-mix(in srgb, var(--bg-primary), #fff 35%);
 }
 
 /* A pressed header corner lights up. */
@@ -130,7 +121,7 @@ input {
     gap: 0.3rem;
 }
 
-.card-header.home-hero-head .chip-tags {
+.settings-list-header.home-hero-head .chip-tags {
     justify-content: center;
     margin-top: 0.2rem;
 }
@@ -140,42 +131,8 @@ input {
     margin: 0.1rem 0 1rem;
 }
 
-/* A figure worked out from the entered one: quieter than the goal pill. */
-.stat-chip-derived {
-    color: var(--text-muted);
-    background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
-    border-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
-}
-
-/* The day's goal, as a traffic light. Error red while something is still
-   owed, success green once it is not. */
-.stat-chip-short {
-    color: var(--color-error);
-    background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
-    border-color: color-mix(in srgb, var(--color-error) 35%, transparent);
-}
-
-.stat-chip-met {
-    color: var(--color-success);
-    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
-    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
-}
-
-/* The fitted line's own color, so the chip naming it matches it. */
-.stat-chip-trend {
-    color: var(--palette-2);
-    background-color: color-mix(in srgb, var(--palette-2) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-2) 35%, transparent);
-}
-
-.stat-chip-goal {
-    color: var(--palette-4);
-    background-color: color-mix(in srgb, var(--palette-4) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-4) 35%, transparent);
-}
-
 .home-hero {
-    /* Full width of .profile-sections, which already holds the page gutter.
+    /* Full width of .settings-sections, which already holds the page gutter.
        Setting the gutter again here inset the hero from its own siblings. */
     width: 100%;
     display: flex;
@@ -188,7 +145,7 @@ input {
 
 /* The mark and the date share a row: the S on the left, today's line and its
    tags filling the rest. */
-.card-header.home-hero-head {
+.settings-list-header.home-hero-head {
     flex-direction: row;
     align-items: center;
     gap: 0.75rem;
@@ -205,7 +162,7 @@ input {
 
 /* In the hero the mark is a sibling, not a banner: no page padding, and it
    must not stretch the row. */
-.card-header.home-hero-head .logo {
+.settings-list-header.home-hero-head .logo {
     padding: 0;
     margin: 0;
     flex-shrink: 0;
@@ -221,29 +178,6 @@ input {
     font-size: 0.75rem;
     color: var(--text-muted);
     margin-bottom: 0.4rem;
-}
-
-.content-enter-delayed {
-    animation: content-enter 0.4s ease-out 0.45s both;
-}
-
-@keyframes content-enter {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        /* `none`, not translateY(0): the animation keeps its end state, and
-           any transform on an ancestor becomes the containing block for a
-           position: fixed overlay, so a dialog's dim would cover only the
-           content column instead of the screen. */
-        transform: none;
-    }
-}
-
-.content-enter {
-    animation: content-enter 0.3s ease-out both;
 }
 
 /* A card arrives when the viewport reaches it: entrance.js marks it pending
@@ -299,35 +233,6 @@ input {
     sections and cards
  ==================== */
 
-.profile-sections {
-    display: flex;
-    flex-direction: column;
-    gap: var(--panel-gap);
-    width: calc(100% - 2rem);
-    max-width: 40rem;
-    padding-bottom: 1rem;
-}
-
-.profile-list {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    overflow: hidden;
-    width: 100%;
-    box-shadow: var(--shadow-sm);
-}
-
-.card-header {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--border-secondary);
-}
-
 /* A header whose tags sit on the name's own line and wrap into it, rather
    than forming a block that drops below the name the moment it does not
    fit. Left-aligned, because space-between on a wrapping row leaves a hole
@@ -336,15 +241,6 @@ input {
     justify-content: flex-start;
     align-items: center;
     row-gap: 0.35rem;
-}
-
-.card-title {
-    font-size: 1rem;
-    letter-spacing: 0.1em;
-    color: var(--accent-primary);
-    /* Counter names sit here and are often one unbroken word. */
-    overflow-wrap: break-word;
-    min-width: 0;
 }
 
 .card-subtitle {
@@ -466,11 +362,6 @@ input {
     transition: opacity 0.06s;
 }
 
-.profile-list > .action-bar {
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-}
-
 .chip-row {
     display: flex;
     flex-direction: row;
@@ -486,19 +377,6 @@ input {
     flex-direction: column;
     align-items: flex-start;
     padding: 1rem 1rem 1rem;
-}
-
-.settings-row-value {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    font-size: 1rem;
-    flex-shrink: 1;
-    min-width: 0;
-    justify-content: flex-end;
-    text-align: right;
 }
 
 /* ==================
@@ -646,28 +524,8 @@ input {
 }
 
 /* ==================
-    preference rows
- ==================== */
-
-.pref-note {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    text-align: center;
-    line-height: 1.4;
-    /* Paths and errors have no spaces to wrap at. */
-    overflow-wrap: anywhere;
-    word-break: break-all;
-}
-
-/* ==================
         hints
  ==================== */
-
-/* The "?" beside a label. */
-.info-button {
-    font-family: "JetBrains Mono", monospace;
-    cursor: pointer;
-}
 
 .row-label-with-hint {
     display: flex;
@@ -762,17 +620,9 @@ input {
     font-size: 8px;
 }
 
-/* pathLength pins every polyline to 1000 units, so one keyframe draws any
-   line end to end. The svg remounts on data change, which replays it. */
+/* The kit's .chart-line draws the line; cairn's is finer. */
 .chart-line {
-    fill: none;
-    stroke: var(--accent-primary);
     stroke-width: 1.6;
-    stroke-linejoin: round;
-    stroke-linecap: round;
-    stroke-dasharray: 1000;
-    stroke-dashoffset: 1000;
-    animation: chart-draw 0.9s ease-out forwards;
 }
 
 .chart-overlay {
@@ -801,12 +651,6 @@ input {
     stroke-width: 1.4;
     stroke-dasharray: 5 4;
     opacity: 0.9;
-}
-
-@keyframes chart-draw {
-    to {
-        stroke-dashoffset: 0;
-    }
 }
 
 /* What the chart is, above it, as a plain line. The chips below name the
@@ -1211,32 +1055,11 @@ input {
     fill: transparent;
 }
 
-/* The tapped day's chip, hung just above its cell. Near an edge it hangs
-   from its start or end instead of its middle. */
-.heat-tip {
-    position: absolute;
-    transform: translate(-50%, calc(-100% - 0.4rem));
-    background-color: var(--bg-primary);
-    pointer-events: none;
-    white-space: nowrap;
-    z-index: 1;
-    animation: content-enter 0.18s ease-out;
-}
-
-.heat-tip.tip-start {
-    transform: translate(-0.5rem, calc(-100% - 0.4rem));
-}
-
-.heat-tip.tip-end {
-    transform: translate(calc(-100% + 0.5rem), calc(-100% - 0.4rem));
-}
-
 .heat-note {
     margin: 0 1rem 0.75rem;
 }
 
-/* Someone who has asked the OS for less motion gets none of this. The chart
-   line keeps its drawn state rather than the undrawn one it animates from. */
+/* Someone who has asked the OS for less motion gets none of this. */
 @media (prefers-reduced-motion: reduce) {
     .celebrate-levelup,
     .celebrate-confetti,
@@ -1266,18 +1089,7 @@ input {
         animation: none;
     }
 
-    .reveal-in,
-    .heat-cell,
-    .heat-halo,
-    .heat-tip,
-    .content-enter,
-    .content-enter-delayed {
+    .reveal-in {
         animation: none;
-    }
-
-    .chart-line,
-    .chart-overlay {
-        animation: none;
-        stroke-dashoffset: 0;
     }
 }

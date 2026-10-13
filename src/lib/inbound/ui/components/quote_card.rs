@@ -75,11 +75,11 @@ pub fn QuoteCard() -> Element {
     };
 
     rsx! {
-        div { class: "profile-list quote-card",
+        div { class: "settings-list quote-card",
             TypedText { key: "{text}", text, typed }
             div { class: tags,
-                span { class: "stat-chip stat-chip-goal", "{author}" }
-                span { class: "stat-chip stat-chip-derived", "{source}" }
+                span { class: "stat-chip stat-chip-p4", "{author}" }
+                span { class: "stat-chip stat-chip-muted", "{source}" }
                 span { class: "stat-chip",
                     "Next quote "
                     span { class: "quote-tick-value", "{countdown}" }

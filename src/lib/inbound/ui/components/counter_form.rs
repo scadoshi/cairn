@@ -252,7 +252,7 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                 div { class: "chip-tags chip-tags-center",
                     for (text, entered) in parts {
                         span {
-                            class: if entered { "stat-chip stat-chip-goal" } else { "stat-chip stat-chip-derived" },
+                            class: if entered { "stat-chip stat-chip-p4" } else { "stat-chip stat-chip-muted" },
                             "{text}"
                         }
                     }

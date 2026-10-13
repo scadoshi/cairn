@@ -101,9 +101,9 @@ pub fn Home() -> Element {
 
     rsx! {
         div { class: "screen-content",
-            div { class: "profile-sections content-enter",
+            div { class: "settings-sections content-enter",
                 Reveal { class: "home-hero",
-                    div { class: "card-header home-hero-head",
+                    div { class: "settings-list-header home-hero-head",
                         // The mark resolves from static as the screen opens.
                         // Keyed on the mark and the tap count, so a change in
                         // Config or a tap on it decodes anew.
@@ -117,9 +117,9 @@ pub fn Home() -> Element {
                             }
                         }
                         div { class: "home-hero-when",
-                            span { class: "card-title", "{date}" }
+                            span { class: "settings-list-title", "{date}" }
                             div { class: "chip-tags",
-                                span { class: "stat-chip stat-chip-goal", "day " Num { text: day.to_string() } }
+                                span { class: "stat-chip stat-chip-p4", "day " Num { text: day.to_string() } }
                                 span { class: "stat-chip", "week " Num { text: week.to_string() } }
                             }
                         }
@@ -185,9 +185,9 @@ pub fn Home() -> Element {
             HintLine { "Tap a counter's name or numbers to open it" }
             HintBullets {
                 HintBullet {
-                    HintChip { class: "stat-chip-short", "40 to go" }
+                    HintChip { class: "stat-chip-error", "40 to go" }
                     " is what today still owes, and turns into "
-                    HintChip { class: "stat-chip-met", "goal met" }
+                    HintChip { class: "stat-chip-success", "goal met" }
                 }
                 HintBullet { "Up top is every counter added together" }
             }
