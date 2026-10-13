@@ -42,7 +42,7 @@ cairn/
 
 ## Data model
 
-- `counters(id, name, goal_per_year, created_at)`
+- `counters(id, name, goal_per_year, created_on)`
 - `entries(counter_id, day, count)` with `PRIMARY KEY (counter_id, day)`; one
   row per counter per day, which is also the export shape.
 - `settings(key, value)` for the theme.
