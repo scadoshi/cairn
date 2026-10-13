@@ -57,7 +57,7 @@ getting it onto someone else's phone.
 
 ## Branches
 
-- `orangui` (2026-10-12, not merged): swaps the UI dependency from `zwipe-components` in the zwipe repo to [orangui](https://github.com/scadoshi/orangui), the same components lifted into their own crate. Every `zwipe_components::` import becomes `orangui::`, the lockfile drops `zwipe-components` and `zwipe-core`, and `tao` stays on zwipe's vendored copy. Merges once the simulator build and the before-and-after screenshots check out.
+- `orangui` (2026-10-12, merged 2026-10-13 at 650e008): swapped the UI dependency from `zwipe-components` in the zwipe repo to [orangui](https://github.com/scadoshi/orangui), the same components lifted into their own crate. Every `zwipe_components::` import became `orangui::`, the lockfile dropped `zwipe-components` and `zwipe-core`, and `tao` stays on zwipe's vendored copy. The simulator build and device checks are still owed; todo has the list.
 
 ## Known gaps
 

@@ -1,5 +1,5 @@
 /* Cairn's own rules, ported from zwiper's main.css so the two apps feel the
-   same. Loaded after zwipe-components' themes.css and components.css, so
+   same. Loaded after orangui's THEMES_CSS, COMPONENTS_CSS and APP_CSS, so
    anything here overrides them at equal specificity. Colors come only from
    the theme variables; never hardcode a palette. */
 
