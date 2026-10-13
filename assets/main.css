@@ -626,7 +626,7 @@ input {
 }
 
 .chart-overlay {
-    stroke: var(--palette-4);
+    color: var(--palette-4);
     stroke-width: 2.2;
     animation-duration: 1.3s;
     animation-delay: 0.15s;
