@@ -5,7 +5,6 @@ pub mod alert_dialog;
 pub mod celebration;
 pub mod counter_form;
 pub mod counter_list;
-pub mod dialog_host;
 pub mod heatmap;
 pub mod hint;
 pub mod line_chart;

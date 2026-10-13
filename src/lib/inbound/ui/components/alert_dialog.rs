@@ -1,9 +1,9 @@
-//! Confirmation for destructive actions, zwiper's look, drawn by the
-//! app-root dialog host so the dim covers the whole screen.
+//! Confirmation for destructive actions: orangui's `AlertDialog` with a
+//! Cancel and a danger confirm, drawn by the app-root dialog host so the dim
+//! covers the whole screen.
 
-use super::dialog_host::{DialogSpec, use_hosted_dialog};
 use dioxus::prelude::*;
-use orangui::use_overlay_back;
+use orangui::{AlertDialog, DialogAction};
 
 /// A yes/no dialog. `open` is host-owned so the caller keeps the state that
 /// drives it.
@@ -18,15 +18,19 @@ pub fn ConfirmDialog(
     confirm_label: String,
     on_confirm: EventHandler<()>,
 ) -> Element {
-    use_overlay_back(open);
-    let confirm = use_callback(move |()| on_confirm.call(()));
-    use_hosted_dialog(open, move |close| DialogSpec {
-        title: title.clone(),
-        body: rsx! { p { class: "alert-dialog-description", "{body}" } },
-        confirm: Some((confirm_label.clone(), confirm)),
-        close,
-        link: None,
-        owner: 0,
-    });
-    rsx! {}
+    rsx! {
+        AlertDialog {
+            open,
+            title,
+            actions: vec![
+                DialogAction::Dismiss("Cancel".into()),
+                DialogAction::Confirm {
+                    label: confirm_label,
+                    danger: true,
+                    on_confirm,
+                },
+            ],
+            p { "{body}" }
+        }
+    }
 }

@@ -3,12 +3,7 @@
 
 use orangui::status_uses;
 
-const ALLOWED: [&str; 4] = [
-    ".alert-dialog-action-danger",
-    ".form-error",
-    ".stat-chip-met",
-    ".stat-chip-short",
-];
+const ALLOWED: [&str; 3] = [".form-error", ".stat-chip-met", ".stat-chip-short"];
 
 #[test]
 fn status_colors_only_where_they_mean_something() {

@@ -5,9 +5,8 @@
 //! `HintKey`); the dialog, the screen's header hint and [`HintChip`] are
 //! cairn's.
 
-use super::dialog_host::{DialogSpec, use_hosted_dialog};
 use dioxus::prelude::*;
-use orangui::use_overlay_back;
+use orangui::{AlertDialog, DialogAction};
 
 /// The screen's own hint, published upward so the shell's header can offer
 /// it. The header is drawn above the router, so it cannot reach into the
@@ -38,16 +37,14 @@ pub fn use_screen_hint(open: Signal<bool>) {
 /// covers the whole screen; the OS back gesture closes it.
 #[component]
 pub fn HintDialog(open: Signal<bool>, title: String, children: Element) -> Element {
-    use_overlay_back(open);
-    use_hosted_dialog(open, move |close| DialogSpec {
-        title: title.clone(),
-        body: rsx! { div { class: "alert-dialog-description hint-body", {children.clone()} } },
-        confirm: None,
-        close,
-        link: None,
-        owner: 0,
-    });
-    rsx! {}
+    rsx! {
+        AlertDialog {
+            open,
+            title,
+            actions: vec![DialogAction::Dismiss("Got it".into())],
+            div { class: "hint-body", {children} }
+        }
+    }
 }
 
 /// A real tag, dropped into hint text as its own example.

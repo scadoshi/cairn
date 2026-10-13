@@ -31,8 +31,8 @@ cairn/
         │       ├── counter_list.rs # the cards, the main body of home
         │       ├── counter_form.rs # the shared form and the edit sheet
         │       ├── quote_card.rs   # the quote and its countdown
-        │       ├── dialog_host.rs  # one slot at the root so overlays escape
-        │       ├── alert_dialog.rs, hint.rs
+        │       ├── alert_dialog.rs # ConfirmDialog over orangui's AlertDialog
+        │       ├── hint.rs
         │       ├── heatmap.rs, line_chart.rs, reveal.rs, tile.rs
         │       └── navigation/     # back_handler.rs: the layout that calls orangui's use_os_back
         └── outbound/

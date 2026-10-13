@@ -11,7 +11,10 @@ use crate::domain::{
 };
 use chrono::{Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
-use orangui::{APP_CSS, COMPONENTS_CSS, PageHeader, THEMES_CSS, TOAST_CSS, ToastStack};
+use orangui::{
+    APP_CSS, COMPONENTS_CSS, DialogHostView, PageHeader, THEMES_CSS, TOAST_CSS, ToastStack,
+    use_dialog_host,
+};
 use router::Route;
 use std::sync::Arc;
 
@@ -136,7 +139,7 @@ pub fn App() -> Element {
     });
     let overlays = orangui::use_overlay_back_stack();
     use_context_provider(|| overlays);
-    let dialogs = components::dialog_host::DialogHost(use_signal(|| None));
+    let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
     let screen_hint = components::hint::ScreenHint(use_signal(|| None));
     use_context_provider(|| screen_hint);
@@ -188,7 +191,7 @@ pub fn App() -> Element {
                 Router::<Route> {}
                 // Dialogs draw here, beside the router, so no screen's scroll
                 // container can trap their fixed overlay.
-                components::dialog_host::DialogHostView {}
+                DialogHostView {}
                 // Same reason as the dialogs: a fixed overlay inside a
                 // screen is clipped by the card or the scroll column.
                 components::celebration::CelebrationHostView {}
