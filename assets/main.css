@@ -7,10 +7,15 @@
         base
  ==================== */
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* In a layer, so it sits under every unlayered rule: the kit's :where()
+   defaults (dialog padding, chip padding, pref-note margin) have zero
+   specificity like this reset, and this sheet loads after the kit's. */
+@layer reset {
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 }
 
 html,
