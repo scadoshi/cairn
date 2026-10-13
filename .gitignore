@@ -10,3 +10,6 @@
 # iOS and Android archives from release builds
 *.ipa
 *.aab
+
+# Worktrees created by Claude Code sessions
+.claude/worktrees/
