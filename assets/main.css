@@ -776,7 +776,7 @@ input {
     font-weight: 700;
     letter-spacing: 0.35em;
     /* The spacing is between characters, so the last one pushes the line
-       off centre by one gap without this. */
+       off center by one gap without this. */
     text-indent: 0.35em;
     color: var(--tint);
     text-shadow: 0 0 1.2rem var(--tint);

@@ -185,7 +185,7 @@ impl CounterFormState {
     }
 }
 
-/// The form body, the deck form's shape: labels over inputs, chips centred.
+/// The form body, the deck form's shape: labels over inputs, chips centered.
 #[component]
 pub fn CounterForm(state: CounterFormState) -> Element {
     let CounterFormState {

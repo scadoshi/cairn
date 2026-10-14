@@ -509,7 +509,7 @@ mod tests {
                 adjacent += 1;
             }
         }
-        assert_eq!(adjacent, 0, "{adjacent} hours land on a neighbouring quote");
+        assert_eq!(adjacent, 0, "{adjacent} hours land on a neighboring quote");
     }
 
     #[test]

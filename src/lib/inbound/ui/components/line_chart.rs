@@ -128,7 +128,7 @@ pub fn LineChart(
         // Measured against the real thing rather than from the font
         // metrics: the viewBox is stretched horizontally to the card, so a
         // character costs more than its 8px advance. One character of gap
-        // between neighbours on top.
+        // between neighbors on top.
         #[allow(clippy::cast_precision_loss)]
         let needed = (widest + 1) as f64 * 6.2;
         let spacing = if n > 1 {

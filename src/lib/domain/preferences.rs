@@ -162,7 +162,7 @@ impl Celebration {
         }
     }
 
-    /// Reads a stored key back. `None` for anything unrecognised, so a
+    /// Reads a stored key back. `None` for anything unrecognized, so a
     /// column written by a newer build falls back rather than failing.
     pub fn from_key(key: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|c| c.key() == key)
@@ -517,7 +517,7 @@ mod tests {
     }
 
     #[test]
-    fn a_removed_animation_key_is_not_recognised() {
+    fn a_removed_animation_key_is_not_recognized() {
         // A counter that picked it falls back to the app-wide setting.
         assert_eq!(Celebration::from_key("scanline"), None);
     }

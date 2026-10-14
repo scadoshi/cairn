@@ -23,7 +23,7 @@ reps across push-ups, pull-ups and squats.
   goal, lifetime across everything, and a streak counting days anything at all
   was logged rather than the best per-counter run.
 - Counter cards with plus and minus by each counter's step, an Edit sheet, and
-  a goal tag that counts down in the error colour and turns green when the
+  a goal tag that counts down in the error color and turns green when the
   day's share is in. Tapping the name or numbers opens the counter. A counter
   can carry a second, larger step, which puts a wider pair outside the first.
 - Something plays when a counter's day is finished: a level up, confetti,

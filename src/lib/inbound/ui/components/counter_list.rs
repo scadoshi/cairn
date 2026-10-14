@@ -209,7 +209,7 @@ fn CounterCard(
                 }
             }
             ActionBar {
-                // Big on the outside: distance from the centre matching
+                // Big on the outside: distance from the center matching
                 // magnitude is what makes the bar readable without labels.
                 if let Some(big) = big {
                     Button {

@@ -42,7 +42,7 @@ A `Celebration` enum in `domain/preferences.rs`, cycled like `Logo` and `Counter
 
 `celebrate` picks the line and returns it for the toast, or nothing when the setting is Off, so the toast and the animation cannot disagree about which line this is.
 
-Single-colour animations take one of the theme's three accents in rotation. All of them in the success green read as variations of one effect.
+Single-color animations take one of the theme's three accents in rotation. All of them in the success green read as variations of one effect.
 
 ## The toast
 
