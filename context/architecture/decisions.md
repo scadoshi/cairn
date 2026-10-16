@@ -26,7 +26,18 @@ The use case is "how many pull-ups this year." A yearly goal derives today's tar
 
 Same as the portfolio: the shared UI crate, [orangui](https://github.com/scadoshi/orangui), is pulled from its own repo and its CSS is inlined through `THEMES_CSS` and `COMPONENTS_CSS`. `Cargo.lock` pins the commit and `cargo update -p orangui` moves it. Upgrading is deliberate. Until 2026-10-12 the crate was `zwipe-components` inside the zwipe repo; orangui is its generic half lifted out, with the same component names, class names and `ThemeConfig`, so the switch was the dependency line, the import path and the lockfile. `tao` is still patched from zwipe's vendored copy, pinned separately, and is unrelated to the UI crate.
 
-cairn also takes the app kit it shares with zwiper, with the `toast` feature on: `BottomSheet`, `PageHeader` (the Shell header), `ThemeSheet`, `ToastStack` (with `timed_fade`), `InfoButton` and the hint lines, the overlay back stack, the OS back gesture (`use_os_back`), the dialogs (`AlertDialog`, `DialogAction`, `use_dialog_host` and `DialogHostView` at the root), `display_theme_name`, `COLORBLIND_THEMES`, the heatmap's `peak_indices` and `ChartTip`, the line chart's `curve` and `.chart-line` draw, the `stat-chip` tones, and the settings list classes. The CSS loads as `THEMES_CSS`, `COMPONENTS_CSS`, `APP_CSS`, then `assets/main.css`, then `TOAST_CSS`; `main.css` keeps only where cairn differs: the sheet title's letter spacing, the sheet's grid background, the hint lines' spacing and size, the hint bullets' size, the bolder hint key, and the header corners' pressed state, which `APP_CSS` doesn't have. What stays cairn's: `HintDialog` and `ConfirmDialog` (thin wrappers over `AlertDialog`), `ScreenHint` and `HintChip`. The line chart used its own Catmull-Rom smoothing until 2026-10-07; it swung below zero beside a spike on per-day counts, so it moved to the shared monotone `curve`, which never passes either neighboring point.
+cairn also takes the app kit it shares with zwiper, with the `toast` feature on:
+
+- `BottomSheet`, `PageHeader` (the Shell header), `ThemeSheet`, `ToastStack` (with `timed_fade`), `InfoButton` and the hint lines
+- the overlay back stack and the OS back gesture (`use_os_back`)
+- the dialogs (`AlertDialog`, `DialogAction`, `use_dialog_host` and `DialogHostView` at the root)
+- `display_theme_name`, `COLORBLIND_THEMES`, the heatmap's `peak_indices` and `ChartTip`, the line chart's `curve` and `.chart-line` draw, the `stat-chip` tones, and the settings list classes
+
+The CSS loads as `THEMES_CSS`, `COMPONENTS_CSS`, `APP_CSS`, then `assets/main.css`, then `TOAST_CSS`. `main.css` keeps only where cairn differs: the sheet title's letter spacing, the sheet's grid background, the hint lines' spacing and size, the hint bullets' size, the bolder hint key, and the header corners' pressed state, which `APP_CSS` doesn't have.
+
+What stays cairn's: `HintDialog` and `ConfirmDialog` (thin wrappers over `AlertDialog`), `ScreenHint` and `HintChip`.
+
+The line chart used its own Catmull-Rom smoothing until 2026-10-07. It swung below zero beside a spike on per-day counts, so it moved to the shared monotone `curve`, which never passes either neighboring point.
 
 The domain never calls the crate beyond `ThemeConfig`, so the heatmap's peak days are picked in `components/heatmap.rs` rather than in `domain/counter/heat.rs`.
 
@@ -44,22 +55,36 @@ The sync unit is the events table. Every tap is an append-only record with a tim
 
 ## 9. Renamed from Odo to Notch
 
-2026-09-20. An "odo" step-counter with odometer digits already sits in the App Store, same concept, same name. Notch is free there, one syllable, and means the thing: one notch per rep, notching up. The bundle id is `com.scadoshi.notch`; the data folder and database moved with it. The big lifetime readout is still called the odometer in the code, since that is what it is.
+2026-09-20. An "odo" step-counter with odometer digits already sits in the App Store: same concept, same name.
+
+Notch is free there, one syllable, and means the thing: one notch per rep, notching up. The bundle id is `com.scadoshi.notch`; the data folder and database moved with it. The big lifetime readout is still called the odometer in the code, since that is what it is.
 
 ## 10. Renamed again, from Notch to Crow
 
-2026-09-20, the same day. Notch was fine but anonymous. Crows count: a 2024 study had carrion crows caw a set number of times on cue, and corvid numeracy is the best studied among birds. It also sits in the bird lineage with chickadee and steller. The store name will be "scadoshi count" with Crow under the icon; the bundle id `com.scadoshi.crow` is the part that lasts.
+2026-09-20, the same day. Notch was fine but anonymous.
+
+Crows count: a 2024 study had carrion crows caw a set number of times on cue, and corvid numeracy is the best studied among birds. It also sits in the bird lineage with chickadee and steller. The store name will be "scadoshi count" with Crow under the icon; the bundle id `com.scadoshi.crow` is the part that lasts.
 
 ## 11. Crow stays the repo name; the app is Count
 
-2026-09-21. Crow is a fine repo name (bird repos, like chickadee and steller) but it says nothing to a stranger reading an App Store listing. So the split: the repo, crate, and internal event names stay `crow`; everything that lands on a device (bundle id, data folder `scadoshi-count/count.db`, CSV names) says count. The product is "Scadoshi Count" on the store, "Count" under the home-screen icon (the label truncates past about twelve characters), and the wordmark on the home screen says "scadoshi", the dev name. The bundle id is `com.scadoshi.count`, name-agnostic on purpose: it is the one thing App Store Connect never lets you change, so the display name can move again without it.
+2026-09-21. Crow is a fine repo name (bird repos, like chickadee and steller), but it says nothing to a stranger reading an App Store listing. So the split:
+
+- The repo, crate and internal event names stay `crow`.
+- Everything that lands on a device (bundle id, data folder `scadoshi-count/count.db`, CSV names) says count.
+- The product is "Scadoshi Count" on the store and "Count" under the home-screen icon (the label truncates past about twelve characters). The wordmark on the home screen says "scadoshi", the dev name.
+- The bundle id is `com.scadoshi.count`, name-agnostic on purpose. It is the one thing App Store Connect never lets you change, so the display name can move again without it.
 
 ## 12. Cairn
 
-2026-09-23. Crow said nothing to a stranger and Count said nothing at all. A cairn is a waymarker on a mountain path, built one stone at a time by whoever walks it, and the walker here is you: the same path, the same small unglamorous act, every day. The pile is the record of having done it. It is Sisyphus with the boulder staying put, which is exactly what a lifetime counter is, and it marks the way besides.
+2026-09-23. Crow said nothing to a stranger and Count said nothing at all.
+
+A cairn is a waymarker on a mountain path, built one stone at a time by whoever walks it, and the walker here is you: the same path, the same small unglamorous act, every day. The pile is the record of having done it. It is Sisyphus with the boulder staying put, which is exactly what a lifetime counter is, and it marks the way besides.
 
 The first version of this entry said "everyone who passes adds one", which reads as a crowd each passing once. That is a worse description of the app than one person passing repeatedly, and it briefly made the name look wrong when it was the sentence that was wrong.
 
 Sisyphus itself was considered and rejected: his defining trait is that the work accumulates nothing, which is the opposite of the app. Notch was rejected because two apps on the store are already called Notch and both are tally counters, and because the word belongs to Markus Persson and to the iPhone screen cutout. Groove was rejected because it names a training protocol (Pavel Tsatsouline's grease the groove) that this app does not implement, and six apps already sit under that banner.
 
-The bundle id stays `com.scadoshi.count`, since App Store Connect never lets it change and it was always meant to be name-agnostic. The data folder stays `scadoshi-count/count.db` for the same reason: it holds real counts on a real phone. The crate, the repo and the header are Cairn. The home-screen mark is the C in `assets/c.txt`, with the owner's S available behind the Mark setting, because this started as a personal app.
+- The bundle id stays `com.scadoshi.count`, since App Store Connect never lets it change and it was always meant to be name-agnostic.
+- The data folder stays `scadoshi-count/count.db` for the same reason: it holds real counts on a real phone.
+- The crate, the repo and the header are Cairn.
+- The home-screen mark is the C in `assets/c.txt`, with the owner's S available behind the Mark setting, because this started as a personal app.

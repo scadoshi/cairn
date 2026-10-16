@@ -36,7 +36,11 @@ Lint levels live in `Cargo.toml` `[lints.clippy]`. The panic family (`unwrap`, `
 dx check
 ```
 
-In CI as its own `hooks` job, so a CLI install that fails or drifts cannot mask a real lint or test failure. The job pins `dioxus-cli@0.7.10`, the version used locally; bump both together. Run it locally too before pushing UI changes. It catches the one class of bug neither clippy nor the tests can see: a hook called conditionally, in a loop, or outside a component body. Dioxus panics at runtime on a hook count that changes between renders, which takes the whole screen down with "Unable to retrieve the hook that was initialized at this index". That shipped to a phone once already.
+In CI as its own `hooks` job, so a CLI install that fails or drifts cannot mask a real lint or test failure. The job pins `dioxus-cli@0.7.10`, the version used locally; bump both together.
+
+Run it locally too before pushing UI changes. It catches the one class of bug neither clippy nor the tests can see: a hook called conditionally, in a loop, or outside a component body.
+
+Dioxus panics at runtime on a hook count that changes between renders, which takes the whole screen down with "Unable to retrieve the hook that was initialized at this index". That shipped to a phone once already.
 
 ### 4. Tests
 

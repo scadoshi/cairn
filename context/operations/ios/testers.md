@@ -6,7 +6,9 @@ Two routes. Which one depends on whether the person is standing next to you.
 
 The right answer for a tester who will keep using it and sending back ideas. They need an email address and nothing else: no UDID, no cable, no Mac, and no trip back to you when the build changes. Apple pushes updates to them the way any app updates.
 
-External testers, up to 10,000 of them, never touch the Apple Developer account. The cost is a Beta App Review on the first build of each version, usually under a day and much lighter than a full App Store review. Internal testers skip review entirely, but they have to be added as users on the App Store Connect team, which hands a friend access to the account. Not worth it for one person.
+External testers, up to 10,000 of them, never touch the Apple Developer account. The cost is a Beta App Review on the first build of each version, usually under a day and much lighter than a full App Store review.
+
+Internal testers skip review entirely, but they have to be added as users on the App Store Connect team, which hands a friend access to the account. Not worth it for one person.
 
 What has to exist first, none of which does yet:
 
