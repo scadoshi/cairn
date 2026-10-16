@@ -174,8 +174,8 @@ Code blocks keep their own line breaks, obviously.
 
 **Good documentation has high signal-to-noise ratio:**
 
-- **High Signal**: "Lower values indicate more popular" (non-obvious ranking direction)
-- **Low Signal**: "The white color" (restates the name "White")
+- High Signal: "Lower values indicate more popular" (non-obvious ranking direction)
+- Low Signal: "The white color" (restates the name "White")
 
 **Ask yourself:**
 1. Would a competent developer in this domain be confused without this doc?
