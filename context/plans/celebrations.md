@@ -1,11 +1,6 @@
 # Goal-met celebrations
 
-Built 2026-09-24. Seven animations rather than two, a Random option, and a
-per-counter override on top of the app-wide setting, which schema v7 carries.
-The firing rule below is the part that survived unchanged, and it is the part
-that mattered. Typewriter and stamp were dropped 2026-10-08, leaving level up,
-confetti, poppers and pulse; the Goal animation sheet has a Test button that
-plays the picked one.
+Built 2026-09-24. Seven animations rather than two, a Random option, and a per-counter override on top of the app-wide setting, which schema v7 carries. The firing rule below is the part that survived unchanged, and it is the part that mattered. Typewriter and stamp were dropped 2026-10-08, leaving level up, confetti, poppers and pulse; the Goal animation sheet has a Test button that plays the picked one.
 
 A counter crossing its daily goal should say so. Seven ways it can, one at a time, or none. Plus a toast with a rotating success line.
 
