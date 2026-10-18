@@ -8,26 +8,36 @@ DB_DEST="Library/Application Support/scadoshi-count/count.db"
 # Sets UDID and DEVICE_NAME. With a selector, matches that name or UDID;
 # without one, requires exactly one attached iPhone.
 #
-# devicectl reports hardware "reality" as physical or simulated, the same
-# thing the plain `list devices` table shows in its Reality column. A phone
-# listed as "connected (no DDI)" has not had Developer Mode turned on yet,
-# and nothing can be installed on it until it has.
+# devicectl marks simulators with hardware "reality" = "simulated". Since
+# Xcode 27 (devicectl JSON v5) real hardware has no "reality" at all and the
+# data lives under "properties", so anything not simulated is a phone; the old
+# top-level fields are a fallback for older Xcodes. A phone listed as
+# "connected (no DDI)" has not had Developer Mode turned on yet, and nothing
+# can be installed on it until it has.
 find_device() {
-  local want="${1:-}" found count
-  found="$(xcrun devicectl list devices --quiet --json-output /dev/stdout 2>/dev/null \
-    | python3 -c '
+  local want="${1:-}" found count json
+  json="$(mktemp)"
+  if ! xcrun devicectl list devices --quiet --json-output "$json" > /dev/null 2>&1 \
+      || [ ! -s "$json" ]; then
+    rm -f "$json"
+    echo "devicectl could not list devices. Run: xcrun devicectl list devices" >&2
+    return 1
+  fi
+  found="$(python3 -c '
 import json, sys
-want = sys.argv[1] if len(sys.argv) > 1 else ""
-for d in json.load(sys.stdin)["result"]["devices"]:
-    hw = d.get("hardwareProperties", {})
-    if hw.get("reality") != "physical" or hw.get("deviceType") != "iPhone":
+want = sys.argv[2] if len(sys.argv) > 2 else ""
+for d in json.load(open(sys.argv[1]))["result"]["devices"]:
+    props = d.get("properties", {})
+    hw = props.get("hardware") or d.get("hardwareProperties", {})
+    if hw.get("reality") == "simulated" or hw.get("deviceType") != "iPhone":
         continue
     udid = hw.get("udid", "")
-    name = d.get("deviceProperties", {}).get("name", "?")
+    name = (props.get("state") or {}).get("name") or d.get("deviceProperties", {}).get("name", "?")
     if want and want.lower() not in name.lower() and want.lower() != udid.lower():
         continue
     print(udid, name)
-' "$want")"
+' "$json" "$want")"
+  rm -f "$json"
   count="$(printf '%s' "$found" | grep -c . || true)"
   if [ "$count" -eq 0 ]; then
     if [ -n "$want" ]; then
@@ -36,7 +46,7 @@ for d in json.load(sys.stdin)["result"]["devices"]:
       echo "No iPhone found. Plug it in, unlock it, and trust the Mac." >&2
     fi
     echo "Attached now:" >&2
-    xcrun devicectl list devices 2>/dev/null | grep -i physical >&2 || true
+    xcrun devicectl list devices 2>/dev/null | grep -iv simulated >&2 || true
     return 1
   fi
   if [ "$count" -gt 1 ]; then
