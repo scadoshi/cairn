@@ -1,36 +1,65 @@
-//! The home-screen icon: which theme's colors it is drawn in.
+//! The home-screen icon: which theme's colors it is drawn in, dark or light.
 //!
 //! iOS keeps the choice itself, so nothing is stored here: every read asks
 //! the OS for its alternate icon name. Every other platform has one fixed
 //! icon, and the pick is held for the session so the sheet behaves the same
 //! there.
 //!
-//! `scripts/icon.py` renders an icon per theme into `assets/app-icons/`, and
-//! `scripts/ios/icons.sh` bundles each as an alternate icon named
-//! `AppIcon-<theme>`.
+//! `scripts/icon.py` renders an icon per theme and mode into
+//! `assets/app-icons/`, and `scripts/ios/icons.sh` bundles each as an
+//! alternate icon named `AppIcon-<theme>-<mode>`.
 
-/// The theme the bundled primary icon is drawn in.
+use orangui::ThemeConfig;
+
+/// The theme the bundled primary icon is drawn in, in dark mode.
 pub const PRIMARY: &str = "gruvbox";
 
 /// The prefix `scripts/ios/icons.sh` gives each alternate icon.
 const PREFIX: &str = "AppIcon-";
 
-/// The theme the icon is drawn in now.
-pub fn current() -> String {
-    imp::current()
-        .and_then(|name| name.strip_prefix(PREFIX).map(str::to_string))
-        .unwrap_or_else(|| PRIMARY.to_string())
+/// The bundled primary icon.
+pub fn primary() -> ThemeConfig {
+    ThemeConfig {
+        name: PRIMARY.to_string(),
+        is_dark: true,
+    }
 }
 
-/// Switches the icon to `theme`'s. On iOS the OS shows its own alert saying
-/// the icon changed.
-pub fn set(theme: &str) -> Result<(), String> {
-    imp::set(alternate_name(theme).as_deref())
+/// The theme and mode the icon is drawn in now.
+pub fn current() -> ThemeConfig {
+    imp::current()
+        .and_then(|name| parse(&name))
+        .unwrap_or_else(primary)
+}
+
+/// Switches the icon to `icon`'s colors. On iOS the OS shows its own alert
+/// saying the icon changed.
+pub fn set(icon: &ThemeConfig) -> Result<(), String> {
+    imp::set(alternate_name(icon).as_deref())
+}
+
+/// "dark" or "light", as the icon files and bundle names spell it.
+pub fn mode(is_dark: bool) -> &'static str {
+    if is_dark { "dark" } else { "light" }
 }
 
 /// The alternate icon's bundle name, or `None` for the primary icon.
-fn alternate_name(theme: &str) -> Option<String> {
-    (theme != PRIMARY).then(|| format!("{PREFIX}{theme}"))
+fn alternate_name(icon: &ThemeConfig) -> Option<String> {
+    (*icon != primary()).then(|| format!("{PREFIX}{}-{}", icon.name, mode(icon.is_dark)))
+}
+
+/// The icon an alternate's bundle name stands for.
+fn parse(name: &str) -> Option<ThemeConfig> {
+    let (theme, mode) = name.strip_prefix(PREFIX)?.rsplit_once('-')?;
+    let is_dark = match mode {
+        "dark" => true,
+        "light" => false,
+        _ => return None,
+    };
+    Some(ThemeConfig {
+        name: theme.to_string(),
+        is_dark,
+    })
 }
 
 #[cfg(target_os = "ios")]
@@ -61,10 +90,12 @@ mod imp {
 
     pub fn set(name: Option<&str>) -> Result<(), String> {
         let app = app().ok_or("no UIApplication")?;
+        // False only when Info.plist lists no alternates, which is a build
+        // that skipped scripts/ios/icons.sh.
         // SAFETY: `supportsAlternateIcons` is a BOOL getter.
         let supported: bool = unsafe { msg_send![app, supportsAlternateIcons] };
         if !supported {
-            return Err("this device can't change its app icon".to_string());
+            return Err("No alternate icons in this build".to_string());
         }
         let name = name.map(NSString::from_str);
         let name: Option<&NSString> = name.as_deref();
@@ -100,36 +131,60 @@ mod imp {
 mod tests {
     use super::*;
 
+    fn icon(name: &str, is_dark: bool) -> ThemeConfig {
+        ThemeConfig {
+            name: name.to_string(),
+            is_dark,
+        }
+    }
+
     #[test]
-    fn the_primary_theme_restores_the_bundled_icon() {
-        assert_eq!(alternate_name(PRIMARY), None);
+    fn only_the_primary_icon_has_no_alternate_name() {
+        assert_eq!(alternate_name(&primary()), None);
         assert_eq!(
-            alternate_name("vantablack").as_deref(),
-            Some("AppIcon-vantablack")
+            alternate_name(&icon("vantablack", true)).as_deref(),
+            Some("AppIcon-vantablack-dark")
+        );
+        assert_eq!(
+            alternate_name(&icon(PRIMARY, false)).as_deref(),
+            Some("AppIcon-gruvbox-light")
         );
     }
 
     #[test]
-    fn every_other_theme_has_a_rendered_icon() {
+    fn a_bundle_name_parses_back_keeping_the_themes_hyphens() {
+        assert!(parse("AppIcon-tokyo-night-light") == Some(icon("tokyo-night", false)));
+        assert!(parse("AppIcon-nord-dark") == Some(icon("nord", true)));
+        assert!(parse("AppIcon-nord").is_none());
+    }
+
+    #[test]
+    fn every_other_theme_and_mode_has_a_rendered_icon() {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/app-icons");
         for theme in orangui::ALLOWED_THEMES {
-            let png = dir.join(format!("{theme}.png"));
-            if *theme == PRIMARY {
-                assert!(
-                    !png.exists(),
-                    "the primary icon is assets/favicon, not an alternate"
-                );
-            } else {
-                assert!(png.exists(), "{theme} has no icon; run scripts/icon.py");
+            for is_dark in [true, false] {
+                let png = dir.join(format!("{theme}-{}.png", mode(is_dark)));
+                if icon(theme, is_dark) == primary() {
+                    assert!(
+                        !png.exists(),
+                        "the primary icon is assets/favicon, not an alternate"
+                    );
+                } else {
+                    assert!(
+                        png.exists(),
+                        "{theme} {} has no icon; run scripts/icon.py",
+                        mode(is_dark)
+                    );
+                }
             }
         }
     }
 
     #[test]
-    fn a_pick_reads_back_as_its_theme() {
-        set("nord").unwrap();
-        assert_eq!(current(), "nord");
-        set(PRIMARY).unwrap();
-        assert_eq!(current(), PRIMARY);
+    fn a_pick_reads_back_as_its_theme_and_mode() {
+        assert!(set(&icon("nord", false)).is_ok());
+        assert!(current() == icon("nord", false));
+        assert!(set(&primary()).is_ok());
+        assert!(current() == primary());
     }
 }

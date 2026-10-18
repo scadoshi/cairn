@@ -57,6 +57,14 @@ if [ -n "$newest_source" ]; then
 fi
 echo "bundle built $(stat -f '%Sm' "$APP") from $(git -C "$REPO_ROOT" rev-parse --short HEAD)"
 
+# dx leaves the bundle without icons, and adding them breaks the signature it
+# made, so sign again with the identity it used.
+IDENTITY="$(codesign -dvv "$APP" 2>&1 | sed -n 's/^Authority=\(Apple Development: .*\)$/\1/p' | head -1)"
+[ -n "$IDENTITY" ] || { echo "could not read the signing identity off $APP" >&2; exit 1; }
+"$REPO_ROOT/scripts/ios/icons.sh" "$APP"
+codesign --force --sign "$IDENTITY" --preserve-metadata=entitlements "$APP"
+codesign --verify "$APP"
+
 # --id matters: with two phones attached ios-deploy otherwise picks one
 # of them on its own.
 ios-deploy --id "$UDID" --bundle "$APP"

@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Compile the app icons into an asset catalog and reference them from
-# Info.plist. dx does not run actool, so without this the phone shows a blank
-# icon and Apple rejects the upload ("Missing required icon file ... 120x120").
+# Info.plist: the gruvbox primary from assets/favicon, plus one alternate per
+# theme and mode from assets/app-icons. dx does not run actool, so without
+# this the phone shows a blank icon, the App icon sheet has nothing to switch
+# to, and Apple rejects the upload ("Missing required icon file ... 120x120").
 #
-# Run after every release build and before signing. scripts/ios/install_device.sh
-# does it automatically; operations/ios/submission.md calls it by hand.
+# Run after every build and before signing. scripts/ios/deploy.sh and
+# install_device.sh do it for a phone, scripts/ios/sim_icons.sh for the
+# simulator; operations/ios/submission.md calls it by hand.
 #
 # The PNGs come from scripts/icon.py, which renders the mark from assets/c.txt.
 #
@@ -43,8 +46,9 @@ for px in 40 60 80 87 120 180 1024; do
   cp "$ICONS/icon-$px.png" "$SET/"
 done
 
-# One single-size set per theme in assets/app-icons, named AppIcon-<theme>,
-# which is the name src/lib/outbound/app_icon.rs asks UIKit for.
+# One single-size set per theme and mode in assets/app-icons, named
+# AppIcon-<theme>-<mode>, which is the name src/lib/outbound/app_icon.rs asks
+# UIKit for.
 ALTERNATES=()
 for png in "$REPO_ROOT"/assets/app-icons/*.png; do
   name="AppIcon-$(basename "$png" .png)"
@@ -62,7 +66,14 @@ JSON
   ALTERNATES+=(--alternate-app-icon "$name")
 done
 
-actool --compile "$APP" --platform iphoneos --minimum-deployment-target 16.0 \
+# A simulator build is its own platform to actool; the binary says which it is.
+BIN="$APP/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")"
+case "$(xcrun vtool -show-build "$BIN" 2>/dev/null | awk '/platform/ { print $2; exit }')" in
+  IOSSIMULATOR) PLATFORM=iphonesimulator ;;
+  *) PLATFORM=iphoneos ;;
+esac
+
+actool --compile "$APP" --platform "$PLATFORM" --minimum-deployment-target 16.0 \
   --app-icon AppIcon "${ALTERNATES[@]}" \
   --output-partial-info-plist "$WORK/partial.plist" \
   "$WORK/Assets.xcassets" > /dev/null

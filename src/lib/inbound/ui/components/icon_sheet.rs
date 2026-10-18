@@ -1,5 +1,6 @@
 //! The App icon sheet: every theme as a row, each with the icon drawn in that
-//! theme's dark colors, laid out like orangui's ThemeSheet.
+//! theme's colors in the mode the icon is in now (Config's App icon row flips
+//! the mode), laid out like orangui's ThemeSheet.
 
 use crate::{
     inbound::ui::{TOAST_NORMAL, TOAST_QUICK, screens::home::LOGO_CAIRN},
@@ -8,14 +9,15 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
-    ALLOWED_THEMES, BottomSheet, Button, ButtonVariant, COLORBLIND_THEMES, display_theme_name,
+    ALLOWED_THEMES, BottomSheet, Button, ButtonVariant, COLORBLIND_THEMES, ThemeConfig,
+    display_theme_name,
 };
 
 /// One selectable icon row: name on the left, the icon on the right. The tile
 /// draws the mark as text in the theme's own class, so it is the same glyph
 /// and colors `scripts/icon.py` renders, with nothing bundled to show it.
 #[component]
-fn IconRow(theme: String, mut draft: Signal<String>) -> Element {
+fn IconRow(theme: String, mode: String, mut draft: Signal<String>) -> Element {
     let is_selected = draft() == theme;
     let click_theme = theme.clone();
     rsx! {
@@ -24,7 +26,7 @@ fn IconRow(theme: String, mut draft: Signal<String>) -> Element {
             onclick: move |_| draft.set(click_theme.clone()),
             div { class: "pref-row-inner",
                 span { "{display_theme_name(&theme)}" }
-                div { class: "app-icon-tile theme-{theme}-dark",
+                div { class: "app-icon-tile theme-{theme}-{mode}",
                     pre { "{LOGO_CAIRN.trim_end()}" }
                 }
             }
@@ -32,24 +34,29 @@ fn IconRow(theme: String, mut draft: Signal<String>) -> Element {
     }
 }
 
-/// Bottom sheet for picking the home-screen icon. The pick is held until Save,
-/// which switches the icon and writes the theme to `icon`.
+/// Bottom sheet for picking the home-screen icon's theme. The pick is held
+/// until Save, which switches the icon in its current mode and writes it to
+/// `icon`.
 #[component]
-pub fn IconSheet(mut open: Signal<bool>, mut icon: Signal<String>, hint: Signal<bool>) -> Element {
+pub fn IconSheet(
+    mut open: Signal<bool>,
+    mut icon: Signal<ThemeConfig>,
+    hint: Signal<bool>,
+) -> Element {
     let toast = use_toast();
-    let mut draft = use_signal(|| icon.peek().clone());
+    let mut draft = use_signal(|| icon.peek().name.clone());
 
     // Every open starts from the icon actually showing.
     use_effect(move || {
         if open() {
             let now = app_icon::current();
-            icon.set(now.clone());
-            draft.set(now);
+            draft.set(now.name.clone());
+            icon.set(now);
         }
     });
 
     let discard = use_callback(move |()| {
-        if *draft.peek() != *icon.peek() {
+        if *draft.peek() != icon.peek().name {
             toast.info(
                 "App icon unchanged".to_string(),
                 ToastOptions::default().duration(TOAST_QUICK),
@@ -58,6 +65,7 @@ pub fn IconSheet(mut open: Signal<bool>, mut icon: Signal<String>, hint: Signal<
         open.set(false);
     });
 
+    let mode = app_icon::mode(icon().is_dark).to_string();
     let regular = ALLOWED_THEMES
         .iter()
         .copied()
@@ -81,13 +89,16 @@ pub fn IconSheet(mut open: Signal<bool>, mut icon: Signal<String>, hint: Signal<
                 }
                 Button {
                     variant: ButtonVariant::Action,
-                    disabled: draft() == icon(),
+                    disabled: draft() == icon().name,
                     onclick: move |_| {
-                        let picked = draft();
+                        let picked = ThemeConfig {
+                            name: draft(),
+                            is_dark: icon.peek().is_dark,
+                        };
                         match app_icon::set(&picked) {
                             Ok(()) => {
                                 toast.success(
-                                    format!("App icon: {}", display_theme_name(&picked)),
+                                    format!("App icon: {}", display_theme_name(&picked.name)),
                                     ToastOptions::default().duration(TOAST_NORMAL),
                                 );
                                 icon.set(picked);
@@ -102,11 +113,11 @@ pub fn IconSheet(mut open: Signal<bool>, mut icon: Signal<String>, hint: Signal<
                 }
             },
             for t in regular {
-                IconRow { theme: t.to_string(), draft }
+                IconRow { theme: t.to_string(), mode: mode.clone(), draft }
             }
             div { class: "pref-section-label", "Color blind" }
             for t in colorblind {
-                IconRow { theme: t.to_string(), draft }
+                IconRow { theme: t.to_string(), mode: mode.clone(), draft }
             }
         }
     }

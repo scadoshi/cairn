@@ -9,8 +9,8 @@ solid strokes the way zwipe's Z icon does) onto gruvbox dark, cream on
 #282828. Writes every size iOS, the web, and Android need into
 assets/favicon/, plus an inset variant for Android's adaptive mask.
 
-Also writes one 1024 icon per other orangui theme into assets/app-icons/,
-each theme's dark text on its dark background, read from the themes.css of
+Also writes one 1024 icon per orangui theme and mode into assets/app-icons/,
+each theme's text on its background in that mode, read from the themes.css of
 the orangui build Cargo.lock pins. scripts/ios/icons.sh compiles them into
 the alternate icons the App icon sheet switches between.
 
@@ -28,7 +28,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BG, FG = "#282828", "#ebdbb2"
-PRIMARY = "gruvbox"
+PRIMARY = ("gruvbox", "dark")
 SIZES = [16, 32, 40, 60, 80, 87, 120, 180, 192, 512]
 
 
@@ -45,8 +45,8 @@ def ttf_path() -> str:
     return str(out)
 
 
-def dark_palettes() -> dict[str, tuple[str, str]]:
-    """Each theme's dark (background, text) from the pinned orangui themes.css."""
+def palettes() -> dict[tuple[str, str], tuple[str, str]]:
+    """Each (theme, mode)'s (background, text) from the pinned orangui themes.css."""
     meta = json.loads(
         subprocess.run(
             ["cargo", "metadata", "--format-version", "1"],
@@ -56,11 +56,13 @@ def dark_palettes() -> dict[str, tuple[str, str]]:
     manifest = next(p["manifest_path"] for p in meta["packages"] if p["name"] == "orangui")
     css = (pathlib.Path(manifest).parent / "assets/themes.css").read_text()
     out = {}
-    for name, body in re.findall(r"^\.theme-([a-z0-9-]+)-dark\s*\{(.*?)^\}", css, re.M | re.S):
+    for name, mode, body in re.findall(
+        r"^\.theme-([a-z0-9-]+)-(dark|light)\s*\{(.*?)^\}", css, re.M | re.S
+    ):
         bg = re.search(r"--bg-primary:\s*(#[0-9a-fA-F]{6})", body)
         fg = re.search(r"--text-primary:\s*(#[0-9a-fA-F]{6})", body)
         if bg and fg:
-            out[name] = (bg.group(1), fg.group(1))
+            out[(name, mode)] = (bg.group(1), fg.group(1))
     return out
 
 
@@ -104,9 +106,9 @@ def main() -> None:
     alternates.mkdir(exist_ok=True)
     for stale in alternates.glob("*.png"):
         stale.unlink()
-    for name, (bg, fg) in sorted(dark_palettes().items()):
-        if name != PRIMARY:
-            render(mark, 1024, 0.74, ttf, bg=bg, fg=fg).save(alternates / f"{name}.png")
+    for (name, mode), (bg, fg) in sorted(palettes().items()):
+        if (name, mode) != PRIMARY:
+            render(mark, 1024, 0.74, ttf, bg=bg, fg=fg).save(alternates / f"{name}-{mode}.png")
     print("wrote", len(list(alternates.glob("*.png"))), "alternate icons")
 
 

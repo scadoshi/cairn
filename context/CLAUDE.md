@@ -41,6 +41,7 @@ src/
 ```bash
 dx serve                                  # desktop app with hot reload
 dx serve --platform ios                   # iOS simulator (needs Xcode)
+scripts/ios/sim_icons.sh                  # then this, so the simulator build has its app icons
 cargo test                                # domain tests, offline
 cargo +nightly fmt                        # rustfmt.toml uses an unstable option; stable fmt skips it
 cargo clippy --all-targets -- -D warnings # what CI runs

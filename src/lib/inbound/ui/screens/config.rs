@@ -43,7 +43,7 @@ pub fn Config() -> Element {
     let mut celebration_open = use_signal(|| false);
     let mut mark_open = use_signal(|| false);
     let mut icon_open = use_signal(|| false);
-    let icon = use_signal(app_icon::current);
+    let mut icon = use_signal(app_icon::current);
     let mut hint_open = use_signal(|| false);
     let screen_hint_open = use_signal(|| false);
     use_screen_hint(screen_hint_open);
@@ -134,6 +134,22 @@ pub fn Config() -> Element {
         said.call(format!("Dark mode {}", if on { "on" } else { "off" }));
     };
 
+    // The home-screen icon's own mode, apart from the app's.
+    let toggle_icon_dark = move |_| {
+        let prev = icon.read().clone();
+        let next = ThemeConfig {
+            name: prev.name,
+            is_dark: !prev.is_dark,
+        };
+        match app_icon::set(&next) {
+            Ok(()) => {
+                said.call(format!("App icon {}", app_icon::mode(next.is_dark)));
+                icon.set(next);
+            }
+            Err(e) => toast.error(e, ToastOptions::default()),
+        }
+    };
+
     rsx! {
         div { class: "screen-content",
         div { class: "settings-sections content-enter",
@@ -165,7 +181,8 @@ pub fn Config() -> Element {
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::AppIcon)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
-                        span { {display_theme_name(&icon())} }
+                        span { {display_theme_name(&icon().name)} }
+                        DarkModeButton { is_dark: icon().is_dark, onclick: toggle_icon_dark }
                         Button {
                             variant: ButtonVariant::Action,
                             onclick: move |_| {

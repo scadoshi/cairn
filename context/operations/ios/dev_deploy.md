@@ -41,6 +41,12 @@ Reinstalling over an existing app keeps its data container, so an ordinary deplo
 
 Debug is the one to stay on day to day; it builds in a fraction of the time. Use release to check what the optimized build actually feels like on the phone. Both are signed with the development profile, so the database scripts reach either one.
 
+Both also run `scripts/ios/icons.sh` on the bundle and sign it again, because dx leaves it without icons: no home-screen icon, and nothing for the App icon sheet to switch to.
+
+### Simulator
+
+`dx serve --platform ios` has the same gap, so the sheet's Save says "No alternate icons in this build". Once the app is up, `scripts/ios/sim_icons.sh` compiles the icons into that bundle and reinstalls it; the simulator's home screen then shows the pick. A full rebuild writes a fresh bundle, so run it again after one. Hot reloads keep the icons.
+
 ### Doing it by hand
 
 The pieces, pasted as one line because zsh mangles `\` continuations on paste:
