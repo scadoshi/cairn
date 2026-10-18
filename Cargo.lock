@@ -289,10 +289,13 @@ dependencies = [
 name = "cairn"
 version = "0.1.0"
 dependencies = [
+ "block2",
  "chrono",
  "dioxus",
  "dioxus-primitives",
  "dirs",
+ "objc2",
+ "objc2-foundation",
  "orangui",
  "rusqlite",
  "serde",

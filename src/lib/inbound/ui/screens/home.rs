@@ -36,7 +36,7 @@ use orangui::{
 use std::time::Duration;
 
 /// The C, the app's own mark.
-const LOGO_CAIRN: &str = include_str!("../../../../../assets/c.txt");
+pub(crate) const LOGO_CAIRN: &str = include_str!("../../../../../assets/c.txt");
 /// The S, the owner's dev mark. This started as a personal app and the
 /// wordmark is his name, so it stays available behind a setting.
 const LOGO_SCADOSHI: &str = include_str!("../../../../../assets/s.txt");

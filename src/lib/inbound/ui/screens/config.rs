@@ -11,11 +11,12 @@ use crate::{
         components::{
             celebration::{CelebrationHost, celebrate},
             hint::{HintDialog, use_screen_hint},
+            icon_sheet::IconSheet,
         },
         router::Route,
         use_date_format, use_prefs, use_store,
     },
-    outbound::paths,
+    outbound::{app_icon, paths},
 };
 use chrono::Weekday;
 use dioxus::prelude::*;
@@ -41,6 +42,8 @@ pub fn Config() -> Element {
     let mut hint = use_signal(|| None::<ConfigHint>);
     let mut celebration_open = use_signal(|| false);
     let mut mark_open = use_signal(|| false);
+    let mut icon_open = use_signal(|| false);
+    let icon = use_signal(app_icon::current);
     let mut hint_open = use_signal(|| false);
     let screen_hint_open = use_signal(|| false);
     use_screen_hint(screen_hint_open);
@@ -151,6 +154,23 @@ pub fn Config() -> Element {
                             onclick: move |_| {
                                 hint.set(Some(ConfigHint::Theme));
                                 preferences_open.set(true);
+                            },
+                            "Change"
+                        }
+                    }
+                }
+                div { class: "settings-row",
+                    span { class: "row-label-with-hint",
+                        span { class: "settings-row-label", "App icon" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::AppIcon)); hint_open.set(true); } }
+                    }
+                    div { class: "settings-row-value",
+                        span { {display_theme_name(&icon())} }
+                        Button {
+                            variant: ButtonVariant::Action,
+                            onclick: move |_| {
+                                hint.set(Some(ConfigHint::AppIcon));
+                                icon_open.set(true);
                             },
                             "Change"
                         }
@@ -366,6 +386,7 @@ pub fn Config() -> Element {
         RestDaysSheet { open: rest_open, hint: hint_open }
         CelebrationSheet { open: celebration_open, hint: hint_open }
         MarkSheet { open: mark_open, hint: hint_open }
+        IconSheet { open: icon_open, icon, hint: hint_open }
         ConfigHintDialog { open: hint_open, which: hint() }
         HintDialog { open: screen_hint_open, title: "Config",
             HintLine { "Settings only. Nothing here edits your counts" }
@@ -533,6 +554,7 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ConfigHint {
     Theme,
+    AppIcon,
     Mark,
     Celebration,
     Dates,
@@ -556,6 +578,13 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
                 HintLine { "The app's palette. It previews as you tap" }
                 HintLine { "The last four are color blind modes" }
                 HintLine { HintKey { ModeIcon { dark: false } " light" } " " HintKey { ModeIcon { dark: true } " dark" } " switches between the theme's two palettes" }
+            }
+        },
+        ConfigHint::AppIcon => rsx! {
+            HintDialog { open, title: "App icon",
+                HintLine { "The icon on your home screen, in any theme's colors" }
+                HintLine { "It stays put when you change the app's theme" }
+                HintLine { "iPhone tells you when it switches" }
             }
         },
         ConfigHint::Mark => rsx! {

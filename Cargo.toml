@@ -35,6 +35,13 @@ dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "0
 # Timers for the entrances; dioxus-desktop already brings the runtime in.
 tokio = { version = "1", features = ["time"] }
 
+# UIApplication's alternate icon calls, for the App icon sheet. The same
+# versions tao already brings in.
+[target.'cfg(target_os = "ios")'.dependencies]
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString"] }
+block2 = "0.6"
+
 [features]
 default = ["desktop"]
 desktop = ["dioxus/desktop"]
