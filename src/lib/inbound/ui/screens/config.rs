@@ -583,8 +583,6 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
         ConfigHint::AppIcon => rsx! {
             HintDialog { open, title: "App icon",
                 HintLine { "The icon on your home screen, in any theme's colors" }
-                HintLine { "It stays put when you change the app's theme" }
-                HintLine { "iPhone tells you when it switches" }
             }
         },
         ConfigHint::Mark => rsx! {
