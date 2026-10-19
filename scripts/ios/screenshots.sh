@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Store screenshots: the booted iPhone 11 Pro Max simulator (the 6.5" set the
-# App Store wants, 1242x2688) tapped through Home, a counter, its trends, the
+# Store screenshots: the booted iPhone 16 Pro Max simulator (the 6.9" set the
+# App Store wants, 1320x2868) tapped through Home, a counter, its trends, the
 # counter list and Config, in each theme listed below. Needs the app installed
 # on the simulator, a spoof database pushed in (scripts/ios/spoof_db.py) and
 # idb on PATH (brew install facebook/fb/idb-companion; pip install fb-idb) to
-# do the tapping, since simctl cannot. Coordinates are points on the 414x896
-# screen; the action bar sits at y=829.
+# do the tapping, since simctl cannot. Coordinates below are points measured
+# on the 11 Pro Max's 414x896 screen; the 16 Pro Max is 440x956, so re-measure
+# the card and action bar taps before the next screenshot run.
 #
 # Usage: scripts/ios/screenshots.sh [OUT_DIR]   # default context/.../screenshots
 set -uo pipefail
@@ -17,8 +18,8 @@ UDID="$(xcrun simctl list devices booted -j | python3 -c '
 import json, sys
 for devs in json.load(sys.stdin)["devices"].values():
     for d in devs:
-        if d["name"] == "iPhone 11 Pro Max": print(d["udid"])')"
-[ -n "$UDID" ] || { echo "boot the iPhone 11 Pro Max simulator first" >&2; exit 1; }
+        if d["name"] == "iPhone 16 Pro Max": print(d["udid"])')"
+[ -n "$UDID" ] || { echo "boot the iPhone 16 Pro Max simulator first" >&2; exit 1; }
 C="$(xcrun simctl get_app_container "$UDID" $APPID data)"
 DB="$C/Library/Application Support/scadoshi-count/count.db"
 

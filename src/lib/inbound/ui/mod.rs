@@ -189,7 +189,7 @@ pub fn App() -> Element {
         div { class: "theme-root {follow.shown.read().css_class()}",
             // Keyed on the theme class so the field rains in again on a theme
             // or mode change, and holds across navigation.
-            components::grid_cells::GridCells { key: "{follow.shown.read().css_class()}" }
+            orangui::GridCells { key: "{follow.shown.read().css_class()}" }
             ToastStack { timed_fade: true,
                 Router::<Route> {}
                 // Dialogs draw here, beside the router, so no screen's scroll

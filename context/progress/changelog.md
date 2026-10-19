@@ -6,6 +6,8 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- The backdrop is a field of shaded squares instead of grid lines. It rains in when the app opens and again when the theme changes.
+
 ## 1.1.0, 2026-10-19
 
 - Four Monokai Pro themes: Pro, Machine, Octagon and Spectrum, each in dark and light.
