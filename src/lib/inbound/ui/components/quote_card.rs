@@ -75,7 +75,9 @@ pub fn QuoteCard() -> Element {
     };
 
     rsx! {
-        div { class: "settings-list quote-card",
+        // A reveal like the panels around it, so it eases in with them rather
+        // than appearing, and the typing starts as it lands.
+        div { class: "settings-list quote-card reveal",
             TypedText { key: "{text}", text, typed }
             div { class: tags,
                 span { class: "stat-chip stat-chip-p4", "{author}" }
