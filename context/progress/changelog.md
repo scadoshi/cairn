@@ -8,7 +8,9 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## 1.1.0, 2026-10-19
 
-- Three new themes: Monokai Octagon, Oxocarbon and Poimandres, each in dark and light, bringing the set to 34.
+- Four Monokai Pro themes: Pro, Machine, Octagon and Spectrum, each in dark and light.
+- Five more themes: Darcula, GitHub High Contrast, Kanagawa Dragon, Oxocarbon and Poimandres, each in dark and light, bringing the set to 40.
+- Ristretto is now called Monokai Pro Ristretto.
 - The App icon picker offers the new themes too.
 
 ## 1.0.0, 2026-10-18

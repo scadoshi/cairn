@@ -455,9 +455,12 @@ impl SettingsStore for SqliteStore {
                 |r| r.get(0),
             )
             .optional()?;
-        // A theme that no longer parses (an old shape, say) is just ignored;
-        // the default takes over and the next pick overwrites it.
-        Ok(raw.and_then(|s| serde_json::from_str(&s).ok()))
+        // A theme that no longer parses (an old shape, say) or whose slug
+        // orangui no longer lists (a renamed theme) is just ignored; the
+        // default takes over and the next pick overwrites it.
+        Ok(raw
+            .and_then(|s| serde_json::from_str::<ThemeConfig>(&s).ok())
+            .filter(|t| orangui::ALLOWED_THEMES.contains(&t.name.as_str())))
     }
 
     fn set_theme(&self, theme: &ThemeConfig) -> Result<(), StoreError> {
@@ -645,6 +648,17 @@ mod tests {
         let got = s.theme().unwrap().unwrap();
         assert_eq!(got.name, "dracula");
         assert!(!got.is_dark);
+    }
+
+    #[test]
+    fn a_theme_orangui_no_longer_lists_reads_back_as_none() {
+        let s = store();
+        s.set_theme(&ThemeConfig {
+            name: "ristretto".to_string(),
+            is_dark: true,
+        })
+        .unwrap();
+        assert!(s.theme().unwrap().is_none());
     }
 
     #[test]
