@@ -6,9 +6,6 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
-- The backdrop is a field of shaded squares instead of grid lines, on screens and sheets.
-- The app opens on a short splash: the backdrop rains in and the C resolves over it before the first screen, whose cards, figures and quote arrive as it leaves.
-
 ## 1.1.0, 2026-10-19
 
 - Four Monokai Pro themes: Pro, Machine, Octagon and Spectrum, each in dark and light.
@@ -17,6 +14,8 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 - The theme and App icon pickers group themes under headings by look, with high contrast and color blind last.
 - Ristretto is now called Monokai Pro Ristretto.
 - The App icon picker offers the new themes too.
+- The backdrop is a field of shaded squares instead of grid lines, on screens and sheets.
+- The app opens on a short splash: the backdrop rains in and the C resolves over it before the first screen, whose cards, figures and quote arrive as it leaves.
 
 ## 1.0.0, 2026-10-18
 
