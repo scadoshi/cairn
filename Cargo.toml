@@ -1,6 +1,6 @@
 [package]
 name = "cairn"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Scotty Fermo <scottyfermo@hotmail.com>"]
 edition = "2024"
 publish = false

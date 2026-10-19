@@ -6,6 +6,10 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+## 1.0.0, 2026-10-18
+
+The first App Store build; everything before this shipped straight to the phone.
+
 - Config has an About section with the app version, the same row Zwipe's Profile shows.
 
 - Cards sit 1rem apart on every screen, matching Zwipe.
