@@ -4,7 +4,7 @@ Per-release iOS build numbers (`CFBundleVersion`). Every upload gets its own num
 
 | Version | iOS build | Notes |
 |---------|-----------|-------|
-| 1.1.0 | 6 | Build 5 with the quote card easing in with the other panels and typing out as it lands. 99 alternate icons. Built 2026-10-19 with Xcode 27.1 (27A9275), signed with the Count App Store profile. **Built 2026-10-19, not yet uploaded.** |
+| 1.1.0 | 6 | Build 5 with the quote card easing in with the other panels and typing out as it lands. 99 alternate icons. Built 2026-10-19 with Xcode 27.1 (27A9275), signed with the Count App Store profile, uploaded through Transporter. **Uploaded 2026-10-19.** |
 | 1.1.0 | 5 | Build 4 with gruvbox's blue back as its accent (orangui `3c7aac2`); the aqua swap had moved its syntax colors. 99 alternate icons. Built 2026-10-19 with Xcode 27.1 (27A9275), signed with the Count App Store profile, uploaded through Transporter. **Uploaded 2026-10-19, waiting on 1.0.0's review before it can be submitted.** |
 | 1.1.0 | 4 | Build 3 with gruvbox's accent as its aqua (orangui `1ac1b5b`). 99 alternate icons. Built 2026-10-19 with Xcode 27.1 (27A9275), signed with the Count App Store profile, uploaded through Transporter. **Uploaded 2026-10-19, never submitted**: gruvbox's aqua accent broke its syntax colors, so the blue came back and 1.1.0 ships as build 5. |
 | 1.1.0 | 3 | Build 2 plus the shaded-square backdrop drawn on a canvas and the opening splash, with the cards, figures and quote arriving as it leaves; the heatmap in gruvbox's aqua. 99 alternate icons. Built 2026-10-19 with Xcode 27.1 (27A9275), signed with the Count App Store profile. **Never uploaded**: gruvbox's accent became its aqua the same afternoon, so 1.1.0 ships as build 4. |
