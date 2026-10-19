@@ -187,9 +187,13 @@ pub fn App() -> Element {
         // container, which mounts above the router, resolves the same
         // palette instead of falling through to unset variables.
         div { class: "theme-root {follow.shown.read().css_class()}",
-            // Keyed on the theme class so the field rains in again on a theme
-            // or mode change, and holds across navigation.
-            orangui::GridCells { key: "{follow.shown.read().css_class()}" }
+            // In place from the start; the splash is what rains.
+            orangui::GridCells { still: true }
+            // The opening: the field rains in under the mark, then fades to
+            // the first screen while it mounts underneath.
+            orangui::Splash {
+                pre { class: "logo", orangui::Decode { text: screens::home::LOGO_CAIRN } }
+            }
             ToastStack { timed_fade: true,
                 Router::<Route> {}
                 // Dialogs draw here, beside the router, so no screen's scroll

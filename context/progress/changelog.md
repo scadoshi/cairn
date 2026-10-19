@@ -6,7 +6,8 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
-- The backdrop is a field of shaded squares instead of grid lines. It rains in when the app opens and again when the theme changes.
+- The backdrop is a field of shaded squares instead of grid lines, on screens and sheets.
+- The app opens on a short splash: the backdrop rains in and the C resolves over it before the first screen.
 
 ## 1.1.0, 2026-10-19
 
