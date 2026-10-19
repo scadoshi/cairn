@@ -11,6 +11,7 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 - Four Monokai Pro themes: Pro, Machine, Octagon and Spectrum, each in dark and light.
 - Editor defaults as themes: Darcula, Xcode, Visual Studio, Eclipse and Neovim, each in dark and light.
 - Ten more themes: Bluloco, GitHub High Contrast, Kanagawa Dragon, Material, Melange, Modus, Nightfox, Oxocarbon, Poimandres and Terafox, each in dark and light, bringing the set to 50.
+- The theme and App icon pickers sort themes by look, warm to cool to neutral, with high contrast and color blind last.
 - Ristretto is now called Monokai Pro Ristretto.
 - The App icon picker offers the new themes too.
 

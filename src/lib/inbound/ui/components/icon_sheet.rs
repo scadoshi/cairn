@@ -8,10 +8,7 @@ use crate::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use orangui::{
-    ALLOWED_THEMES, BottomSheet, Button, ButtonVariant, COLORBLIND_THEMES, ThemeConfig,
-    display_theme_name,
-};
+use orangui::{BottomSheet, Button, ButtonVariant, THEME_GROUPS, ThemeConfig, display_theme_name};
 
 /// One selectable icon row: name on the left, the icon on the right. The tile
 /// draws the mark as text in the theme's own class, so it is the same glyph
@@ -66,14 +63,6 @@ pub fn IconSheet(
     });
 
     let mode = app_icon::mode(icon().is_dark).to_string();
-    let regular = ALLOWED_THEMES
-        .iter()
-        .copied()
-        .filter(|t| !COLORBLIND_THEMES.contains(t));
-    let colorblind = ALLOWED_THEMES
-        .iter()
-        .copied()
-        .filter(|t| COLORBLIND_THEMES.contains(t));
 
     rsx! {
         BottomSheet {
@@ -112,12 +101,11 @@ pub fn IconSheet(
                     "Save"
                 }
             },
-            for t in regular {
-                IconRow { theme: t.to_string(), mode: mode.clone(), draft }
-            }
-            div { class: "pref-section-label", "Color blind" }
-            for t in colorblind {
-                IconRow { theme: t.to_string(), mode: mode.clone(), draft }
+            for group in THEME_GROUPS {
+                div { class: "pref-section-label", "{group.label}" }
+                for t in group.themes.iter().copied() {
+                    IconRow { theme: t.to_string(), mode: mode.clone(), draft }
+                }
             }
         }
     }
