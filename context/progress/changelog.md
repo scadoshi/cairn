@@ -16,7 +16,6 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 - The App icon picker offers the new themes too.
 - The backdrop is a field of shaded squares instead of grid lines, on screens and sheets.
 - The app opens on a short splash: the backdrop rains in and the C resolves over it before the first screen, whose cards, figures and quote arrive as it leaves.
-- Gruvbox's accent is its aqua, with its blue in the swatches where the aqua was.
 
 ## 1.0.0, 2026-10-18
 
