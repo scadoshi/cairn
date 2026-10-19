@@ -94,7 +94,7 @@ A personal counter with no account and no network. Open the app, tap Add to make
 | Category | Health & Fitness |
 | Secondary Category | Productivity |
 | Age Rating | None for every question: 4+ |
-| Content Rights | No third-party content |
+| Content Rights | Yes, necessary rights held: the 72 one-line quotes, each attributed to its speaker and source |
 | Pricing | Free |
 | App Store Version Release | Automatically release |
 
