@@ -369,6 +369,8 @@ pub fn Config() -> Element {
                     p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
                 }
             }
+            }
+            }
             div { class: "settings-list",
                 div { class: "settings-list-header",
                     span { class: "settings-list-title", "About" }
@@ -382,8 +384,6 @@ pub fn Config() -> Element {
                         span { "v{APP_VERSION}" }
                     }
                 }
-            }
-            }
             }
         }
         }
