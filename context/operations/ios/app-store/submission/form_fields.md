@@ -108,4 +108,4 @@ Data Not Collected. Nothing leaves the device; there is no account, no analytics
 
 ## Screenshots
 
-The four in the README (`docs/screenshots/`: home, counters, counter, config) were taken on the phone. The listing wants the 6.5" size (1242×2688), so retake them on the iPhone 11 Pro Max simulator, the same device zwipe uses (`zwipe/context/operations/ios/simulator.md`), and keep them in `screenshots/` here. From April 2027 Apple also wants iPhone Duo screenshots for apps on the iOS 27.1 SDK or later.
+`screenshots/<theme>-<mode>/`: 25 of them, five per theme (Home, a counter, its trends and bests, the counter list, Config) in gruvbox dark, catppuccin light, nord dark, rose-pine light and tokyo-night dark, 1242x2688 from the iPhone 11 Pro Max simulator, the 6.5" set the listing takes. `contact.png` shows them all. The numbers are made up: `scripts/ios/spoof_db.py` writes a database of four invented counters, and `scripts/ios/screenshots.sh` taps through the app with idb and captures each screen, so no real data is on the store. Redo both when the screens change. From April 2027 Apple also wants iPhone Duo screenshots for apps on the iOS 27.1 SDK or later.
