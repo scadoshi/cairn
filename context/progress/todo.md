@@ -11,7 +11,6 @@ Ordered. Top is next.
     - The counter chart draws a 1.6 line, and its overlay starts after a short delay.
     - Config lists, pref notes and stat chips look right.
 4. Draw the Cairn mark properly. `assets/c.txt` is the home-screen logo and the source `scripts/icon.py` renders the app icon from; `assets/s.txt` is the scadoshi mark kept behind the Mark setting. The pipeline is verified, only the artwork is pending.
-5. TestFlight and App Store review. `operations/ios/app-store/submission/overview.md`.
-6. Edit a past day's count (today's +/- exists; history is read-only).
-7. Export: pick a destination instead of always writing to Downloads.
-8. A yearly heat strip per counter.
+5. Edit a past day's count (today's +/- exists; history is read-only).
+6. Export: pick a destination instead of always writing to Downloads.
+7. A yearly heat strip per counter.
