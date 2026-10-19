@@ -68,7 +68,7 @@ counter,tally,pull-ups,push-ups,habit,streak,lifetime,tracker,goal,daily,workout
 |-------|-------|
 | Support URL | https://scottyfermo.com/side-quests/cairn |
 | Marketing URL | https://scottyfermo.com/side-quests/cairn |
-| Privacy Policy URL | To create: a page on scottyfermo.com saying the app collects nothing and nothing leaves the device. Apple requires the URL for every app, collecting or not. |
+| Privacy Policy URL | https://scottyfermo.com/projects/cairn/privacy (portfolio `src/pages/privacy.rs`; Apple requires one for every app, collecting or not) |
 | Version | 1.0.0 (must match the build's `CFBundleShortVersionString`; the console creates the version as "1.0", change it) |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
