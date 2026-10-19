@@ -114,6 +114,8 @@ pub fn App() -> Element {
     let saved = store.theme().ok().flatten();
     let theme = use_signal(move || saved.unwrap_or_default());
     use_context_provider(|| theme);
+    // Closed until the splash starts to fade; the entrances wait on it.
+    use_context_provider(|| orangui::SplashGate(Signal::new(false)));
     use_context_provider(|| StoreVersion(Signal::new(0)));
     let saved_prefs = store.preferences().unwrap_or_default();
     let prefs = use_signal(move || saved_prefs);

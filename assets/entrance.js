@@ -89,5 +89,22 @@
         });
     }).observe(document.body, { subtree: true, childList: true });
 
-    scan(document);
+    // The splash covers the first screen, so the cards wait and arrive as it
+    // leaves rather than underneath it. Ready once the app has mounted and
+    // its splash is fading or gone; with no splash, right away.
+    function splashLeaving() {
+        if (!document.querySelector(".theme-root")) return false;
+        var splash = document.querySelector(".splash");
+        return !splash || splash.classList.contains("splash-out");
+    }
+    if (splashLeaving()) {
+        scan(document);
+    } else {
+        var gate = new MutationObserver(function () {
+            if (!splashLeaving()) return;
+            gate.disconnect();
+            scan(document);
+        });
+        gate.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] });
+    }
 })();

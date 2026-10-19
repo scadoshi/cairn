@@ -112,16 +112,23 @@ fn TypedText(text: &'static str, typed: Signal<bool>) -> Element {
         }
     });
     let mut typing = use_signal(|| fresh);
-    use_future(move || async move {
-        if !fresh {
+    // Types once the splash starts to leave, so the typing is seen from its
+    // first letter; without a gate it types on mount.
+    let gate = try_consume_context::<orangui::SplashGate>();
+    let mut started = use_signal(|| false);
+    use_effect(move || {
+        if !fresh || *started.peek() || !gate.is_none_or(|gate| gate.0()) {
             return;
         }
-        for c in text.chars() {
-            tokio::time::sleep(Duration::from_millis(LETTER_MS)).await;
-            shown.write().push(c);
-        }
-        typing.set(false);
-        typed.set(true);
+        started.set(true);
+        spawn(async move {
+            for c in text.chars() {
+                tokio::time::sleep(Duration::from_millis(LETTER_MS)).await;
+                shown.write().push(c);
+            }
+            typing.set(false);
+            typed.set(true);
+        });
     });
 
     rsx! {
