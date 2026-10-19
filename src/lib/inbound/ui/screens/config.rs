@@ -27,6 +27,9 @@ use orangui::{
 };
 use std::{fmt::Write as _, path::PathBuf};
 
+/// The crate version, which is the release version on the stores.
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// The config screen.
 #[component]
 pub fn Config() -> Element {
@@ -366,6 +369,20 @@ pub fn Config() -> Element {
                     p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
                 }
             }
+            div { class: "settings-list",
+                div { class: "settings-list-header",
+                    span { class: "settings-list-title", "About" }
+                }
+                div { class: "settings-row",
+                    span { class: "row-label-with-hint",
+                        span { class: "settings-row-label", "Version" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Version)); hint_open.set(true); } }
+                    }
+                    div { class: "settings-row-value",
+                        span { "v{APP_VERSION}" }
+                    }
+                }
+            }
             }
             }
         }
@@ -581,6 +598,7 @@ enum ConfigHint {
     SortCounters,
     ConfirmMinus,
     Export,
+    Version,
 }
 
 /// One dialog for the whole screen, its content picked by `which`.
@@ -669,6 +687,11 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
                     HintBullet { "Desktop: Downloads" }
                     HintBullet { "Same names overwrite" }
                 }
+            }
+        },
+        ConfigHint::Version => rsx! {
+            HintDialog { open, title: "Version",
+                HintLine { "The build you are on" }
             }
         },
     }
