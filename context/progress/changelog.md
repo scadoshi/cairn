@@ -6,6 +6,11 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+## 1.1.0, 2026-10-19
+
+- Three new themes: Monokai Octagon, Oxocarbon and Poimandres, each in dark and light, bringing the set to 34.
+- The App icon picker offers the new themes too.
+
 ## 1.0.0, 2026-10-18
 
 The first App Store build; everything before this shipped straight to the phone.
