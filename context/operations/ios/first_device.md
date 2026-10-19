@@ -40,7 +40,7 @@ A development-signed app runs for a year on registered devices only, which is ex
 
 ## Route B: TestFlight
 
-Follow `submission.md` through packaging, upload with Transporter, then in App Store Connect add yourself as an internal tester on the build. Internal TestFlight needs no review. Use this once the app should survive Xcode updates and phone swaps without a rebuild.
+Follow `app-store/submission/build.md` through packaging, upload with Transporter, then in App Store Connect add yourself as an internal tester on the build. Internal TestFlight needs no review. Use this once the app should survive Xcode updates and phone swaps without a rebuild.
 
 ## Data
 

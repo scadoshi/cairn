@@ -10,7 +10,7 @@ Read [`CLAUDE.md`](CLAUDE.md) first for the rules.
 |-----------|--------------|
 | [`architecture/`](architecture/) | `structure.md` (the tree and who owns what), `decisions.md` (the numbered why) |
 | [`development/`](development/) | How to write code here: ownership (read first), commit and doc standards, the Dioxus 0.7 cheatsheet |
-| [`operations/`](operations/) | How to ship: `ios/submission.md` and the build history |
+| [`operations/`](operations/) | How to ship: `ios/app-store/submission/` (build, publish, form fields, history) and `store-submissions/` (What's New per version) |
 | [`plans/`](plans/) | Specs for upcoming work. `watch.md` is the Apple Watch horizon |
 | [`progress/`](progress/) | `overview.md` (live), `todo.md` (next), `backlog.md` (someday), `changelog.md` |
 
@@ -26,7 +26,7 @@ It is installed on scotland-mobile and in daily use, signed with a development p
 
 There is a write-up at [scottyfermo.com/side-quests/cairn](https://scottyfermo.com/side-quests/cairn) with a demo and screenshots.
 
-**Next:** draw the Cairn mark properly, then TestFlight and review via [`operations/ios/submission.md`](operations/ios/submission.md). The database push does not work on a TestFlight build, which is signed without `get-task-allow`; moving data there needs the in-app import on the backlog.
+**Next:** draw the Cairn mark properly, then TestFlight and review via [`operations/ios/app-store/submission/overview.md`](operations/ios/app-store/submission/overview.md). The database push does not work on a TestFlight build, which is signed without `get-task-allow`; moving data there needs the in-app import on the backlog.
 
 Two features are scoped but not started: [`plans/celebrations.md`](plans/celebrations.md) and [`plans/big_step.md`](plans/big_step.md).
 

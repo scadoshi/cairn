@@ -17,7 +17,7 @@ What has to exist first, none of which does yet:
 3. An **app record** in App Store Connect. Apps, +, iOS. Name "Cairn", primary language, the bundle id, any SKU. The name is reserved once this exists.
 4. An **app icon**. Apple rejects uploads without one. `scripts/ios/icons.sh` handles the mechanics and the placeholder mark passes; the artwork can change later.
 
-Then follow [`submission.md`](submission.md) end to end: build, patch the plist, compile the icon catalog, sign with the distribution identity and `Entitlements-Release.plist`, package the `.ipa`, upload with Transporter.
+Then follow [`app-store/submission/build.md`](app-store/submission/build.md) end to end: build, patch the plist, compile the icon catalog, sign with the distribution identity and `Entitlements-Release.plist`, package the `.ipa`, upload with Transporter.
 
 In App Store Connect, TestFlight tab, external group, add their email. They get a link, install Apple's TestFlight app, and Cairn appears in it.
 

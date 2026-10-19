@@ -1,6 +1,6 @@
-# iOS: build, sign, upload
+# Build the iOS app (release)
 
-Cairn's version of zwipe's runbook, with the parts a local-only app never needs cut out. One-time setup (Apple Developer account, the App ID for `com.scadoshi.count`, an Apple Distribution certificate, an App Store provisioning profile saved as `~/certs/Count_App_Store.mobileprovision`) is the same as zwipe's `context/operations/ios/setup.md`; do that once and don't repeat it here.
+Produce a signed `Cairn.ipa` ready to upload, the recurring runbook for every version. Cairn's version of zwipe's `build.md`, with the parts a local-only app never needs cut out. To upload and submit what this produces, continue to [publish.md](publish.md). One-time setup (Apple Developer account, the App ID for `com.scadoshi.count`, an Apple Distribution certificate, an App Store provisioning profile saved as `~/certs/Count_App_Store.mobileprovision`) is the same as zwipe's `context/operations/ios/setup.md`; do that once and don't repeat it here.
 
 Entitlements are checked in: `Entitlements.plist` for debug and `Entitlements-Release.plist` for the store, identical except `get-task-allow`. The team prefix is zwipe's.
 
@@ -37,7 +37,7 @@ Dioxus writes these from a stale template.
   $APP/Info.plist
 
 # Marketing version = Cargo.toml's; build number increments every upload and
-# is never reused. Record both in history.md.
+# is never reused. Record both in history.md. Build 1 was 1.0.0.
 /usr/libexec/PlistBuddy \
   -c "Set :CFBundleShortVersionString <VERSION>" \
   -c "Set :CFBundleVersion <BUILD>" \
@@ -90,10 +90,4 @@ codesign --force --sign "<HASH-OR-NAME>" --entitlements Entitlements-Release.pli
 rm -f Cairn.ipa && mkdir -p Payload && cp -r $APP Payload/ && zip -r Cairn.ipa Payload && rm -rf Payload
 ```
 
-## 6. Upload and submit
-
-Use Transporter from the Mac App Store: sign in, drag `Cairn.ipa` in, Deliver. Not `xcrun altool` (deprecated, and its metadata errors trigger false "beta Xcode" rejections) and not `iTMSTransporter` (wants `.itmsp`, not `.ipa`).
-
-The build appears in App Store Connect after five to ten minutes. Create the version if needed, select the build, answer No to export compliance (no encryption beyond the OS), submit. TestFlight first for anything you want on your own phone before review.
-
-Then add a row to `history.md`.
+**Next:** `open -a Transporter ~/Developer/cairn/Cairn.ipa` opens it ready to Deliver; the rest is [publish.md](publish.md).

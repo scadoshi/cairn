@@ -7,7 +7,7 @@
 #
 # Run after every build and before signing. scripts/ios/deploy.sh and
 # install_device.sh do it for a phone, scripts/ios/sim_icons.sh for the
-# simulator; operations/ios/submission.md calls it by hand.
+# simulator; operations/ios/app-store/submission/build.md calls it by hand.
 #
 # The PNGs come from scripts/icon.py, which renders the mark from assets/c.txt.
 #
