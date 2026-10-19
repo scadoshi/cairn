@@ -10,7 +10,8 @@ solid strokes the way zwipe's Z icon does) onto gruvbox dark, cream on
 assets/favicon/, plus an inset variant for Android's adaptive mask.
 
 Also writes one 1024 icon per orangui theme and mode into assets/app-icons/,
-each theme's text on its background in that mode, read from the themes.css of
+each theme's logo color on its background, the text color in dark and the
+accent in light like orangui's --logo, read from the themes.css of
 the orangui build Cargo.lock pins. scripts/ios/icons.sh compiles them into
 the alternate icons the App icon sheet switches between.
 
@@ -59,8 +60,10 @@ def palettes() -> dict[tuple[str, str], tuple[str, str]]:
     for name, mode, body in re.findall(
         r"^\.theme-([a-z0-9-]+)-(dark|light)\s*\{(.*?)^\}", css, re.M | re.S
     ):
+        # The mark takes orangui's --logo: the text color in dark, the accent in light.
+        ink = "--text-primary" if mode == "dark" else "--accent-primary"
         bg = re.search(r"--bg-primary:\s*(#[0-9a-fA-F]{6})", body)
-        fg = re.search(r"--text-primary:\s*(#[0-9a-fA-F]{6})", body)
+        fg = re.search(ink + r":\s*(#[0-9a-fA-F]{6})", body)
         if bg and fg:
             out[(name, mode)] = (bg.group(1), fg.group(1))
     return out
