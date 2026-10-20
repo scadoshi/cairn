@@ -3,7 +3,8 @@
 //! iOS keeps the choice itself, so nothing is stored here: every read asks
 //! the OS for its alternate icon name. Every other platform has one fixed
 //! icon, and the pick is held for the session so the sheet behaves the same
-//! there.
+//! there. Whether the icon follows the theme is a preference, stored with
+//! the rest.
 //!
 //! `scripts/icon.py` renders an icon per theme and mode into
 //! `assets/app-icons/`, and `scripts/ios/icons.sh` bundles each as an
@@ -36,6 +37,16 @@ pub fn current() -> ThemeConfig {
 /// saying the icon changed.
 pub fn set(icon: &ThemeConfig) -> Result<(), String> {
     imp::set(alternate_name(icon).as_deref())
+}
+
+/// Switches the icon to `icon`'s colors unless it already shows them, so the
+/// OS alert comes only with a change.
+pub fn show(icon: &ThemeConfig) -> Result<(), String> {
+    if current() == *icon {
+        Ok(())
+    } else {
+        set(icon)
+    }
 }
 
 /// "dark" or "light", as the icon files and bundle names spell it.
@@ -180,10 +191,14 @@ mod tests {
         }
     }
 
+    // One test, since the pick is process-wide.
     #[test]
     fn a_pick_reads_back_as_its_theme_and_mode() {
         assert!(set(&icon("nord", false)).is_ok());
         assert!(current() == icon("nord", false));
+        assert!(show(&icon("nord", false)).is_ok());
+        assert!(show(&icon("dracula", true)).is_ok());
+        assert!(current() == icon("dracula", true));
         assert!(set(&primary()).is_ok());
         assert!(current() == primary());
     }

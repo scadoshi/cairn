@@ -1,29 +1,36 @@
-//! The App icon sheet: every theme as a row, each with the icon drawn in that
-//! theme's colors in the mode the icon is in now (Config's App icon row flips
-//! the mode), laid out like orangui's ThemeSheet.
+//! The App icon sheet: Match theme first, then every theme as a row, each with
+//! the icon drawn in that theme's colors in the mode the icon is in now
+//! (Config's App icon row flips the mode), laid out like orangui's ThemeSheet.
 
 use crate::{
-    inbound::ui::{TOAST_NORMAL, TOAST_QUICK, screens::home::LOGO_CAIRN},
+    domain::preferences::AppIcon,
+    inbound::ui::{TOAST_NORMAL, TOAST_QUICK, screens::home::LOGO_CAIRN, use_prefs},
     outbound::app_icon,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{BottomSheet, Button, ButtonVariant, THEME_GROUPS, ThemeConfig, display_theme_name};
 
-/// One selectable icon row: name on the left, the icon on the right. The tile
-/// draws the mark as text in the theme's own class, so it is the same glyph
-/// and colors `scripts/icon.py` renders, with nothing bundled to show it.
+/// One selectable row: label on the left, the icon on the right. The tile
+/// draws the mark as text in `tile`'s own class, so it is the same glyph and
+/// colors `scripts/icon.py` renders, with nothing bundled to show it. `pick`
+/// is the draft it stands for, `None` for Match theme.
 #[component]
-fn IconRow(theme: String, mode: String, mut draft: Signal<String>) -> Element {
-    let is_selected = draft() == theme;
-    let click_theme = theme.clone();
+fn IconRow(
+    label: String,
+    pick: Option<String>,
+    tile: ThemeConfig,
+    mut draft: Signal<Option<String>>,
+) -> Element {
+    let is_selected = draft() == pick;
+    let mode = app_icon::mode(tile.is_dark);
     rsx! {
         button {
             class: if is_selected { "pref-row selected" } else { "pref-row" },
-            onclick: move |_| draft.set(click_theme.clone()),
+            onclick: move |_| draft.set(pick.clone()),
             div { class: "pref-row-inner",
-                span { "{display_theme_name(&theme)}" }
-                div { class: "app-icon-tile theme-{theme}-{mode}",
+                span { "{label}" }
+                div { class: "app-icon-tile theme-{tile.name}-{mode}",
                     pre { "{LOGO_CAIRN.trim_end()}" }
                 }
             }
@@ -31,9 +38,9 @@ fn IconRow(theme: String, mode: String, mut draft: Signal<String>) -> Element {
     }
 }
 
-/// Bottom sheet for picking the home-screen icon's theme. The pick is held
-/// until Save, which switches the icon in its current mode and writes it to
-/// `icon`.
+/// Bottom sheet for picking the home-screen icon's theme, or Match theme. The
+/// pick is held until Save, which switches the icon, writes it to `icon`, and
+/// stores whether it follows the theme.
 #[component]
 pub fn IconSheet(
     mut open: Signal<bool>,
@@ -41,19 +48,22 @@ pub fn IconSheet(
     hint: Signal<bool>,
 ) -> Element {
     let toast = use_toast();
-    let mut draft = use_signal(|| icon.peek().name.clone());
+    let theme = use_context::<Signal<ThemeConfig>>();
+    let mut prefs = use_prefs();
+    // `None` is Match theme.
+    let saved = move || (prefs().app_icon == AppIcon::Picked).then(|| icon().name);
+    let mut draft = use_signal(saved);
 
     // Every open starts from the icon actually showing.
     use_effect(move || {
         if open() {
-            let now = app_icon::current();
-            draft.set(now.name.clone());
-            icon.set(now);
+            icon.set(app_icon::current());
+            draft.set(saved());
         }
     });
 
     let discard = use_callback(move |()| {
-        if *draft.peek() != icon.peek().name {
+        if *draft.peek() != saved() {
             toast.info(
                 "App icon unchanged".to_string(),
                 ToastOptions::default().duration(TOAST_QUICK),
@@ -62,7 +72,36 @@ pub fn IconSheet(
         open.set(false);
     });
 
-    let mode = app_icon::mode(icon().is_dark).to_string();
+    let save = move |_| {
+        let picked = draft();
+        let (next, message) = match &picked {
+            None => (theme(), "App icon matches your theme".to_string()),
+            Some(name) => (
+                ThemeConfig {
+                    name: name.clone(),
+                    is_dark: icon.peek().is_dark,
+                },
+                format!("App icon: {}", display_theme_name(name)),
+            ),
+        };
+        match app_icon::show(&next) {
+            Ok(()) => {
+                toast.success(message, ToastOptions::default().duration(TOAST_NORMAL));
+                icon.set(next);
+                prefs.write().app_icon = if picked.is_none() {
+                    AppIcon::MatchesTheme
+                } else {
+                    AppIcon::Picked
+                };
+            }
+            Err(e) => {
+                toast.error(e, ToastOptions::default());
+            }
+        }
+        open.set(false);
+    };
+
+    let icon_mode = icon().is_dark;
 
     rsx! {
         BottomSheet {
@@ -78,33 +117,21 @@ pub fn IconSheet(
                 }
                 Button {
                     variant: ButtonVariant::Action,
-                    disabled: draft() == icon().name,
-                    onclick: move |_| {
-                        let picked = ThemeConfig {
-                            name: draft(),
-                            is_dark: icon.peek().is_dark,
-                        };
-                        match app_icon::set(&picked) {
-                            Ok(()) => {
-                                toast.success(
-                                    format!("App icon: {}", display_theme_name(&picked.name)),
-                                    ToastOptions::default().duration(TOAST_NORMAL),
-                                );
-                                icon.set(picked);
-                            }
-                            Err(e) => {
-                                toast.error(e, ToastOptions::default());
-                            }
-                        }
-                        open.set(false);
-                    },
+                    disabled: draft() == saved(),
+                    onclick: save,
                     "Save"
                 }
             },
+            IconRow { label: "Match theme", pick: None, tile: theme(), draft }
             for group in THEME_GROUPS {
                 div { class: "pref-section-label", "{group.label}" }
                 for t in group.themes.iter().copied() {
-                    IconRow { theme: t.to_string(), mode: mode.clone(), draft }
+                    IconRow {
+                        label: display_theme_name(t),
+                        pick: Some(t.to_string()),
+                        tile: ThemeConfig { name: t.to_string(), is_dark: icon_mode },
+                        draft,
+                    }
                 }
             }
         }

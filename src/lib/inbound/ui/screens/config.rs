@@ -4,7 +4,7 @@
 use crate::{
     domain::{
         counter::csv,
-        preferences::{Celebration, Logo, Preferences, rest_mask_has, rest_mask_toggled},
+        preferences::{AppIcon, Celebration, Logo, Preferences, rest_mask_has, rest_mask_toggled},
     },
     inbound::ui::{
         TOAST_NORMAL, TOAST_QUICK,
@@ -127,13 +127,26 @@ pub fn Config() -> Element {
         toast.success(what, ToastOptions::default().duration(TOAST_NORMAL));
     });
 
+    // A kept theme, never a preview, carries the icon along when it follows.
+    let follow_icon = use_callback(move |kept: ThemeConfig| {
+        if prefs.peek().app_icon != AppIcon::MatchesTheme {
+            return;
+        }
+        match app_icon::show(&kept) {
+            Ok(()) => icon.set(kept),
+            Err(e) => toast.error(e, ToastOptions::default()),
+        }
+    });
+
     let toggle_dark = move |_| {
         let prev = theme.read().clone();
         let on = !prev.is_dark;
-        theme.set(ThemeConfig {
+        let next = ThemeConfig {
             name: prev.name,
             is_dark: on,
-        });
+        };
+        theme.set(next.clone());
+        follow_icon.call(next);
         said.call(format!("Dark mode {}", if on { "on" } else { "off" }));
     };
 
@@ -184,8 +197,12 @@ pub fn Config() -> Element {
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::AppIcon)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
-                        span { {display_theme_name(&icon().name)} }
-                        DarkModeButton { is_dark: icon().is_dark, onclick: toggle_icon_dark }
+                        if prefs().app_icon == AppIcon::MatchesTheme {
+                            span { "Matches theme" }
+                        } else {
+                            span { {display_theme_name(&icon().name)} }
+                            DarkModeButton { is_dark: icon().is_dark, onclick: toggle_icon_dark }
+                        }
                         Button {
                             variant: ButtonVariant::Action,
                             onclick: move |_| {
@@ -404,7 +421,8 @@ pub fn Config() -> Element {
             open: preferences_open,
             theme,
             hint: Some(hint_open),
-            on_save: move |_| {
+            on_save: move |kept: ThemeConfig| {
+                follow_icon.call(kept);
                 toast.success(
                     "Theme saved".to_string(),
                     ToastOptions::default().duration(TOAST_NORMAL),
@@ -618,6 +636,7 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
         ConfigHint::AppIcon => rsx! {
             HintDialog { open, title: "App icon",
                 HintLine { "The icon on your home screen, in any theme's colors" }
+                HintLine { HintKey { "Match theme" } " keeps it in your theme as you change it" }
             }
         },
         ConfigHint::Mark => rsx! {

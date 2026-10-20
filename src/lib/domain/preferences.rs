@@ -43,6 +43,16 @@ impl CounterOrder {
     }
 }
 
+/// What colors the home-screen icon.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum AppIcon {
+    /// The theme picked in the App icon sheet, kept until another pick.
+    #[default]
+    Picked,
+    /// The app's theme and its mode, switching with them.
+    MatchesTheme,
+}
+
 /// Which mark the home screen shows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum Logo {
@@ -326,6 +336,8 @@ pub struct Preferences {
     /// What happens when a daily goal is met.
     #[serde(deserialize_with = "celebration_or_default")]
     pub celebration: Celebration,
+    /// What colors the home-screen icon.
+    pub app_icon: AppIcon,
 }
 
 /// Reads the stored celebration, falling back to the default for anything
@@ -362,6 +374,7 @@ impl Default for Preferences {
             confirm_minus: false,
             logo: Logo::Cairn,
             celebration: Celebration::LevelUp,
+            app_icon: AppIcon::Picked,
         }
     }
 }
@@ -438,6 +451,7 @@ mod tests {
         assert_eq!(p.counter_order, CounterOrder::Lifetime);
         assert!(p.confirm_minus);
         assert_eq!(p.logo, Logo::Cairn, "a missing field takes its default");
+        assert_eq!(p.app_icon, AppIcon::Picked);
     }
 
     #[test]
