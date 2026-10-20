@@ -185,6 +185,9 @@ pub fn App() -> Element {
         // Reveals cards and rolls their figures from inside the page, where it
         // keeps running while the page scrolls.
         document::Script { src: ENTRANCE_JS, defer: true }
+        // Last of the head elements: shows #main, which the launch config
+        // hides, once every stylesheet above is in.
+        orangui::BootReveal {}
         // The theme class sits here as well as on the screen, so the toast
         // container, which mounts above the router, resolves the same
         // palette instead of falling through to unset variables.

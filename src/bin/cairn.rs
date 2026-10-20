@@ -2,13 +2,8 @@ use cairn::{
     inbound::ui::{App, SharedStore},
     outbound::{paths, sqlite::SqliteStore},
 };
+use orangui::{BOOT_BG, BOOT_HEAD};
 use std::sync::Arc;
-
-// Anti-flash boot styling for the native WebView, same trick as zwiper: the
-// default theme's --bg-primary (gruvbox-dark #282828) is painted before any
-// HTML so the window never flashes white.
-const BOOT_BG: (u8, u8, u8, u8) = (0x28, 0x28, 0x28, 0xff);
-const BOOT_HEAD: &str = "<style>html,body{background-color:#282828;}</style>";
 
 fn main() {
     let path = match paths::database() {
@@ -29,6 +24,8 @@ fn main() {
     launch(store);
 }
 
+// The WebView paints dark and keeps #main hidden until the styles are in;
+// App mounts orangui's BootReveal last among its head elements.
 #[cfg(feature = "desktop")]
 fn launch(store: SharedStore) {
     use dioxus::desktop::Config;

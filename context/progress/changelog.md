@@ -7,6 +7,7 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 ## Unreleased
 
 - The app icon can match your theme, switching with it in dark and light.
+- The app no longer flashes unstyled for a moment before the splash.
 
 ## 1.1.0, 2026-10-19
 
