@@ -6,6 +6,8 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
+## 1.1.1, 2026-10-21
+
 - Flexoki replaces Visual Studio, which now opens as VS Code.
 - Synthwave '84's colors match the original theme.
 
