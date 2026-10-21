@@ -455,12 +455,12 @@ impl SettingsStore for SqliteStore {
                 |r| r.get(0),
             )
             .optional()?;
-        // A theme that no longer parses (an old shape, say) or whose slug
-        // orangui no longer lists (a renamed theme) is just ignored; the
+        // A retired theme reads back as its replacement. One that no longer
+        // parses (an old shape, say) or names no theme is ignored; the
         // default takes over and the next pick overwrites it.
         Ok(raw
             .and_then(|s| serde_json::from_str::<ThemeConfig>(&s).ok())
-            .filter(|t| orangui::ALLOWED_THEMES.contains(&t.name.as_str())))
+            .and_then(ThemeConfig::resolve))
     }
 
     fn set_theme(&self, theme: &ThemeConfig) -> Result<(), StoreError> {
@@ -651,10 +651,23 @@ mod tests {
     }
 
     #[test]
-    fn a_theme_orangui_no_longer_lists_reads_back_as_none() {
+    fn a_retired_theme_reads_back_as_its_replacement() {
         let s = store();
         s.set_theme(&ThemeConfig {
-            name: "ristretto".to_string(),
+            name: "visual-studio".to_string(),
+            is_dark: false,
+        })
+        .unwrap();
+        let got = s.theme().unwrap().unwrap();
+        assert_eq!(got.name, "vscode");
+        assert!(!got.is_dark);
+    }
+
+    #[test]
+    fn a_theme_no_build_lists_reads_back_as_none() {
+        let s = store();
+        s.set_theme(&ThemeConfig {
+            name: "a-theme-from-a-newer-build".to_string(),
             is_dark: true,
         })
         .unwrap();

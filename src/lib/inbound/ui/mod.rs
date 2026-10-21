@@ -114,6 +114,10 @@ pub fn App() -> Element {
     let saved = store.theme().ok().flatten();
     let theme = use_signal(move || saved.unwrap_or_default());
     use_context_provider(|| theme);
+    // An icon a retired theme drew switches to its replacement, once a launch.
+    use_hook(|| {
+        let _ = crate::outbound::app_icon::replace_retired();
+    });
     // Closed until the splash starts to fade; the entrances wait on it.
     use_context_provider(|| orangui::SplashGate(Signal::new(false)));
     use_context_provider(|| StoreVersion(Signal::new(0)));

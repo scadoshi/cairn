@@ -26,11 +26,23 @@ pub fn primary() -> ThemeConfig {
     }
 }
 
-/// The theme and mode the icon is drawn in now.
+/// The theme and mode the icon is drawn in now. A retired theme's icon reads
+/// as its replacement's, and a name this build cannot read as the primary.
 pub fn current() -> ThemeConfig {
     imp::current()
         .and_then(|name| parse(&name))
+        .and_then(ThemeConfig::resolve)
         .unwrap_or_else(primary)
+}
+
+/// Moves an icon this build no longer bundles (a retired theme's) onto the one
+/// [`current`] reads it as. A no-op once they match; on iOS the OS shows its
+/// own alert when it switches.
+pub fn replace_retired() -> Result<(), String> {
+    match imp::current().and_then(|name| parse(&name)) {
+        Some(shown) if shown != current() => set(&current()),
+        _ => Ok(()),
+    }
 }
 
 /// Switches the icon to `icon`'s colors. On iOS the OS shows its own alert
@@ -201,5 +213,13 @@ mod tests {
         assert!(current() == icon("dracula", true));
         assert!(set(&primary()).is_ok());
         assert!(current() == primary());
+
+        assert!(imp::set(Some("AppIcon-visual-studio-light")).is_ok());
+        assert!(current() == icon("vscode", false));
+        assert!(replace_retired().is_ok());
+        assert_eq!(imp::current().as_deref(), Some("AppIcon-vscode-light"));
+        assert!(imp::set(Some("AppIcon-no-such-theme-dark")).is_ok());
+        assert!(current() == primary());
+        assert!(set(&primary()).is_ok());
     }
 }

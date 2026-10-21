@@ -6,6 +6,9 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
+- Flexoki replaces Visual Studio, which now opens as VS Code.
+- Synthwave '84's colors match the original theme.
+
 ## 1.1.0, 2026-10-20
 
 - Four Monokai Pro themes: Pro, Machine, Octagon and Spectrum, each in dark and light.
