@@ -1,8 +1,8 @@
 # Changelog
 
-Unreleased entries collect at the top. At cut time they move under a version
-heading with the date, and `Cargo.toml` bumps in the same commit. See
-`development/versioning.md` for what bumps what.
+Unreleased entries collect at the top. At cut time they move under a version heading with the date, and `Cargo.toml` bumps in the same commit. See `development/versioning.md` for what bumps what.
+
+Every entry added here also goes into portfolio's `src/changelog.rs` in the same sitting, in `UPCOMING` under the next version, reworded to zwipe's rules (one phrase, no period). That file is what scottyfermo.com/projects/cairn/changelog shows, and the app has no other public changelog.
 
 ## Unreleased
 
