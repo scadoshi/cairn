@@ -28,7 +28,9 @@ There is a write-up at [scottyfermo.com/side-quests/cairn](https://scottyfermo.c
 
 **2026-10-18: 1.0.0 submitted to the App Store** as Cairn Counter ("Cairn" was taken), iOS build 1, straight to review with no TestFlight round. The same day the repo got zwipe's submission layout under `operations/ios/app-store/submission/` (build, publish, form fields, history), `operations/store-submissions/` for the per-version What's New, a Version row in Config, a privacy policy page on the portfolio, and `scripts/ios/spoof_db.py` plus `scripts/ios/screenshots.sh`, which fill a simulator with invented counters and tap through the app for the store screenshots, so no real numbers go on the listing. Build 1 is the first with the App icon picker and the light-mode icons in each theme's accent color.
 
-**Next:** draw the Cairn mark properly, and watch the review. The runbook for the next version is
+**2026-10-20: 1.0.0 live on the App Store.** 1.1.0 takes everything since and ships as iOS build 7, which replaces build 6 (uploaded, never submitted). The runbook is `operations/ios/app-store/submission/overview.md`.
+
+**Next:** submit 1.1.0, and draw the Cairn mark properly.
 
 Two features are scoped but not started: [`plans/celebrations.md`](plans/celebrations.md) and [`plans/big_step.md`](plans/big_step.md).
 

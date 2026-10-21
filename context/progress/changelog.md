@@ -6,13 +6,7 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 ## Unreleased
 
-- The app icon can match your theme, switching with it in dark and light.
-- The app no longer flashes unstyled for a moment before the splash.
-- The logo builds left to right, its shape arriving as noise and then decoding into the mark, on the splash and the home screen.
-- The splash's logo leaves the way it arrived, turning back to noise and clearing left to right before the home screen shows.
-- The splash spells out the full Cairn wordmark.
-
-## 1.1.0, 2026-10-19
+## 1.1.0, 2026-10-20
 
 - Four Monokai Pro themes: Pro, Machine, Octagon and Spectrum, each in dark and light.
 - Editor defaults as themes: Darcula, Xcode, Visual Studio, Eclipse and Neovim, each in dark and light.
@@ -22,6 +16,11 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 - The App icon picker offers the new themes too.
 - The backdrop is a field of shaded squares instead of grid lines, on screens and sheets.
 - The app opens on a short splash: the backdrop rains in and the C resolves over it before the first screen, whose cards, figures and quote arrive as it leaves.
+- The app icon can match your theme, switching with it in dark and light.
+- The app no longer flashes unstyled for a moment before the splash.
+- The logo builds left to right, its shape arriving as noise and then decoding into the mark, on the splash and the home screen.
+- The splash's logo leaves the way it arrived, turning back to noise and clearing left to right before the home screen shows.
+- The splash spells out the full Cairn wordmark.
 
 ## 1.0.0, 2026-10-18
 
