@@ -8,7 +8,7 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 
 - The app icon can match your theme, switching with it in dark and light.
 - The app no longer flashes unstyled for a moment before the splash.
-- The logo builds itself left to right as it decodes, on the splash and the home screen.
+- The logo builds left to right, its shape arriving as noise and then decoding into the mark, on the splash and the home screen.
 
 ## 1.1.0, 2026-10-19
 
