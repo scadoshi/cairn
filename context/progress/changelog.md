@@ -10,6 +10,7 @@ heading with the date, and `Cargo.toml` bumps in the same commit. See
 - The app no longer flashes unstyled for a moment before the splash.
 - The logo builds left to right, its shape arriving as noise and then decoding into the mark, on the splash and the home screen.
 - The splash's logo leaves the way it arrived, turning back to noise and clearing left to right before the home screen shows.
+- The splash spells out the full Cairn wordmark.
 
 ## 1.1.0, 2026-10-19
 

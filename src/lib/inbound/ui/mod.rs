@@ -197,7 +197,7 @@ pub fn App() -> Element {
             // The opening: the field rains in under the mark, then fades to
             // the first screen while it mounts underneath.
             orangui::Splash {
-                pre { class: "logo", orangui::Decode { text: screens::home::LOGO_CAIRN } }
+                pre { class: "logo", orangui::Decode { text: include_str!("../../../../assets/cairn.txt") } }
             }
             ToastStack { timed_fade: true,
                 Router::<Route> {}
