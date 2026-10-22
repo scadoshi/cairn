@@ -5,7 +5,7 @@ cairn/
 ├── Cargo.toml              # single crate; lib + one bin
 ├── Dioxus.toml             # app name, bundle id, iOS plist
 ├── assets/                 # main.css, fonts, the c and s marks
-├── docs/screenshots/       # what the README shows
+├── docs/                   # the README's logo
 ├── scripts/                # icon.py, seed.py, import_taps.py, ios/, android/
 ├── context/                # this documentation
 └── src/

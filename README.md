@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.png">
+  <img src="docs/logo-light.png" alt="cairn" width="536">
+</picture>
+
 # Cairn
 
 A counter, named for the waymarker you build one stone at a time by walking the same path and adding one every time you pass. You name something you do, log how many you did today, and the number goes up and stays up.
@@ -6,14 +11,7 @@ I built it to track lifetime pull-ups and push-ups. A lifetime total on its own 
 
 Everything lives on the device in SQLite. No account, no server, nothing leaves the phone. Export is a CSV of two columns, `day` and `count`, because that's all the raw data actually is.
 
-Desktop and iOS today. An Apple Watch version is the reason the counting logic is kept free of any UI or database code.
-
-| | |
-|:---:|:---:|
-| ![Home](docs/screenshots/home.jpeg) | ![Counters](docs/screenshots/counters.jpeg) |
-| Today across every counter, then a quote | Each counter and what today still owes |
-| ![One counter](docs/screenshots/counter.jpeg) | ![Config](docs/screenshots/config.jpeg) |
-| Pace against a goal, and 60 days of history | Every setting explains itself |
+It's on the [App Store](https://apps.apple.com/us/app/cairn-counter/id6824349629), and it runs on desktop too. An Apple Watch version is the reason the counting logic is kept free of any UI or database code.
 
 ## Running it
 
