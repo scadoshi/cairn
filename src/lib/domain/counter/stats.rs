@@ -4,10 +4,12 @@
 //! All functions take `today` as a parameter. The clock is read once, at the
 //! UI edge, so these are testable with fixed dates.
 
+use std::collections::BTreeMap;
+
+use chrono::{Datelike, NaiveDate};
+
 use super::{DayCount, Goal};
 use crate::domain::preferences::Preferences;
-use chrono::{Datelike, NaiveDate};
-use std::collections::BTreeMap;
 
 /// Standing against a yearly goal as of `today`.
 #[derive(Debug, Clone, PartialEq)]

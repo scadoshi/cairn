@@ -2,8 +2,9 @@
 //! column per week, rows in the week's own order, and a level per cell from
 //! how the day ranks against the counter's other logged days.
 
-use super::DayCount;
 use chrono::{Datelike, Duration, NaiveDate, Weekday};
+
+use super::DayCount;
 
 /// One day on the grid.
 #[derive(Debug, Clone, PartialEq, Eq)]

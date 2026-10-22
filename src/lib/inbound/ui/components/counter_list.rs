@@ -8,31 +8,22 @@
 //! is clipped by the card's own rounded corners, so the screen owns those
 //! and a card only says which counter it wants opened.
 
-use crate::{
-    domain::{
-        counter::{
-            Counter,
-            format::{compact, thousands, thousands_i64},
-            stats,
-            stats::days_in_year,
-        },
-        preferences::{CounterOrder, all_done_line},
-    },
-    inbound::ui::{
-        SharedStore, TOAST_NORMAL, TOAST_QUICK, all_goals_met,
-        components::{
-            alert_dialog::ConfirmDialog,
-            celebration::{CelebrationHost, Saying, celebrate_saying},
-            reveal::Reveal,
-            tile::{Num, Tile, TileGrid, rate},
-        },
-        now, today, use_prefs, use_store,
-    },
-};
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{ActionBar, Button, ButtonVariant};
+
+use crate::domain::counter::format::{compact, thousands, thousands_i64};
+use crate::domain::counter::stats::days_in_year;
+use crate::domain::counter::{Counter, stats};
+use crate::domain::preferences::{CounterOrder, all_done_line};
+use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
+use crate::inbound::ui::components::celebration::{CelebrationHost, Saying, celebrate_saying};
+use crate::inbound::ui::components::reveal::Reveal;
+use crate::inbound::ui::components::tile::{Num, Tile, TileGrid, rate};
+use crate::inbound::ui::{
+    SharedStore, TOAST_NORMAL, TOAST_QUICK, all_goals_met, now, today, use_prefs, use_store,
+};
 
 /// Every counter as a card, in the preferred order.
 #[component]

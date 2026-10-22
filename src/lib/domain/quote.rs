@@ -456,8 +456,9 @@ pub const QUOTES: &[Quote] = &[
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use chrono::{TimeZone, Utc};
+
+    use super::*;
 
     #[test]
     fn every_quote_shows_within_a_few_cycles() {

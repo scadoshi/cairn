@@ -1,40 +1,30 @@
 //! One counter: the odometer, today's controls, stats, trends, years, rename,
 //! delete.
 
-use crate::{
-    domain::{
-        counter::{
-            Counter, CounterId, DayCount, Event, Goal, Step,
-            format::{compact, compact_i64, thousands, thousands_i64},
-            series,
-            series::HourlyBasis,
-            stats,
-            stats::Summary,
-        },
-        preferences::all_done_line,
-    },
-    inbound::ui::{
-        TOAST_NORMAL, TOAST_QUICK, all_goals_met, bump_store_version,
-        components::{
-            alert_dialog::ConfirmDialog,
-            celebration::{CelebrationHost, Saying, celebrate_saying},
-            counter_form::EditSheet,
-            heatmap::Heatmap,
-            hint::{HintDialog, use_screen_hint},
-            line_chart::{LineChart, Point},
-            reveal::Reveal,
-            tile::{Num, Tile, TileGrid, rate},
-        },
-        now,
-        router::Route,
-        today, use_date_format, use_prefs, use_store,
-    },
-};
 use chrono::{Datelike, Duration as ChronoDuration};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
     ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey, HintLine, InfoButton,
+};
+
+use crate::domain::counter::format::{compact, compact_i64, thousands, thousands_i64};
+use crate::domain::counter::series::HourlyBasis;
+use crate::domain::counter::stats::Summary;
+use crate::domain::counter::{Counter, CounterId, DayCount, Event, Goal, Step, series, stats};
+use crate::domain::preferences::all_done_line;
+use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
+use crate::inbound::ui::components::celebration::{CelebrationHost, Saying, celebrate_saying};
+use crate::inbound::ui::components::counter_form::EditSheet;
+use crate::inbound::ui::components::heatmap::Heatmap;
+use crate::inbound::ui::components::hint::{HintDialog, use_screen_hint};
+use crate::inbound::ui::components::line_chart::{LineChart, Point};
+use crate::inbound::ui::components::reveal::Reveal;
+use crate::inbound::ui::components::tile::{Num, Tile, TileGrid, rate};
+use crate::inbound::ui::router::Route;
+use crate::inbound::ui::{
+    TOAST_NORMAL, TOAST_QUICK, all_goals_met, bump_store_version, now, today, use_date_format,
+    use_prefs, use_store,
 };
 
 /// Which series the trends card draws.

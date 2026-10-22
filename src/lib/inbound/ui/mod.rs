@@ -4,11 +4,8 @@ pub mod components;
 pub mod router;
 pub mod screens;
 
-use crate::domain::{
-    counter::{self, CounterId, DayCount, Goal, Store},
-    date_format::DateFormat,
-    preferences::Preferences,
-};
+use std::sync::Arc;
+
 use chrono::{Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
 use orangui::{
@@ -16,7 +13,10 @@ use orangui::{
     use_dialog_host,
 };
 use router::Route;
-use std::sync::Arc;
+
+use crate::domain::counter::{self, CounterId, DayCount, Goal, Store};
+use crate::domain::date_format::DateFormat;
+use crate::domain::preferences::Preferences;
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const ENTRANCE_JS: Asset = asset!("/assets/entrance.js");

@@ -2,14 +2,14 @@
 //! the icon drawn in that theme's colors in the mode the icon is in now
 //! (Config's App icon row flips the mode), laid out like orangui's ThemeSheet.
 
-use crate::{
-    domain::preferences::AppIcon,
-    inbound::ui::{TOAST_NORMAL, TOAST_QUICK, screens::home::LOGO_CAIRN, use_prefs},
-    outbound::app_icon,
-};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{BottomSheet, Button, ButtonVariant, THEME_GROUPS, ThemeConfig, display_theme_name};
+
+use crate::domain::preferences::AppIcon;
+use crate::inbound::ui::screens::home::LOGO_CAIRN;
+use crate::inbound::ui::{TOAST_NORMAL, TOAST_QUICK, use_prefs};
+use crate::outbound::app_icon;
 
 /// One selectable row: label on the left, the icon on the right. The tile
 /// draws the mark as text in `tile`'s own class, so it is the same glyph and

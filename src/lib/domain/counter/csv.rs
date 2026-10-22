@@ -1,7 +1,8 @@
 //! The export shape: a `day,count` header and one ISO date row per entry.
 
-use super::DayCount;
 use std::fmt::Write;
+
+use super::DayCount;
 
 /// Renders entries as CSV text, oldest first. Dates are `YYYY-MM-DD`, so the
 /// file sorts correctly as plain text and needs no quoting.
@@ -18,8 +19,9 @@ pub fn render(entries: &[DayCount]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use chrono::NaiveDate;
+
+    use super::*;
 
     fn d(y: i32, m: u32, day: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(y, m, day).unwrap()

@@ -1,9 +1,10 @@
 //! What a counter and a day's entry are.
 
-use crate::domain::preferences::Celebration;
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+use crate::domain::preferences::Celebration;
 
 /// Why a value could not be constructed.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]

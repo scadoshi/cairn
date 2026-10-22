@@ -9,12 +9,12 @@
 //! the tap handler rather than from render state, so it happens once on the
 //! tap that crosses and never on a launch or a redraw.
 
-use crate::domain::preferences::{Celebration, done_line};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Duration;
+
 use dioxus::prelude::*;
-use std::{
-    sync::atomic::{AtomicU64, Ordering},
-    time::Duration,
-};
+
+use crate::domain::preferences::{Celebration, done_line};
 
 /// How long the overlay stays mounted, per kind. The level up is one fast
 /// pass; the confetti has to wait for the last piece to land.

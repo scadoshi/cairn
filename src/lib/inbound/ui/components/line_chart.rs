@@ -7,10 +7,12 @@
 //! hash of the data, so a change remounts it and replays the draw, which is
 //! what makes a +1 on the counter visibly move the trend.
 
-use crate::domain::counter::series::Shape;
+use std::hash::{Hash, Hasher};
+
 use dioxus::prelude::*;
 use orangui::curve;
-use std::hash::{Hash, Hasher};
+
+use crate::domain::counter::series::Shape;
 
 /// One point: the label shown for it and its value.
 #[derive(Debug, Clone, PartialEq)]

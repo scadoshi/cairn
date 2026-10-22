@@ -6,16 +6,14 @@
 //! the same tick picks up the new quote. At launch the words type themselves
 //! out, one letter at a steady pace.
 
-use crate::{
-    domain::quote::{self, Quote},
-    inbound::ui::now,
-};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+
 use chrono::{Local, NaiveDateTime, TimeZone};
 use dioxus::prelude::*;
-use std::{
-    sync::atomic::{AtomicBool, Ordering},
-    time::Duration,
-};
+
+use crate::domain::quote::{self, Quote};
+use crate::inbound::ui::now;
 
 /// The gap between two letters while a quote types out.
 const LETTER_MS: u64 = 20;

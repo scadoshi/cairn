@@ -1,9 +1,9 @@
-use cairn::{
-    inbound::ui::{App, SharedStore},
-    outbound::{paths, sqlite::SqliteStore},
-};
-use orangui::{BOOT_BG, BOOT_HEAD};
 use std::sync::Arc;
+
+use cairn::inbound::ui::{App, SharedStore};
+use cairn::outbound::paths;
+use cairn::outbound::sqlite::SqliteStore;
+use orangui::{BOOT_BG, BOOT_HEAD};
 
 fn main() {
     let path = match paths::database() {

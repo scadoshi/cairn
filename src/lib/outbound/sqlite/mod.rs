@@ -3,21 +3,19 @@
 //! All SQL in the crate lives in this file. Rows are mapped to domain types
 //! here and nowhere else.
 
-use crate::domain::{
-    counter::{
-        Counter, CounterId, CounterName, CounterStore, DayCount, Event, Goal, SettingsStore, Step,
-        StoreError,
-    },
-    date_format::DateFormat,
-    preferences::{Celebration, Preferences},
-};
+use std::path::Path;
+use std::sync::{Mutex, MutexGuard};
+
 use chrono::{NaiveDate, NaiveDateTime};
 use orangui::ThemeConfig;
 use rusqlite::{Connection, OptionalExtension, params};
-use std::{
-    path::Path,
-    sync::{Mutex, MutexGuard},
+
+use crate::domain::counter::{
+    Counter, CounterId, CounterName, CounterStore, DayCount, Event, Goal, SettingsStore, Step,
+    StoreError,
 };
+use crate::domain::date_format::DateFormat;
+use crate::domain::preferences::{Celebration, Preferences};
 
 /// Schema version written to SQLite's `user_version` pragma. Bump it and add
 /// a step in `migrate` for each schema change.

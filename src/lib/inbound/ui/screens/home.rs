@@ -8,32 +8,28 @@
 //! Both sheets hang off the screen rather than off a card, because a fixed
 //! overlay inside a card is clipped by the card's rounded corners.
 
-use crate::{
-    domain::{
-        counter::{Counter, DayCount, Goal, format::compact, stats},
-        preferences::Logo,
-    },
-    inbound::ui::{
-        TOAST_NORMAL, bump_store_version,
-        components::{
-            counter_form::{CounterForm, CounterFormState, EditSheet},
-            counter_list::CounterList,
-            hint::{HintChip, HintDialog, use_screen_hint},
-            quote_card::QuoteCard,
-            reveal::Reveal,
-            tile::{Num, Tile},
-        },
-        router::Route,
-        today, use_date_format, use_prefs, use_store,
-    },
-};
+use std::time::Duration;
+
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
     ActionBar, BottomSheet, Button, ButtonVariant, Decode, HintBullet, HintBullets, HintLine,
 };
-use std::time::Duration;
+
+use crate::domain::counter::format::compact;
+use crate::domain::counter::{Counter, DayCount, Goal, stats};
+use crate::domain::preferences::Logo;
+use crate::inbound::ui::components::counter_form::{CounterForm, CounterFormState, EditSheet};
+use crate::inbound::ui::components::counter_list::CounterList;
+use crate::inbound::ui::components::hint::{HintChip, HintDialog, use_screen_hint};
+use crate::inbound::ui::components::quote_card::QuoteCard;
+use crate::inbound::ui::components::reveal::Reveal;
+use crate::inbound::ui::components::tile::{Num, Tile};
+use crate::inbound::ui::router::Route;
+use crate::inbound::ui::{
+    TOAST_NORMAL, bump_store_version, today, use_date_format, use_prefs, use_store,
+};
 
 /// The C, the app's own mark.
 pub(crate) const LOGO_CAIRN: &str = include_str!("../../../../../assets/c.txt");

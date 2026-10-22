@@ -7,10 +7,12 @@
 //! for the OS back intent; this layout names that event. On iOS it hands over
 //! the WKWebView the edge swipe attaches to. The desktop build is untouched.
 
-use std::{ffi::c_void, ptr::NonNull};
+use std::ffi::c_void;
+use std::ptr::NonNull;
+
+use dioxus::prelude::*;
 
 use crate::inbound::ui::router::Route;
-use dioxus::prelude::*;
 
 /// Layout wrapping all routes: installs the OS-back bridge, then renders the
 /// active route.

@@ -3,20 +3,17 @@
 //! button on each card, and the counter screen, so the three never drift.
 //! The host owns the signals and does the saving.
 
-use crate::domain::counter::{
-    CounterId, CounterName, Goal, Step, ValidationError, check_big_step, stats,
-};
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{BottomSheet, Button, ButtonVariant, Chip, HintKey, HintLine, InfoButton};
 
-use crate::{
-    domain::preferences::Celebration,
-    inbound::ui::{
-        TOAST_NORMAL, bump_store_version, components::hint::HintDialog, today, use_store,
-    },
+use crate::domain::counter::{
+    CounterId, CounterName, Goal, Step, ValidationError, check_big_step, stats,
 };
+use crate::domain::preferences::Celebration;
+use crate::inbound::ui::components::hint::HintDialog;
+use crate::inbound::ui::{TOAST_NORMAL, bump_store_version, today, use_store};
 
 /// Which period a typed goal amount is for.
 #[allow(missing_docs)]

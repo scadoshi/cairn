@@ -2,16 +2,18 @@
 //! cell shaded by how the day ranks against the counter's other logged days.
 //! Tapping a cell names the day and its count.
 
-use crate::{
-    domain::counter::{DayCount, format::thousands, heat},
-    inbound::ui::{components::tile::Num, today, use_date_format, use_prefs},
-};
+use std::rc::Rc;
+
 use dioxus::prelude::*;
 use orangui::{
     ChartTip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, heat_span, peak_indices,
     use_scroll_to_end,
 };
-use std::rc::Rc;
+
+use crate::domain::counter::format::thousands;
+use crate::domain::counter::{DayCount, heat};
+use crate::inbound::ui::components::tile::Num;
+use crate::inbound::ui::{today, use_date_format, use_prefs};
 
 /// Room on the left for the weekday labels and on top for the months.
 const LEFT: f64 = 26.0;
@@ -130,8 +132,9 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use chrono::{Duration as Days, NaiveDate, Weekday};
+
+    use super::*;
 
     fn d(s: &str) -> NaiveDate {
         NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap()

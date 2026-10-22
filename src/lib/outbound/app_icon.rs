@@ -88,11 +88,9 @@ fn parse(name: &str) -> Option<ThemeConfig> {
 #[cfg(target_os = "ios")]
 mod imp {
     use block2::Block;
-    use objc2::{
-        msg_send,
-        rc::Retained,
-        runtime::{AnyClass, AnyObject},
-    };
+    use objc2::msg_send;
+    use objc2::rc::Retained;
+    use objc2::runtime::{AnyClass, AnyObject};
     use objc2_foundation::NSString;
 
     fn app() -> Option<&'static AnyObject> {

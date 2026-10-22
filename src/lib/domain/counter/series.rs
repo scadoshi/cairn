@@ -1,9 +1,10 @@
 //! Series behind the trend charts. Pure functions over entries and events,
 //! with `today` or a year passed in; the UI picks which to draw.
 
+use chrono::{Datelike, Duration, NaiveDate, Timelike, Weekday};
+
 use super::{DayCount, Event};
 use crate::domain::preferences::Preferences;
-use chrono::{Datelike, Duration, NaiveDate, Timelike, Weekday};
 
 /// One count per day for every day from `from` to `to` inclusive, zero where
 /// nothing was logged, so the line has a point for every day.
@@ -321,8 +322,9 @@ pub fn hourly_average(events: &[Event], basis: HourlyBasis) -> [f64; 24] {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use chrono::NaiveTime;
+
+    use super::*;
 
     fn d(y: i32, m: u32, day: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(y, m, day).unwrap()

@@ -1,12 +1,13 @@
 //! Routes: the home list, one counter, and config. The list used to be a
 //! screen of its own; it is the landing screen now.
 
-use super::{
-    Shell,
-    components::navigation::back_handler::BackHandlerLayout,
-    screens::{config::Config, counter::CounterScreen, home::Home},
-};
 use dioxus::prelude::*;
+
+use super::Shell;
+use super::components::navigation::back_handler::BackHandlerLayout;
+use super::screens::config::Config;
+use super::screens::counter::CounterScreen;
+use super::screens::home::Home;
 
 /// Every screen in the app.
 #[derive(Debug, Clone, Routable, PartialEq)]

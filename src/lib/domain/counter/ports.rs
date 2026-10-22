@@ -1,14 +1,13 @@
 //! What the app needs from storage, written from the app's side. The SQLite
 //! adapter in `outbound` implements these; a watch build would add another.
 
-use super::{Counter, CounterId, CounterName, DayCount, Event, Goal, Step};
-use crate::domain::{
-    date_format::DateFormat,
-    preferences::{Celebration, Preferences},
-};
 use chrono::{NaiveDate, NaiveDateTime};
 use orangui::ThemeConfig;
 use thiserror::Error;
+
+use super::{Counter, CounterId, CounterName, DayCount, Event, Goal, Step};
+use crate::domain::date_format::DateFormat;
+use crate::domain::preferences::{Celebration, Preferences};
 
 /// Storage failure, already reduced to a message. Screens show it; they never
 /// branch on it.
