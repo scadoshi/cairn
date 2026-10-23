@@ -1,6 +1,6 @@
 # Changelog
 
-Unreleased entries collect at the top. At cut time they move under a version heading with the date, and `Cargo.toml` bumps in the same commit. See `development/versioning.md` for what bumps what.
+Unreleased entries collect at the top. At cut time they move under a version heading with the date, and `Cargo.toml` bumps in the same commit. A version's date is the day App Store Connect shows it "Ready for Distribution", when it went live; the portfolio's `RELEASES` entry uses the same date. See `development/versioning.md` for what bumps what.
 
 Every entry added here also goes into portfolio's `src/changelog.rs` in the same sitting, in `UPCOMING` under the next version, reworded to zwipe's rules (one phrase, no period). At cut time the version moves there from `UPCOMING` to the top of `RELEASES`, with the date of its heading here written as `Some(Date::new(year, month, day))`. That file is what scottyfermo.com/projects/cairn/changelog shows, and the app has no other public changelog.
 
@@ -11,7 +11,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - Flexoki replaces Visual Studio, which now opens as VS Code.
 - Synthwave '84's colors match the original theme.
 
-## 1.1.0, 2026-10-20
+## 1.1.0, 2026-10-21
 
 - Four Monokai Pro themes: Pro, Machine, Octagon and Spectrum, each in dark and light.
 - Editor defaults as themes: Darcula, Xcode, Visual Studio, Eclipse and Neovim, each in dark and light.
@@ -27,7 +27,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - The splash's logo leaves the way it arrived, turning back to noise and clearing left to right before the home screen shows.
 - The splash spells out the full Cairn wordmark.
 
-## 1.0.0, 2026-10-18
+## 1.0.0, 2026-10-20
 
 The first App Store build; everything before this shipped straight to the phone.
 
