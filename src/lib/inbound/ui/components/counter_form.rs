@@ -6,13 +6,14 @@
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use orangui::{BottomSheet, Button, ButtonVariant, Chip, HintKey, HintLine, InfoButton};
+use orangui::{
+    BottomSheet, Button, ButtonVariant, Chip, FieldLabel, HintDialog, HintKey, HintLine, TextInput,
+};
 
 use crate::domain::counter::{
     CounterId, CounterName, Goal, Step, ValidationError, check_big_step, stats,
 };
 use crate::domain::preferences::Celebration;
-use crate::inbound::ui::components::hint::HintDialog;
 use crate::inbound::ui::{TOAST_NORMAL, bump_store_version, today, use_store};
 
 /// Which period a typed goal amount is for.
@@ -186,8 +187,8 @@ impl CounterFormState {
 #[component]
 pub fn CounterForm(state: CounterFormState) -> Element {
     let CounterFormState {
-        mut name,
-        mut amount,
+        name,
+        amount,
         mut unit,
         mut step,
         mut big_step,
@@ -207,38 +208,26 @@ pub fn CounterForm(state: CounterFormState) -> Element {
 
     rsx! {
         form { class: "flex-col text-center", onsubmit: move |e| e.prevent_default(),
-            div { class: "label-with-hint",
-                label { class: "label", r#for: "counter_name", "Name" }
-                InfoButton { onclick: move |_| { hint.set(Some(FormHint::Name)); hint_open.set(true); } }
-            }
-            input {
-                class: "input",
+            TextInput {
+                value: name,
                 id: "counter_name",
+                label: "Name",
                 placeholder: "Not set",
-                value: "{name}",
-                maxlength: "{CounterName::MAX_LEN}",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |e| name.set(e.value()),
-            }
-            div { class: "label-with-hint",
-                label { class: "label", r#for: "counter_goal", "Goal" }
-                InfoButton { onclick: move |_| { hint.set(Some(FormHint::Goal)); hint_open.set(true); } }
+                maxlength: CounterName::MAX_LEN,
+                on_info: move |_| { hint.set(Some(FormHint::Name)); hint_open.set(true); },
             }
             // A text field, not type=number: iOS WebKit drops keystrokes when a
             // number input's value is rewritten mid-typing, which a bound value
             // does on every key. inputmode still brings up the number pad, and
-            // the handler keeps only digits.
-            input {
-                class: "input",
+            // the filter keeps only digits.
+            TextInput {
+                value: amount,
                 id: "counter_goal",
-                r#type: "text",
-                inputmode: "numeric",
-                pattern: "[0-9]*",
+                label: "Goal",
                 placeholder: "Not set",
-                value: "{amount}",
-                oninput: move |e| amount.set(e.value().chars().filter(char::is_ascii_digit).collect()),
+                inputmode: "numeric",
+                filter: move |typed: String| typed.chars().filter(char::is_ascii_digit).collect::<String>(),
+                on_info: move |_| { hint.set(Some(FormHint::Goal)); hint_open.set(true); },
             }
             div { class: "chip-row chip-row-center",
                 Chip { selected: unit() == GoalUnit::Day, onclick: move |_| unit.set(GoalUnit::Day), "Per day" }
@@ -255,18 +244,18 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                     }
                 }
             }
-            div { class: "label-with-hint",
-                label { class: "label", "Step" }
-                InfoButton { onclick: move |_| { hint.set(Some(FormHint::Step)); hint_open.set(true); } }
+            FieldLabel {
+                label: "Step",
+                on_info: move |_| { hint.set(Some(FormHint::Step)); hint_open.set(true); },
             }
             div { class: "chip-row chip-row-center",
                 for n in Step::ALLOWED {
                     Chip { selected: step() == n, onclick: move |_| step.set(n), "{n}" }
                 }
             }
-            div { class: "label-with-hint",
-                label { class: "label", "Big step" }
-                InfoButton { onclick: move |_| { hint.set(Some(FormHint::BigStep)); hint_open.set(true); } }
+            FieldLabel {
+                label: "Big step",
+                on_info: move |_| { hint.set(Some(FormHint::BigStep)); hint_open.set(true); },
             }
             div { class: "chip-row chip-row-center",
                 // Zero is "none", and it comes first so the default reads as
@@ -280,9 +269,9 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                     Chip { selected: big_step() == n, onclick: move |_| big_step.set(n), "{n}" }
                 }
             }
-            div { class: "label-with-hint",
-                label { class: "label", "Goal animation" }
-                InfoButton { onclick: move |_| { hint.set(Some(FormHint::Celebration)); hint_open.set(true); } }
+            FieldLabel {
+                label: "Goal animation",
+                on_info: move |_| { hint.set(Some(FormHint::Celebration)); hint_open.set(true); },
             }
             div { class: "chip-row chip-row-center",
                 // Default first: most counters should follow the app-wide

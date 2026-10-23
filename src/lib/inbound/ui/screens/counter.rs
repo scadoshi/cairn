@@ -5,7 +5,8 @@ use chrono::{Datelike, Duration as ChronoDuration};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey, HintLine, InfoButton,
+    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
+    InfoButton, use_screen_hint,
 };
 
 use crate::domain::counter::format::{compact, compact_i64, thousands, thousands_i64};
@@ -17,7 +18,6 @@ use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
 use crate::inbound::ui::components::celebration::{CelebrationHost, Saying, celebrate_saying};
 use crate::inbound::ui::components::counter_form::EditSheet;
 use crate::inbound::ui::components::heatmap::Heatmap;
-use crate::inbound::ui::components::hint::{HintDialog, use_screen_hint};
 use crate::inbound::ui::components::line_chart::{LineChart, Point};
 use crate::inbound::ui::components::reveal::Reveal;
 use crate::inbound::ui::components::tile::{Num, Tile, TileGrid, rate};

@@ -28,14 +28,16 @@ Same as the portfolio: the shared UI crate, [orangui](https://github.com/scadosh
 
 cairn also takes the app kit it shares with zwiper, with the `toast` feature on:
 
-- `BottomSheet`, `PageHeader` (the Shell header), `ThemeSheet`, `ToastStack` (with `timed_fade`), `InfoButton` and the hint lines
+- `BottomSheet`, `PageHeader` (the Shell header), `ThemeSheet`, `ToastStack` (with `timed_fade`)
+- the hint pieces: `HintDialog`, `HintChip`, `InfoButton`, the hint lines, and the `ScreenHint` slot the Shell header reads
+- the form fields: `TextInput` and `FieldLabel`
 - the overlay back stack and the OS back gesture (`use_os_back`)
 - the dialogs (`AlertDialog`, `DialogAction`, `use_dialog_host` and `DialogHostView` at the root)
 - `display_theme_name`, `COLORBLIND_THEMES`, the heatmap's `peak_indices` and `ChartTip`, the line chart's `curve` and `.chart-line` draw, the `stat-chip` tones, and the settings list classes
 
 The CSS loads as `THEMES_CSS`, `COMPONENTS_CSS`, `APP_CSS`, then `assets/main.css`, then `TOAST_CSS`. `main.css` keeps only where cairn differs: the sheet title's letter spacing, the sheet's grid background, the hint lines' spacing and size, the hint bullets' size, the bolder hint key, and the header corners' pressed state, which `APP_CSS` doesn't have.
 
-What stays cairn's: `HintDialog` and `ConfirmDialog` (thin wrappers over `AlertDialog`), `ScreenHint` and `HintChip`.
+What stays cairn's: `ConfirmDialog`, a thin wrapper over `AlertDialog`.
 
 The line chart used its own Catmull-Rom smoothing until 2026-10-07. It swung below zero beside a spike on per-day counts, so it moved to the shared monotone `curve`, which never passes either neighboring point.
 

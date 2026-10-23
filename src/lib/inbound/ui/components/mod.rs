@@ -6,7 +6,6 @@ pub mod celebration;
 pub mod counter_form;
 pub mod counter_list;
 pub mod heatmap;
-pub mod hint;
 pub mod icon_sheet;
 pub mod line_chart;
 pub mod navigation;

@@ -14,7 +14,8 @@ use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
-    ActionBar, BottomSheet, Button, ButtonVariant, Decode, HintBullet, HintBullets, HintLine,
+    ActionBar, BottomSheet, Button, ButtonVariant, Decode, HintBullet, HintBullets, HintChip,
+    HintDialog, HintLine, use_screen_hint,
 };
 
 use crate::domain::counter::format::compact;
@@ -22,7 +23,6 @@ use crate::domain::counter::{Counter, DayCount, Goal, stats};
 use crate::domain::preferences::Logo;
 use crate::inbound::ui::components::counter_form::{CounterForm, CounterFormState, EditSheet};
 use crate::inbound::ui::components::counter_list::CounterList;
-use crate::inbound::ui::components::hint::{HintChip, HintDialog, use_screen_hint};
 use crate::inbound::ui::components::quote_card::QuoteCard;
 use crate::inbound::ui::components::reveal::Reveal;
 use crate::inbound::ui::components::tile::{Num, Tile};

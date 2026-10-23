@@ -147,8 +147,7 @@ pub fn App() -> Element {
     use_context_provider(|| overlays);
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
-    let screen_hint = components::hint::ScreenHint(use_signal(|| None));
-    use_context_provider(|| screen_hint);
+    orangui::use_screen_hint_slot();
     let celebrations = components::celebration::CelebrationHost(use_signal(Vec::new));
     use_context_provider(|| celebrations);
 
@@ -241,7 +240,7 @@ pub fn Shell() -> Element {
 
     // Only screens that registered one get a "?", so the corner stays empty
     // rather than offering a dialog with nothing in it.
-    let hint = use_context::<components::hint::ScreenHint>().0;
+    let hint = use_context::<orangui::ScreenHint>();
 
     rsx! {
         div { class: "screen theme-wrapper {css_class}",
@@ -250,7 +249,7 @@ pub fn Shell() -> Element {
                 leading: rsx! {
                     components::about::AboutButton {}
                 },
-                on_hint: hint(),
+                on_hint: hint.opener(),
             }
             Outlet::<Route> {}
         }

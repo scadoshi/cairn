@@ -88,29 +88,6 @@ input {
     margin-bottom: 0.5rem;
 }
 
-.label {
-    display: block;
-    font-size: 1rem;
-    letter-spacing: 0.1em;
-    color: var(--accent-tertiary);
-    margin-bottom: 0.4rem;
-}
-
-/* A form label and its "?" on one row. The button stands taller than the
-   label's text, so the row owns the spacing below rather than the label:
-   otherwise the "?" sits almost on top of the input. The gap is the
-   button's own margin-left, the same pairing config rows use. */
-.label-with-hint {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 0.7rem;
-}
-
-.label-with-hint .label {
-    margin-bottom: 0;
-}
-
 .text-center {
     text-align: center;
 }
@@ -580,15 +557,6 @@ input {
    them, so the eye lands on the thing being named. */
 .hint-key {
     font-weight: 700;
-}
-
-/* A real .stat-chip shown as an example mid-sentence. */
-.hint-chip {
-    font-size: 0.75rem;
-    font-weight: 700;
-    white-space: nowrap;
-    pointer-events: none;
-    vertical-align: baseline;
 }
 
 /* ==================

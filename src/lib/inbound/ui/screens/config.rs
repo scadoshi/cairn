@@ -9,7 +9,8 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
     ActionBar, BottomSheet, Button, ButtonVariant, Chip, DarkModeButton, HintBullet, HintBullets,
-    HintKey, HintLine, InfoButton, ModeIcon, ThemeConfig, ThemeSheet, display_theme_name,
+    HintDialog, HintKey, HintLine, InfoButton, ModeIcon, ThemeConfig, ThemeSheet,
+    display_theme_name, use_screen_hint,
 };
 
 use crate::domain::counter::csv;
@@ -17,7 +18,6 @@ use crate::domain::preferences::{
     AppIcon, Celebration, Logo, Preferences, rest_mask_has, rest_mask_toggled,
 };
 use crate::inbound::ui::components::celebration::{CelebrationHost, celebrate};
-use crate::inbound::ui::components::hint::{HintDialog, use_screen_hint};
 use crate::inbound::ui::components::icon_sheet::IconSheet;
 use crate::inbound::ui::router::Route;
 use crate::inbound::ui::{TOAST_NORMAL, TOAST_QUICK, use_date_format, use_prefs, use_store};
