@@ -3269,7 +3269,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "orangui"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui#751269515f6a1c301428666b3fa7822db5c14901"
+source = "git+https://github.com/scadoshi/orangui#fd2626fa9d2a6960f80c581a3c9272624bfee9c8"
 dependencies = [
  "dioxus",
  "dioxus-primitives",
