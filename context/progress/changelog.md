@@ -6,6 +6,8 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
+- The changelog page's version chips list each minor version with its patches, not every patch.
+
 ## 1.1.1, 2026-10-21
 
 - Flexoki replaces Visual Studio, which now opens as VS Code.
