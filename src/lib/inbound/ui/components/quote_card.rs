@@ -76,7 +76,12 @@ pub fn QuoteCard() -> Element {
         // A reveal like the panels around it, so it eases in with them rather
         // than appearing, and the typing starts as it lands.
         div { class: "settings-list quote-card reveal",
-            TypedText { key: "{text}", text, typed }
+            // A key only counts among list siblings, so the line sits in a
+            // list of one; a new quote then mounts a fresh line that types
+            // from empty instead of keeping the old one's letters.
+            for text in [text] {
+                TypedText { key: "{text}", text, typed }
+            }
             div { class: tags,
                 span { class: "stat-chip stat-chip-p4", "{author}" }
                 span { class: "stat-chip stat-chip-muted", "{source}" }
