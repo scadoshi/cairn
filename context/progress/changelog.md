@@ -7,6 +7,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 ## Unreleased
 
 - The changelog page's version chips list each minor version with its patches, not every patch.
+- A new quote that arrives while the app stays open types out in full, with its author, source and countdown, instead of keeping the old words.
 
 ## 1.1.1, 2026-10-21
 
