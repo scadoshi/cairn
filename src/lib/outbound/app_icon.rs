@@ -38,6 +38,10 @@ pub fn current() -> ThemeConfig {
 /// Moves an icon this build no longer bundles (a retired theme's) onto the one
 /// [`current`] reads it as. A no-op once they match; on iOS the OS shows its
 /// own alert when it switches.
+///
+/// # Errors
+///
+/// The OS's message when it refuses the switch, as [`set`] returns it.
 pub fn replace_retired() -> Result<(), String> {
     match imp::current().and_then(|name| parse(&name)) {
         Some(shown) if shown != current() => set(&current()),
@@ -47,12 +51,20 @@ pub fn replace_retired() -> Result<(), String> {
 
 /// Switches the icon to `icon`'s colors. On iOS the OS shows its own alert
 /// saying the icon changed.
+///
+/// # Errors
+///
+/// The OS's message when it refuses to switch the icon. Off iOS this never fails.
 pub fn set(icon: &ThemeConfig) -> Result<(), String> {
     imp::set(alternate_name(icon).as_deref())
 }
 
 /// Switches the icon to `icon`'s colors unless it already shows them, so the
 /// OS alert comes only with a change.
+///
+/// # Errors
+///
+/// The OS's message when it refuses the switch, as [`set`] returns it.
 pub fn show(icon: &ThemeConfig) -> Result<(), String> {
     if current() == *icon {
         Ok(())

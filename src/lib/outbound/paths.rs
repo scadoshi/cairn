@@ -5,6 +5,10 @@ use std::path::PathBuf;
 /// The database path: `<data dir>/scadoshi-count/count.db`, with the directory created.
 /// `~/Library/Application Support/scadoshi-count/count.db` on macOS. Falls back to the
 /// working directory if the platform has no data dir.
+///
+/// # Errors
+///
+/// The I/O error from creating the data directory, such as a permission denied.
 pub fn database() -> std::io::Result<PathBuf> {
     let dir = dirs::data_local_dir()
         .unwrap_or_else(|| PathBuf::from("."))
@@ -22,6 +26,10 @@ pub fn database() -> std::io::Result<PathBuf> {
 /// sandbox has no Downloads folder, so this builds the path from HOME.
 /// Elsewhere it is the platform Downloads folder, falling back to the data
 /// dir.
+///
+/// # Errors
+///
+/// The I/O error from creating the exports folder, or from [`database`] when it is the fallback.
 pub fn exports() -> std::io::Result<PathBuf> {
     let preferred = if cfg!(target_os = "ios") {
         std::env::var_os("HOME").map(|h| PathBuf::from(h).join("Documents"))

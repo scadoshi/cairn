@@ -27,6 +27,10 @@ pub enum GoalUnit {
 
 impl GoalUnit {
     /// The goal for `n` in this unit.
+    ///
+    /// # Errors
+    ///
+    /// [`ValidationError::ZeroGoal`] when `n` is zero.
     pub fn goal(self, n: u32) -> Result<Goal, ValidationError> {
         match self {
             Self::Day => Goal::per_day(n),

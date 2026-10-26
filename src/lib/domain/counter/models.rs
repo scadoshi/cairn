@@ -53,6 +53,11 @@ impl CounterName {
     pub const MAX_LEN: usize = 24;
 
     /// Trims and validates.
+    ///
+    /// # Errors
+    ///
+    /// [`ValidationError::EmptyName`] when `raw` is blank after trimming, and
+    /// [`ValidationError::NameTooLong`] when it is longer than [`Self::MAX_LEN`] characters.
     pub fn new(raw: &str) -> Result<Self, ValidationError> {
         let trimmed = raw.trim();
         if trimmed.is_empty() {
@@ -107,6 +112,10 @@ pub enum Goal {
 
 impl Goal {
     /// Rejects zero.
+    ///
+    /// # Errors
+    ///
+    /// [`ValidationError::ZeroGoal`] when `n` is zero.
     pub fn per_year(n: u32) -> Result<Self, ValidationError> {
         if n == 0 {
             return Err(ValidationError::ZeroGoal);
@@ -115,6 +124,10 @@ impl Goal {
     }
 
     /// Rejects zero.
+    ///
+    /// # Errors
+    ///
+    /// [`ValidationError::ZeroGoal`] when `n` is zero.
     pub fn per_week(n: u32) -> Result<Self, ValidationError> {
         if n == 0 {
             return Err(ValidationError::ZeroGoal);
@@ -123,6 +136,10 @@ impl Goal {
     }
 
     /// Rejects zero.
+    ///
+    /// # Errors
+    ///
+    /// [`ValidationError::ZeroGoal`] when `n` is zero.
     pub fn per_day(n: u32) -> Result<Self, ValidationError> {
         if n == 0 {
             return Err(ValidationError::ZeroGoal);
@@ -266,6 +283,10 @@ impl Step {
     pub const ALLOWED: [u32; 9] = [1, 5, 10, 20, 25, 30, 40, 50, 100];
 
     /// Rejects anything not on the menu.
+    ///
+    /// # Errors
+    ///
+    /// [`ValidationError::BadStep`] when `n` is not in [`Self::ALLOWED`].
     pub fn new(n: u32) -> Result<Self, ValidationError> {
         if Self::ALLOWED.contains(&n) {
             Ok(Self(n))
@@ -302,6 +323,10 @@ impl Default for Step {
 /// three-button bar. A big step that is not larger is rejected, because two
 /// buttons moving the count by nearly the same amount are not worth the
 /// width they cost.
+///
+/// # Errors
+///
+/// [`ValidationError::BigStepNotLarger`] when `big` is set and not larger than `step`.
 pub fn check_big_step(step: Step, big: Option<Step>) -> Result<Option<Step>, ValidationError> {
     match big {
         Some(b) if b.get() <= step.get() => Err(ValidationError::BigStepNotLarger),

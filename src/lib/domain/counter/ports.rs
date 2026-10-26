@@ -18,10 +18,22 @@ pub struct StoreError(pub String);
 /// Counters and their daily entries.
 pub trait CounterStore {
     /// Every counter, oldest first.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn list_counters(&self) -> Result<Vec<Counter>, StoreError>;
     /// One counter, or `None` if the id is unknown.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn get_counter(&self, id: CounterId) -> Result<Option<Counter>, StoreError>;
     /// Creates a counter starting today.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn create_counter(
         &self,
         name: &CounterName,
@@ -32,6 +44,10 @@ pub trait CounterStore {
         today: NaiveDate,
     ) -> Result<Counter, StoreError>;
     /// Changes a counter's name, goal, and step.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn update_counter(
         &self,
         id: CounterId,
@@ -42,15 +58,31 @@ pub trait CounterStore {
         celebration: Option<Celebration>,
     ) -> Result<(), StoreError>;
     /// Deletes the counter and every entry under it.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn delete_counter(&self, id: CounterId) -> Result<(), StoreError>;
     /// Every entry for a counter, oldest first. Days with no row are absent.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn entries(&self, id: CounterId) -> Result<Vec<DayCount>, StoreError>;
     /// Every tap for a counter, oldest first.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn events(&self, id: CounterId) -> Result<Vec<Event>, StoreError>;
     /// Records a tap at `at` and adds `delta` to `day`'s total, clamped at
     /// zero. `day` is the caller's call (the rollover preference decides
     /// which day a late tap belongs to). Returns the new total. Creates the
     /// day row on first touch and removes it when it hits zero.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn adjust(
         &self,
         id: CounterId,
@@ -60,22 +92,50 @@ pub trait CounterStore {
     ) -> Result<u32, StoreError>;
     /// Rebuilds every counter's daily entries from its events, assigning each
     /// tap to a day by `prefs`. Called when the rollover hour changes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn rebuild_entries(&self, prefs: &Preferences) -> Result<(), StoreError>;
 }
 
 /// App-wide preferences.
 pub trait SettingsStore {
     /// The saved theme, or `None` on first launch.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn theme(&self) -> Result<Option<ThemeConfig>, StoreError>;
     /// Persists the theme.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn set_theme(&self, theme: &ThemeConfig) -> Result<(), StoreError>;
     /// The saved date format, or the default.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn date_format(&self) -> Result<DateFormat, StoreError>;
     /// Persists the date format.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn set_date_format(&self, format: DateFormat) -> Result<(), StoreError>;
     /// The saved preferences, or the defaults.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn preferences(&self) -> Result<Preferences, StoreError>;
     /// Persists the preferences.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn set_preferences(&self, prefs: &Preferences) -> Result<(), StoreError>;
 }
 

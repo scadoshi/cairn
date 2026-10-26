@@ -93,12 +93,20 @@ impl From<rusqlite::Error> for StoreError {
 
 impl SqliteStore {
     /// Opens (creating if needed) the database at `path` and migrates it.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError`] when the file can't be opened or created, or a migration fails.
     pub fn open(path: &Path) -> Result<Self, StoreError> {
         let conn = Connection::open(path)?;
         Self::init(conn)
     }
 
     /// An in-memory store, for tests.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError`] when SQLite can't open a memory database or a migration fails.
     pub fn in_memory() -> Result<Self, StoreError> {
         Self::init(Connection::open_in_memory()?)
     }
