@@ -15,17 +15,13 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{ActionBar, Button, ButtonVariant};
 
-use crate::domain::counter::format::{compact, thousands, thousands_i64};
-use crate::domain::counter::stats::days_in_year;
-use crate::domain::counter::{Counter, stats};
-use crate::domain::preferences::{CounterOrder, all_done_line};
+use crate::domain::counter::{Counter, format, stats};
+use crate::domain::preferences::{self, CounterOrder};
 use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
-use crate::inbound::ui::components::celebration::{CelebrationHost, Saying, celebrate_saying};
+use crate::inbound::ui::components::celebration::{self, CelebrationHost, Saying};
 use crate::inbound::ui::components::reveal::Reveal;
-use crate::inbound::ui::components::tile::{Num, Tile, TileGrid, rate};
-use crate::inbound::ui::{
-    SharedStore, TOAST_NORMAL, TOAST_QUICK, all_goals_met, now, today, use_prefs, use_store,
-};
+use crate::inbound::ui::components::tile::{self, Num, Tile, TileGrid};
+use crate::inbound::ui::{self, SharedStore, TOAST_NORMAL, TOAST_QUICK, use_prefs, use_store};
 
 /// Every counter as a card, in the preferred order.
 #[component]
@@ -64,13 +60,13 @@ fn CounterCard(
     let store = use_store();
     let entries = store.entries(counter.id).unwrap_or_default();
     let prefs = use_prefs()();
-    let summary = stats::summarize_with(&entries, counter.goal, today(), &prefs);
+    let summary = stats::summarize_with(&entries, counter.goal, ui::today(), &prefs);
     let id = counter.id;
     let bump_store = Arc::clone(&store);
     let toast = use_toast();
     let step = i64::from(counter.step.get());
     let confirm_minus = prefs.confirm_minus;
-    let days = days_in_year(today().year());
+    let days = stats::days_in_year(ui::today().year());
     // `None` once the day is done, so the tag has two states and no zero.
     let left_today = counter
         .goal
@@ -107,7 +103,7 @@ fn CounterCard(
             );
             return;
         }
-        match bump_store.adjust(id, now(), today(), applied) {
+        match bump_store.adjust(id, ui::now(), ui::today(), applied) {
             Ok(_) => {
                 // What this tap crossed, if anything. All three are asked
                 // of the tap rather than of the screen, so nothing has to
@@ -121,7 +117,7 @@ fn CounterCard(
                     .and_then(|g| stats::goal_mark_crossed(g.yearly(days), year_before, applied));
                 // Only worth asking when this counter just finished: the
                 // day cannot have been completed by a tap that did not.
-                let all_done = done && all_goals_met(&bump_store, today(), &prefs);
+                let all_done = done && ui::all_goals_met(&bump_store, ui::today(), &prefs);
 
                 // Rarest first. A fraction of the year comes round a few
                 // times a year, the whole day most days, one counter's day
@@ -129,7 +125,7 @@ fn CounterCard(
                 let saying = if let Some(pct) = mark {
                     Some(Saying::Fixed(format!("{pct}% of the year")))
                 } else if all_done {
-                    Some(Saying::Rotating(all_done_line))
+                    Some(Saying::Rotating(preferences::all_done_line))
                 } else {
                     None
                 };
@@ -137,7 +133,7 @@ fn CounterCard(
                 if done || mark.is_some() {
                     // The counter's own choice wins; None follows Config.
                     let how = card_celebration.unwrap_or(prefs.celebration);
-                    if let Some(line) = celebrate_saying(host, how, saying) {
+                    if let Some(line) = celebration::celebrate_saying(host, how, saying) {
                         toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
                     }
                 } else {
@@ -146,9 +142,12 @@ fn CounterCard(
                     // row are otherwise just numbers.
                     toast.info(
                         if applied >= 0 {
-                            format!("{name} +{}", thousands_i64(applied))
+                            format!("{name} +{}", format::thousands_i64(applied))
                         } else {
-                            format!("{name} -{}", thousands_i64(applied.saturating_neg()))
+                            format!(
+                                "{name} -{}",
+                                format::thousands_i64(applied.saturating_neg())
+                            )
                         },
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
@@ -179,22 +178,22 @@ fn CounterCard(
                         // It carries the number so one tag answers both
                         // "am I done" and "how much is left".
                         if let Some(left) = left_today {
-                            span { class: "stat-chip stat-chip-error", Num { text: thousands(left) } " to go" }
+                            span { class: "stat-chip stat-chip-error", Num { text: format::thousands(left) } " to go" }
                         } else {
                             span { class: "stat-chip stat-chip-success", "goal met" }
                         }
                         if let Some(left) = pace_today {
-                            span { class: "stat-chip stat-chip-muted", Num { text: thousands(left) } " to pace" }
+                            span { class: "stat-chip stat-chip-muted", Num { text: format::thousands(left) } " to pace" }
                         }
                     }
                 }
                 TileGrid {
-                    Tile { label: "lifetime", value: compact(summary.lifetime) }
-                    Tile { label: "today", value: compact(summary.today) }
+                    Tile { label: "lifetime", value: format::compact(summary.lifetime) }
+                    Tile { label: "today", value: format::compact(summary.today) }
                     Tile {
                         label: "this year",
-                        value: compact(summary.this_year.total),
-                        hint: format!("{}/day", rate(summary.this_year.per_day)),
+                        value: format::compact(summary.this_year.total),
+                        hint: format!("{}/day", tile::rate(summary.this_year.per_day)),
                     }
                 }
             }
@@ -263,7 +262,7 @@ fn ordered(counters: &[Counter], store: &SharedStore, order: CounterOrder) -> Ve
                 let entries = store.entries(c.id).unwrap_or_default();
                 // Preferences only reach streaks and consistency, and
                 // neither is a sort key, so the default is the whole truth.
-                let s = stats::summarize(&entries, c.goal, today());
+                let s = stats::summarize(&entries, c.goal, ui::today());
                 if order == CounterOrder::Lifetime {
                     s.lifetime
                 } else {

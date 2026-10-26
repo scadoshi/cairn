@@ -196,19 +196,19 @@ impl Goal {
     /// Both figures as separate strings, the one entered first: `15/day` then
     /// `5,475/year`, or `10,000/year` then `27.4/day`.
     pub fn parts(self, days_in_year: u32) -> [String; 2] {
-        use super::format::{compact as thousands, rate};
+        use super::format;
         match self {
             Self::PerYear(n) => [
-                format!("{}/year", thousands(n)),
-                format!("{}/day", rate(self.daily(days_in_year))),
+                format!("{}/year", format::compact(n)),
+                format!("{}/day", format::rate(self.daily(days_in_year))),
             ],
             Self::PerWeek(n) => [
-                format!("{}/week", thousands(n)),
-                format!("{}/year", thousands(self.yearly(days_in_year))),
+                format!("{}/week", format::compact(n)),
+                format!("{}/year", format::compact(self.yearly(days_in_year))),
             ],
             Self::PerDay(n) => [
-                format!("{}/day", thousands(n)),
-                format!("{}/year", thousands(self.yearly(days_in_year))),
+                format!("{}/day", format::compact(n)),
+                format!("{}/year", format::compact(self.yearly(days_in_year))),
             ],
         }
     }
@@ -222,7 +222,7 @@ impl Goal {
     /// whole numbers grouped, derived fractions to one decimal. `entered`
     /// says which of the three is the one typed in.
     pub fn breakdown(self, days_in_year: u32) -> [(String, bool); 3] {
-        use super::format::{rate, thousands};
+        use super::format;
         let days = f64::from(days_in_year.max(1));
         let (day, week, year) = match self {
             Self::PerDay(n) => (f64::from(n), f64::from(n) * 7.0, f64::from(n) * days),
@@ -238,9 +238,9 @@ impl Goal {
             )]
             let whole = v.round() as u32;
             if exact || (v - v.round()).abs() < 1e-9 {
-                thousands(whole)
+                format::thousands(whole)
             } else {
-                rate(v)
+                format::rate(v)
             }
         };
         let unit = |v: f64, exact: bool, suffix: &str| format!("{}/{suffix}", show(v, exact));

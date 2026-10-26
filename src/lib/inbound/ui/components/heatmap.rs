@@ -5,15 +5,11 @@
 use std::rc::Rc;
 
 use dioxus::prelude::*;
-use orangui::{
-    ChartTip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, heat_span, peak_indices,
-    use_scroll_to_end,
-};
+use orangui::{ChartTip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, use_scroll_to_end};
 
-use crate::domain::counter::format::thousands;
-use crate::domain::counter::{DayCount, heat};
+use crate::domain::counter::{DayCount, format, heat};
 use crate::inbound::ui::components::tile::Num;
-use crate::inbound::ui::{today, use_date_format, use_prefs};
+use crate::inbound::ui::{self, use_date_format, use_prefs};
 
 /// Room on the left for the weekday labels and on top for the months.
 const LEFT: f64 = 26.0;
@@ -39,7 +35,7 @@ struct Tip {
 fn peaks(cells: &[heat::HeatCell]) -> Vec<bool> {
     let counts: Vec<u32> = cells.iter().map(|c| c.count).collect();
     let mut peak = vec![false; cells.len()];
-    for i in peak_indices(&counts, PEAK_RATIO, MAX_PEAKS) {
+    for i in orangui::peak_indices(&counts, PEAK_RATIO, MAX_PEAKS) {
         if let Some(slot) = peak.get_mut(i) {
             *slot = true;
         }
@@ -53,16 +49,16 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
     let prefs = use_prefs()();
     let df = use_date_format()();
     let mut tip: Signal<Option<Tip>> = use_signal(|| None);
-    let grid = heat::heat_grid(&entries, today(), prefs.week_start, WEEKS);
+    let grid = heat::heat_grid(&entries, ui::today(), prefs.week_start, WEEKS);
     let labels = prefs.weekday_labels();
-    let width = LEFT + heat_span(grid.columns);
-    let height = TOP + heat_span(HEAT_ROWS);
+    let width = LEFT + orangui::heat_span(grid.columns);
+    let height = TOP + orangui::heat_span(HEAT_ROWS);
     let days = grid.cells.len();
     // What each cell's chip says, by the cell's index.
     let texts: Rc<[String]> = grid
         .cells
         .iter()
-        .map(|cell| format!("{} on {}", thousands(cell.count), df.date(cell.day)))
+        .map(|cell| format!("{} on {}", format::thousands(cell.count), df.date(cell.day)))
         .collect();
     let cells: Vec<HeatCell> = grid
         .cells
@@ -91,11 +87,11 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                     // Clears the chip when the tap lands on nothing.
                     rect { class: "heat-backdrop", x: "0", y: "0", width: "{width}", height: "{height}", onclick: move |_| tip.set(None) }
                     for m in grid.months.iter() {
-                        text { class: "heat-label", x: "{LEFT + heat_span(m.column)}", y: "{TOP - 4.0}", "{m.name}" }
+                        text { class: "heat-label", x: "{LEFT + orangui::heat_span(m.column)}", y: "{TOP - 4.0}", "{m.name}" }
                     }
                     for (row, label) in labels.iter().enumerate() {
                         if row % 2 == 1 {
-                            text { class: "heat-label", x: "{LEFT - 4.0}", y: "{TOP + heat_span(row) + HEAT_CELL - 2.0}", text_anchor: "end", "{label}" }
+                            text { class: "heat-label", x: "{LEFT - 4.0}", y: "{TOP + orangui::heat_span(row) + HEAT_CELL - 2.0}", text_anchor: "end", "{label}" }
                         }
                     }
                     HeatGrid {
@@ -122,7 +118,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
             }
         }
         p { class: "chart-note heat-note",
-            Num { text: thousands(grid.total) }
+            Num { text: format::thousands(grid.total) }
             " across "
             Num { text: grid.active_days.to_string() }
             " of {days} days"

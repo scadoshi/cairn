@@ -1,13 +1,11 @@
 //! Status colors mean an outcome. Decoration draws from the palette slots. Every
 //! status reference in the stylesheet must be one of these selectors.
 
-use orangui::status_uses;
-
 const ALLOWED: [&str; 1] = [".form-error"];
 
 #[test]
 fn status_colors_only_where_they_mean_something() {
-    let offenders: Vec<String> = status_uses(include_str!("../assets/main.css"))
+    let offenders: Vec<String> = orangui::status_uses(include_str!("../assets/main.css"))
         .into_iter()
         .filter(|u| !ALLOWED.contains(&u.selector.as_str()))
         .map(|u| format!("{} uses {}", u.selector, u.variable))

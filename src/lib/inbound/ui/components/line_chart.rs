@@ -10,7 +10,6 @@
 use std::hash::{Hash, Hasher};
 
 use dioxus::prelude::*;
-use orangui::curve;
 
 use crate::domain::counter::series::Shape;
 
@@ -89,13 +88,13 @@ pub fn LineChart(
                 cur.push((x_of(i), y_of(*v)));
             } else {
                 if cur.len() > 1 {
-                    out.push(curve(&cur));
+                    out.push(orangui::curve(&cur));
                 }
                 cur.clear();
             }
         }
         if cur.len() > 1 {
-            out.push(curve(&cur));
+            out.push(orangui::curve(&cur));
         }
         out
     };

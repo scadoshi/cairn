@@ -238,7 +238,7 @@ pub fn Shell() -> Element {
         Route::Home {} => "Cairn".to_string(),
         Route::Config {} => "Config".to_string(),
         Route::CounterScreen { id } => store
-            .get_counter(CounterId(*id))
+            .fetch_counter(CounterId(*id))
             .ok()
             .flatten()
             .map_or_else(|| "Counter".to_string(), |c| c.name.to_string()),

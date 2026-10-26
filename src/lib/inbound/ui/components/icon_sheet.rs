@@ -4,7 +4,7 @@
 
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use orangui::{BottomSheet, Button, ButtonVariant, THEME_GROUPS, ThemeConfig, display_theme_name};
+use orangui::{BottomSheet, Button, ButtonVariant, THEME_GROUPS, ThemeConfig};
 
 use crate::domain::preferences::AppIcon;
 use crate::inbound::ui::screens::home::LOGO_CAIRN;
@@ -81,7 +81,7 @@ pub fn IconSheet(
                     name: name.clone(),
                     is_dark: icon.peek().is_dark,
                 },
-                format!("App icon: {}", display_theme_name(name)),
+                format!("App icon: {}", orangui::display_theme_name(name)),
             ),
         };
         match app_icon::show(&next) {
@@ -127,7 +127,7 @@ pub fn IconSheet(
                 div { class: "pref-section-label", "{group.label}" }
                 for t in group.themes.iter().copied() {
                     IconRow {
-                        label: display_theme_name(t),
+                        label: orangui::display_theme_name(t),
                         pick: Some(t.to_string()),
                         tile: ThemeConfig { name: t.to_string(), is_dark: icon_mode },
                         draft,

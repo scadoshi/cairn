@@ -11,23 +11,21 @@ use orangui::{
     InfoButton, use_screen_hint,
 };
 
-use crate::domain::counter::format::{compact, compact_i64, thousands, thousands_i64};
 use crate::domain::counter::series::HourlyBasis;
 use crate::domain::counter::stats::Summary;
-use crate::domain::counter::{Counter, CounterId, DayCount, Event, Goal, Step, series, stats};
-use crate::domain::preferences::all_done_line;
+use crate::domain::counter::{
+    Counter, CounterId, DayCount, Event, Goal, Step, format, series, stats,
+};
+use crate::domain::preferences;
 use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
-use crate::inbound::ui::components::celebration::{CelebrationHost, Saying, celebrate_saying};
+use crate::inbound::ui::components::celebration::{self, CelebrationHost, Saying};
 use crate::inbound::ui::components::counter_form::EditSheet;
 use crate::inbound::ui::components::heatmap::Heatmap;
 use crate::inbound::ui::components::line_chart::{LineChart, Point};
 use crate::inbound::ui::components::reveal::Reveal;
-use crate::inbound::ui::components::tile::{Num, Tile, TileGrid, rate};
+use crate::inbound::ui::components::tile::{self, Num, Tile, TileGrid};
 use crate::inbound::ui::router::Route;
-use crate::inbound::ui::{
-    TOAST_NORMAL, TOAST_QUICK, all_goals_met, bump_store_version, now, today, use_date_format,
-    use_prefs, use_store,
-};
+use crate::inbound::ui::{self, TOAST_NORMAL, TOAST_QUICK, use_date_format, use_prefs, use_store};
 
 /// Which series the trends card draws.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -157,7 +155,7 @@ pub fn CounterScreen(id: i64) -> Element {
 
     let load_store = Arc::clone(&store);
     let reload = use_callback(move |()| {
-        match load_store.get_counter(id) {
+        match load_store.fetch_counter(id) {
             Ok(c) => counter.set(c),
             Err(e) => notice.set(Some(e.to_string())),
         }
@@ -178,7 +176,7 @@ pub fn CounterScreen(id: i64) -> Element {
     let adjust = use_callback(move |delta: i64| {
         let today_count = entries()
             .iter()
-            .find(|e| e.day == today())
+            .find(|e| e.day == ui::today())
             .map_or(0, |e| e.count);
         // Report what actually happened rather than what was asked for: a
         // day cannot go below zero, so this makes an empty day read "-0"
@@ -192,28 +190,29 @@ pub fn CounterScreen(id: i64) -> Element {
             );
             return;
         }
-        match adjust_store.adjust(id, now(), today(), applied) {
+        match adjust_store.adjust(id, ui::now(), ui::today(), applied) {
             Ok(_) => {
                 // What this tap crossed, if anything, asked of the tap
                 // rather than of the screen. The same three the counter
                 // list asks, so a crossing looks the same from either
                 // screen.
-                let days = stats::days_in_year(today().year());
+                let days = stats::days_in_year(ui::today().year());
                 let goal = counter().and_then(|c| c.goal);
                 let done = goal.is_some_and(|g| stats::crosses_goal(g, today_count, applied, days));
                 let year_before = entries()
                     .iter()
-                    .filter(|e| e.day.year() == today().year())
+                    .filter(|e| e.day.year() == ui::today().year())
                     .map(|e| e.count)
                     .sum::<u32>();
                 let mark = goal
                     .and_then(|g| stats::goal_mark_crossed(g.yearly(days), year_before, applied));
-                let all_done = done && all_goals_met(&adjust_store, today(), &celebrate_pref());
+                let all_done =
+                    done && ui::all_goals_met(&adjust_store, ui::today(), &celebrate_pref());
 
                 let saying = if let Some(pct) = mark {
                     Some(Saying::Fixed(format!("{pct}% of the year")))
                 } else if all_done {
-                    Some(Saying::Rotating(all_done_line))
+                    Some(Saying::Rotating(preferences::all_done_line))
                 } else {
                     None
                 };
@@ -223,7 +222,7 @@ pub fn CounterScreen(id: i64) -> Element {
                     let how = counter()
                         .and_then(|c| c.celebration)
                         .unwrap_or_else(|| celebrate_pref().celebration);
-                    if let Some(line) = celebrate_saying(host, how, saying) {
+                    if let Some(line) = celebration::celebrate_saying(host, how, saying) {
                         toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
                     }
                 } else {
@@ -232,9 +231,12 @@ pub fn CounterScreen(id: i64) -> Element {
                     let name = counter().map(|c| c.name.to_string()).unwrap_or_default();
                     toast.info(
                         if applied >= 0 {
-                            format!("{name} +{}", thousands_i64(applied))
+                            format!("{name} +{}", format::thousands_i64(applied))
                         } else {
-                            format!("{name} -{}", thousands_i64(applied.saturating_neg()))
+                            format!(
+                                "{name} -{}",
+                                format::thousands_i64(applied.saturating_neg())
+                            )
                         },
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
@@ -256,7 +258,7 @@ pub fn CounterScreen(id: i64) -> Element {
     };
     let step = i64::from(c.step.get());
     let big = c.big_step.map(|b| i64::from(b.get()));
-    let now = today();
+    let now = ui::today();
     let prefs = use_prefs()();
     let summary = stats::summarize_with(&entries(), c.goal, now, &prefs);
     let week_total: u32 = series::this_week(&entries(), now, &prefs)
@@ -274,11 +276,11 @@ pub fn CounterScreen(id: i64) -> Element {
     let week_delta = match week_total.cmp(&last_week_total) {
         std::cmp::Ordering::Greater => format!(
             "up {} on last week",
-            thousands(week_total.abs_diff(last_week_total))
+            format::thousands(week_total.abs_diff(last_week_total))
         ),
         std::cmp::Ordering::Less => format!(
             "down {} on last week",
-            thousands(last_week_total.abs_diff(week_total))
+            format::thousands(last_week_total.abs_diff(week_total))
         ),
         std::cmp::Ordering::Equal => "level with last week".to_string(),
     };
@@ -297,7 +299,7 @@ pub fn CounterScreen(id: i64) -> Element {
                 format!("Deleted {delete_name}"),
                 ToastOptions::default().duration(TOAST_NORMAL),
             );
-            bump_store_version();
+            ui::bump_store_version();
             nav.push(Route::Home {});
         }
         Err(e) => toast.error(e.to_string(), ToastOptions::default()),
@@ -313,14 +315,14 @@ pub fn CounterScreen(id: i64) -> Element {
                     div { class: "odometer",
                         span {
                             class: if summary.lifetime >= 10_000_000 { "odometer-value odometer-value-xl" } else if summary.lifetime >= 100_000 { "odometer-value odometer-value-l" } else { "odometer-value" },
-                            Num { text: thousands(summary.lifetime) }
+                            Num { text: format::thousands(summary.lifetime) }
                         }
                         span { class: "odometer-label", "lifetime since {date_format().date(c.created_on)}" }
                     }
                     TileGrid {
-                        Tile { label: "today", value: compact(summary.today) }
-                        Tile { label: "this week", value: compact(week_total), hint: week_delta }
-                        Tile { label: "this month", value: compact(summary.this_month) }
+                        Tile { label: "today", value: format::compact(summary.today) }
+                        Tile { label: "this week", value: format::compact(week_total), hint: week_delta }
+                        Tile { label: "this month", value: format::compact(summary.this_month) }
                     }
                     ActionBar {
                         // Big on the outside, matching the card's bar.
@@ -375,8 +377,8 @@ pub fn CounterScreen(id: i64) -> Element {
                             for y in summary.years.iter() {
                                 tr {
                                     td { "{y.year}" }
-                                    td { Num { text: thousands(y.total) } }
-                                    td { Num { text: rate(y.per_day) } }
+                                    td { Num { text: format::thousands(y.total) } }
+                                    td { Num { text: tile::rate(y.per_day) } }
                                     td { Num { text: y.active_days.to_string() } " / " Num { text: y.days_elapsed.to_string() } }
                                 }
                             }
@@ -457,7 +459,7 @@ pub fn CounterScreen(id: i64) -> Element {
 #[component]
 fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) -> Element {
     let mut trend = trend;
-    let now = today();
+    let now = ui::today();
     let year = now.year();
     let df = use_date_format()();
     let mut prefs = use_prefs();
@@ -731,9 +733,9 @@ fn YearCard(summary: Summary) -> Element {
                 }
             }
             TileGrid {
-                Tile { label: "total", value: compact(y.total) }
-                Tile { label: "per day", value: rate(y.per_day) }
-                Tile { label: "projected", value: compact(summary.projected_year_end), hint: "by year end at this pace".to_string() }
+                Tile { label: "total", value: format::compact(y.total) }
+                Tile { label: "per day", value: tile::rate(y.per_day) }
+                Tile { label: "projected", value: format::compact(summary.projected_year_end), hint: "by year end at this pace".to_string() }
             }
         }
     }
@@ -747,9 +749,12 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
     };
     let year_len = summary.this_year.days_in_year;
     let (pace_value, pace_hint) = if p.delta >= 0 {
-        (format!("+{}", compact_i64(p.delta)), "ahead of pace")
+        (
+            format!("+{}", format::compact_i64(p.delta)),
+            "ahead of pace",
+        )
     } else {
-        (compact_i64(p.delta), "behind pace")
+        (format::compact_i64(p.delta), "behind pace")
     };
     rsx! {
         Reveal { class: "settings-list",
@@ -765,18 +770,18 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
                 }
             }
             TileGrid {
-                Tile { label: "remaining", value: compact_i64(p.remaining) }
+                Tile { label: "remaining", value: format::compact_i64(p.remaining) }
                 Tile {
                     label: "day goal",
-                    value: compact(goal.daily_target(year_len)),
+                    value: format::compact(goal.daily_target(year_len)),
                     hint: "every day".to_string(),
                 }
                 Tile {
                     label: "today to pace",
-                    value: compact(stats::pace_remaining_today(&p, summary.today)),
+                    value: format::compact(stats::pace_remaining_today(&p, summary.today)),
                     hint: "given where you are".to_string(),
                 }
-                Tile { label: "needed per day", value: rate(p.needed_per_day), hint: "to land on it".to_string() }
+                Tile { label: "needed per day", value: tile::rate(p.needed_per_day), hint: "to land on it".to_string() }
                 Tile { label: "pace", value: pace_value, hint: pace_hint.to_string() }
             }
         }
@@ -787,7 +792,7 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
 #[component]
 fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> Element {
     let mut best = best;
-    let now = today();
+    let now = ui::today();
     let df = use_date_format()();
     // Read before the match: a hook inside one arm runs only for that chip,
     // and a hook count that changes between renders is fatal.
@@ -809,14 +814,14 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
     let tiles = match best() {
         Best::Day => summary
             .best_day
-            .map(|b| (thousands(b.count), None, df.date(b.day))),
+            .map(|b| (format::thousands(b.count), None, df.date(b.day))),
         Best::Week => series::weekly_totals(&entries, now.year(), &prefs)
             .into_iter()
             .max_by_key(|(_, t)| *t)
             .map(|(monday, total)| {
                 (
-                    thousands(total),
-                    Some(rate(f64::from(total) / 7.0)),
+                    format::thousands(total),
+                    Some(tile::rate(f64::from(total) / 7.0)),
                     format!("w/c {}", df.short(monday)),
                 )
             }),
@@ -827,8 +832,8 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
             .max_by_key(|(_, t, _)| *t)
             .map(|(i, total, active)| {
                 (
-                    thousands(total),
-                    Some(rate(f64::from(total) / f64::from(active))),
+                    format::thousands(total),
+                    Some(tile::rate(f64::from(total) / f64::from(active))),
                     months.get(i).copied().unwrap_or("").to_string(),
                 )
             }),
@@ -878,8 +883,8 @@ fn HabitCard(summary: Summary) -> Element {
                 }
             }
             div { class: "tile-grid tile-grid-2",
-                Tile { label: "streak", value: compact(summary.streak), hint: "days".to_string() }
-                Tile { label: "longest streak", value: compact(summary.longest_streak), hint: "days".to_string() }
+                Tile { label: "streak", value: format::compact(summary.streak), hint: "days".to_string() }
+                Tile { label: "longest streak", value: format::compact(summary.longest_streak), hint: "days".to_string() }
                 Tile {
                     label: "consistency",
                     value: format!("{:.0}%", summary.consistency * 100.0),

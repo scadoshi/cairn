@@ -14,7 +14,7 @@ use std::time::Duration;
 
 use dioxus::prelude::*;
 
-use crate::domain::preferences::{Celebration, done_line};
+use crate::domain::preferences::{self, Celebration};
 
 /// How long the overlay stays mounted, per kind. The level up is one fast
 /// pass; the confetti has to wait for the last piece to land.
@@ -54,10 +54,9 @@ const PIECES: [(u32, u32, u32, u8); 18] = [
 
 /// How many celebrations have fired, seeded from the clock at first use.
 ///
-/// The line used to be picked from a figure read off the screen, which a
-/// `use_callback` captured on first render and then never changed, so the
-/// same line came up until the app was relaunched. A counter that the act of
-/// celebrating bumps cannot go stale that way.
+/// A counter that the act of celebrating bumps cannot go stale. A figure read
+/// off the screen can: a `use_callback` captures it on first render and never
+/// sees it change, so the same line would come up until the app relaunched.
 ///
 /// Seeded rather than started at zero because the count is also where
 /// Random and the success lines pick from: from zero, the first goal
@@ -204,7 +203,7 @@ pub fn celebrate_saying(
     let line = match saying {
         Some(Saying::Fixed(text)) => text,
         Some(Saying::Rotating(pick)) => pick(nth).to_string(),
-        None => done_line(nth).to_string(),
+        None => preferences::done_line(nth).to_string(),
     };
     // Stride 2 against 3 accents: every tint before any repeat.
     let tint = u8::try_from(nth.wrapping_mul(2) % 3).unwrap_or(0);

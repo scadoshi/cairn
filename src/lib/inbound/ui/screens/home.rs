@@ -1,9 +1,9 @@
 //! The one screen you land on: the mark and today's date together at the
 //! top, a quote, then the counters.
 //!
-//! This used to be two screens, a landing page and a list. Tapping through to
-//! reach the counters cost a tap on the thing the app exists for, and the
-//! landing page had nothing on it you could act on.
+//! It is one screen rather than a landing page and a list. Tapping through to
+//! reach the counters would cost a tap on the thing the app exists for, and a
+//! landing page has nothing on it you can act on.
 //!
 //! Both sheets hang off the screen rather than off a card, because a fixed
 //! overlay inside a card is clipped by the card's rounded corners.
@@ -19,8 +19,7 @@ use orangui::{
     HintDialog, HintLine, use_screen_hint,
 };
 
-use crate::domain::counter::format::compact;
-use crate::domain::counter::{Counter, DayCount, Goal, stats};
+use crate::domain::counter::{Counter, DayCount, Goal, format, stats};
 use crate::domain::preferences::Logo;
 use crate::inbound::ui::components::counter_form::{CounterForm, CounterFormState, EditSheet};
 use crate::inbound::ui::components::counter_list::CounterList;
@@ -28,9 +27,7 @@ use crate::inbound::ui::components::quote_card::QuoteCard;
 use crate::inbound::ui::components::reveal::Reveal;
 use crate::inbound::ui::components::tile::{Num, Tile};
 use crate::inbound::ui::router::Route;
-use crate::inbound::ui::{
-    TOAST_NORMAL, bump_store_version, today, use_date_format, use_prefs, use_store,
-};
+use crate::inbound::ui::{self, TOAST_NORMAL, use_date_format, use_prefs, use_store};
 
 /// The C, the app's own mark.
 pub(crate) const LOGO_CAIRN: &str = include_str!("../../../../../assets/c.txt");
@@ -71,7 +68,7 @@ pub fn Home() -> Element {
         Logo::Scadoshi => (LOGO_SCADOSHI, "scadoshi"),
     };
 
-    let now = today();
+    let now = ui::today();
 
     // Reading is this screen's job; the arithmetic is the domain's, where it
     // can be tested. See stats::across_counters.
@@ -127,14 +124,14 @@ pub fn Home() -> Element {
                         }
                     } else {
                         div { class: "tile-grid tile-grid-2",
-                            Tile { label: "logged today", value: compact(across.logged_today) }
+                            Tile { label: "logged today", value: format::compact(across.logged_today) }
                             Tile {
                                 label: "goals met",
                                 value: across.goals_met.to_string(),
                                 hint: if across.with_goals == 0 { "no goals set".to_string() } else { format!("of {}", across.with_goals) },
                             }
-                            Tile { label: "lifetime", value: compact(across.lifetime) }
-                            Tile { label: "streak", value: compact(across.streak), hint: "days".to_string() }
+                            Tile { label: "lifetime", value: format::compact(across.lifetime) }
+                            Tile { label: "streak", value: format::compact(across.streak), hint: "days".to_string() }
                         }
                     }
                 }
@@ -225,13 +222,20 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
         let Some(v) = form.validate() else {
             return;
         };
-        match store.create_counter(&v.name, v.goal, v.step, v.big_step, v.celebration, today()) {
+        match store.create_counter(
+            &v.name,
+            v.goal,
+            v.step,
+            v.big_step,
+            v.celebration,
+            ui::today(),
+        ) {
             Ok(c) => {
                 toast.success(
                     format!("Saved {}", c.name),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 );
-                bump_store_version();
+                ui::bump_store_version();
                 on_created.call(());
                 open.set(false);
             }

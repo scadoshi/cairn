@@ -215,7 +215,7 @@ impl CounterStore for SqliteStore {
         rows.map(|r| r?).collect()
     }
 
-    fn get_counter(&self, id: CounterId) -> Result<Option<Counter>, StoreError> {
+    fn fetch_counter(&self, id: CounterId) -> Result<Option<Counter>, StoreError> {
         let conn = self.conn()?;
         conn.query_row(
             &format!("SELECT {COUNTER_COLS} FROM counters WHERE id = ?1"),
@@ -468,8 +468,8 @@ impl SettingsStore for SqliteStore {
                 |r| r.get(0),
             )
             .optional()?;
-        // A retired theme reads back as its replacement. One that no longer
-        // parses (an old shape, say) or names no theme is ignored; the
+        // A retired theme reads back as its replacement. One that does not
+        // parse (an old shape, say) or names no theme is ignored; the
         // default takes over and the next pick overwrites it.
         Ok(raw
             .and_then(|s| serde_json::from_str::<ThemeConfig>(&s).ok())
@@ -518,10 +518,10 @@ mod tests {
             )
             .unwrap();
         assert_eq!(s.list_counters().unwrap(), vec![c.clone()]);
-        assert_eq!(s.get_counter(c.id).unwrap(), Some(c.clone()));
+        assert_eq!(s.fetch_counter(c.id).unwrap(), Some(c.clone()));
         s.delete_counter(c.id).unwrap();
         assert_eq!(s.list_counters().unwrap().len(), 0);
-        assert_eq!(s.get_counter(c.id).unwrap(), None);
+        assert_eq!(s.fetch_counter(c.id).unwrap(), None);
     }
 
     #[test]
@@ -546,7 +546,7 @@ mod tests {
             Some(Celebration::Poppers),
         )
         .unwrap();
-        let got = s.get_counter(c.id).unwrap().unwrap();
+        let got = s.fetch_counter(c.id).unwrap().unwrap();
         assert_eq!(got.name.as_str(), "pull-ups");
         assert_eq!(got.goal, Some(Goal::PerDay(20)));
         assert_eq!(got.step.get(), 25);
@@ -566,12 +566,12 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            s.get_counter(c.id).unwrap().unwrap().goal,
+            s.fetch_counter(c.id).unwrap().unwrap().goal,
             Some(Goal::PerWeek(100))
         );
         s.update_counter(c.id, &got.name, None, got.step, None, None)
             .unwrap();
-        assert_eq!(s.get_counter(c.id).unwrap().unwrap().goal, None);
+        assert_eq!(s.fetch_counter(c.id).unwrap().unwrap().goal, None);
     }
 
     #[test]
@@ -588,7 +588,7 @@ mod tests {
             )
             .unwrap();
         assert_eq!(
-            s.get_counter(c.id).unwrap().unwrap().goal,
+            s.fetch_counter(c.id).unwrap().unwrap().goal,
             Some(Goal::PerDay(15))
         );
     }
@@ -756,9 +756,9 @@ mod tests {
     /// Every other store test starts from `in_memory()`, which is version 0,
     /// so all five rungs always run and the version guards are never
     /// exercised. That leaves the path a real phone takes, an existing
-    /// database being upgraded, with no coverage at all: changing
-    /// `if version < 5` to `if version < 4` used to pass the whole suite
-    /// while breaking every install that already had data.
+    /// database being upgraded, with no coverage at all: a change from
+    /// `if version < 5` to `if version < 4` passes every other test while
+    /// breaking every install that already has data.
     #[test]
     fn opens_a_database_left_at_every_older_version() {
         let ladder = [

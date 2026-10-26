@@ -13,7 +13,7 @@ use chrono::{Local, NaiveDateTime, TimeZone};
 use dioxus::prelude::*;
 
 use crate::domain::quote::{self, Quote};
-use crate::inbound::ui::now;
+use crate::inbound::ui;
 
 /// The gap between two letters while a quote types out.
 const LETTER_MS: u64 = 20;
@@ -30,12 +30,12 @@ pub fn QuoteCard() -> Element {
     let mut typed = use_signal(|| TYPED.swap(true, Ordering::Relaxed));
     // Whether the tags animate in once the line is out.
     let mut arriving = use_signal(|| !*typed.peek());
-    let mut tick = use_signal(now);
+    let mut tick = use_signal(ui::now);
     use_future(move || async move {
-        let mut current = quote_at(&now());
+        let mut current = quote_at(&ui::now());
         loop {
             tokio::time::sleep(Duration::from_secs(1)).await;
-            let at = now();
+            let at = ui::now();
             let next = quote_at(&at);
             if next != current {
                 current = next;

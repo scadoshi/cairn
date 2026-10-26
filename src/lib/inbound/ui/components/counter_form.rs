@@ -10,11 +10,9 @@ use orangui::{
     BottomSheet, Button, ButtonVariant, Chip, FieldLabel, HintDialog, HintKey, HintLine, TextInput,
 };
 
-use crate::domain::counter::{
-    CounterId, CounterName, Goal, Step, ValidationError, check_big_step, stats,
-};
+use crate::domain::counter::{self, CounterId, CounterName, Goal, Step, ValidationError, stats};
 use crate::domain::preferences::Celebration;
-use crate::inbound::ui::{TOAST_NORMAL, bump_store_version, today, use_store};
+use crate::inbound::ui::{self, TOAST_NORMAL, use_store};
 
 /// Which period a typed goal amount is for.
 #[expect(missing_docs, reason = "Day, Week and Year say what they are")]
@@ -176,7 +174,7 @@ impl CounterFormState {
                 }
             }
         };
-        let big_step = match check_big_step(step, big) {
+        let big_step = match counter::check_big_step(step, big) {
             Ok(b) => b,
             Err(e) => {
                 self.error.set(Some(e.to_string()));
@@ -208,7 +206,7 @@ pub fn CounterForm(state: CounterFormState) -> Element {
     } = state;
     let mut hint = use_signal(|| None::<FormHint>);
     let mut hint_open = use_signal(|| false);
-    let days = stats::days_in_year(today().year());
+    let days = stats::days_in_year(ui::today().year());
     let preview = amount()
         .trim()
         .parse::<u32>()
@@ -402,7 +400,7 @@ pub fn EditSheet(
                     format!("Saved {}", v.name),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 );
-                bump_store_version();
+                ui::bump_store_version();
                 on_saved.call(());
                 open.set(false);
             }

@@ -1,5 +1,5 @@
-//! Routes: the home list, one counter, and config. The list used to be a
-//! screen of its own; it is the landing screen now.
+//! Routes: the home list, one counter, and config. The list is the landing
+//! screen rather than a screen of its own.
 
 use dioxus::prelude::*;
 

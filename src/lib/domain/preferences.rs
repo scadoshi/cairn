@@ -367,10 +367,10 @@ pub struct Preferences {
 /// Reads the stored celebration, falling back to the default for anything
 /// this build does not know.
 ///
-/// Settings are one JSON blob, so a variant that no longer exists would
+/// Settings are one JSON blob, so a variant this build dropped would
 /// otherwise fail the whole struct and quietly reset the theme, the rest
-/// days and the rollover hour along with it. Scanline was removed on
-/// 2026-09-24 while it was selectable, so at least one phone has it stored.
+/// days and the rollover hour along with it. Scanline is one: phones that
+/// picked it while it was offered still have it stored.
 fn celebration_or_default<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Celebration, D::Error> {
     #[derive(Deserialize)]
     #[serde(untagged)]

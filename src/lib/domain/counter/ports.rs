@@ -28,7 +28,7 @@ pub trait CounterStore {
     /// # Errors
     ///
     /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
-    fn get_counter(&self, id: CounterId) -> Result<Option<Counter>, StoreError>;
+    fn fetch_counter(&self, id: CounterId) -> Result<Option<Counter>, StoreError>;
     /// Creates a counter starting today.
     ///
     /// # Errors

@@ -9,15 +9,12 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
     ActionBar, BottomSheet, Button, ButtonVariant, Chip, DarkModeButton, HintBullet, HintBullets,
-    HintDialog, HintKey, HintLine, InfoButton, ModeIcon, ThemeConfig, ThemeSheet,
-    display_theme_name, use_screen_hint,
+    HintDialog, HintKey, HintLine, InfoButton, ModeIcon, ThemeConfig, ThemeSheet, use_screen_hint,
 };
 
 use crate::domain::counter::csv;
-use crate::domain::preferences::{
-    AppIcon, Celebration, Logo, Preferences, rest_mask_has, rest_mask_toggled,
-};
-use crate::inbound::ui::components::celebration::{CelebrationHost, celebrate};
+use crate::domain::preferences::{self, AppIcon, Celebration, Logo, Preferences};
+use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::icon_sheet::IconSheet;
 use crate::inbound::ui::router::Route;
 use crate::inbound::ui::{TOAST_NORMAL, TOAST_QUICK, use_date_format, use_prefs, use_store};
@@ -175,7 +172,7 @@ pub fn Config() -> Element {
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Theme)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
-                        span { {display_theme_name(&theme.read().name)} }
+                        span { {orangui::display_theme_name(&theme.read().name)} }
                         DarkModeButton { is_dark: theme.read().is_dark, onclick: toggle_dark }
                         Button {
                             variant: ButtonVariant::Action,
@@ -196,7 +193,7 @@ pub fn Config() -> Element {
                         if prefs().app_icon == AppIcon::MatchesTheme {
                             span { "Matches theme" }
                         } else {
-                            span { {display_theme_name(&icon().name)} }
+                            span { {orangui::display_theme_name(&icon().name)} }
                             DarkModeButton { is_dark: icon().is_dark, onclick: toggle_icon_dark }
                         }
                         Button {
@@ -564,7 +561,7 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                     variant: ButtonVariant::Action,
                     disabled: draft() == Celebration::Off,
                     onclick: move |_| {
-                        if let Some(line) = celebrate(host, draft()) {
+                        if let Some(line) = celebration::celebrate(host, draft()) {
                             toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
                         }
                     },
@@ -791,8 +788,8 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             div { class: "chip-row chip-row-center", style: "flex-wrap: wrap;",
                 for (day, name) in DAYS {
                     Chip {
-                        selected: rest_mask_has(draft(), day),
-                        onclick: move |_| draft.with_mut(|d| *d = rest_mask_toggled(*d, day)),
+                        selected: preferences::rest_mask_has(draft(), day),
+                        onclick: move |_| draft.with_mut(|d| *d = preferences::rest_mask_toggled(*d, day)),
                         "{name}"
                     }
                 }
