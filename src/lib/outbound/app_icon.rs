@@ -189,8 +189,11 @@ mod tests {
 
     #[test]
     fn a_bundle_name_parses_back_keeping_the_themes_hyphens() {
-        assert!(parse("AppIcon-tokyo-night-light") == Some(icon("tokyo-night", false)));
-        assert!(parse("AppIcon-nord-dark") == Some(icon("nord", true)));
+        assert_eq!(
+            parse("AppIcon-tokyo-night-light"),
+            Some(icon("tokyo-night", false))
+        );
+        assert_eq!(parse("AppIcon-nord-dark"), Some(icon("nord", true)));
         assert!(parse("AppIcon-nord").is_none());
     }
 
@@ -220,19 +223,19 @@ mod tests {
     #[test]
     fn a_pick_reads_back_as_its_theme_and_mode() {
         assert!(set(&icon("nord", false)).is_ok());
-        assert!(current() == icon("nord", false));
+        assert_eq!(current(), icon("nord", false));
         assert!(show(&icon("nord", false)).is_ok());
         assert!(show(&icon("dracula", true)).is_ok());
-        assert!(current() == icon("dracula", true));
+        assert_eq!(current(), icon("dracula", true));
         assert!(set(&primary()).is_ok());
-        assert!(current() == primary());
+        assert_eq!(current(), primary());
 
         assert!(imp::set(Some("AppIcon-visual-studio-light")).is_ok());
-        assert!(current() == icon("vscode", false));
+        assert_eq!(current(), icon("vscode", false));
         assert!(replace_retired().is_ok());
         assert_eq!(imp::current().as_deref(), Some("AppIcon-vscode-light"));
         assert!(imp::set(Some("AppIcon-no-such-theme-dark")).is_ok());
-        assert!(current() == primary());
+        assert_eq!(current(), primary());
         assert!(set(&primary()).is_ok());
     }
 }
