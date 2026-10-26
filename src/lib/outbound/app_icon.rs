@@ -114,14 +114,14 @@ mod imp {
         unsafe { app.as_ref() }
     }
 
-    pub fn current() -> Option<String> {
+    pub(super) fn current() -> Option<String> {
         let app = app()?;
         // SAFETY: `alternateIconName` is a nullable NSString getter.
         let name: Option<Retained<NSString>> = unsafe { msg_send![app, alternateIconName] };
         name.map(|n| n.to_string())
     }
 
-    pub fn set(name: Option<&str>) -> Result<(), String> {
+    pub(super) fn set(name: Option<&str>) -> Result<(), String> {
         let app = app().ok_or("no UIApplication")?;
         // False only when Info.plist lists no alternates, which is a build
         // that skipped scripts/ios/icons.sh.
