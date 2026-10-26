@@ -61,6 +61,12 @@ pub fn now() -> NaiveDateTime {
 #[derive(Clone, Copy)]
 pub struct StoreVersion(pub Signal<u32>);
 
+impl std::fmt::Debug for StoreVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("StoreVersion").finish_non_exhaustive()
+    }
+}
+
 /// How long a toast stays up, shared with zwipe so a confirmation does not
 /// linger twice as long in one app as the other. Re-exported at this path so
 /// call sites keep importing from `inbound::ui`.
@@ -126,7 +132,7 @@ pub fn App() -> Element {
     use_context_provider(|| prefs);
     // Persist every change; when the rollover hour moves, rebuild the daily
     // entries from the events so history follows the new day boundary.
-    let prefs_store = store.clone();
+    let prefs_store = Arc::clone(&store);
     let mut last_rollover = use_signal(move || saved_prefs.rollover_hour);
     use_effect(move || {
         let current = prefs();
@@ -139,7 +145,7 @@ pub fn App() -> Element {
     let saved_format = store.date_format().unwrap_or_default();
     let date_format = use_signal(move || saved_format);
     use_context_provider(|| date_format);
-    let format_store = store.clone();
+    let format_store = Arc::clone(&store);
     use_effect(move || {
         let _ = format_store.set_date_format(date_format());
     });
@@ -153,7 +159,7 @@ pub fn App() -> Element {
 
     // Persist every theme change. Runs once at mount too, which is harmless:
     // it writes back whatever was just loaded.
-    let persist_store = store.clone();
+    let persist_store = Arc::clone(&store);
     use_effect(move || {
         let cfg = theme.read().clone();
         let _ = persist_store.set_theme(&cfg);

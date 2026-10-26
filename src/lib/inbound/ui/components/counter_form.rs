@@ -46,6 +46,7 @@ impl GoalUnit {
 }
 
 /// What a filled-in form becomes once every field checks out.
+#[derive(Debug)]
 pub struct ValidCounter {
     /// Display name.
     pub name: CounterName,
@@ -77,6 +78,12 @@ pub struct CounterFormState {
     pub celebration: Signal<Option<Celebration>>,
     /// Validation message to show, if any.
     pub error: Signal<Option<String>>,
+}
+
+impl std::fmt::Debug for CounterFormState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CounterFormState").finish_non_exhaustive()
+    }
 }
 
 impl Default for CounterFormState {
@@ -368,7 +375,7 @@ pub fn EditSheet(
     let toast = use_toast();
     let mut form = use_hook(CounterFormState::default);
 
-    let seed_name = current_name.clone();
+    let seed_name = current_name;
     use_effect(move || {
         if open() {
             form.load(

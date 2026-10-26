@@ -1,3 +1,6 @@
+//! Cairn's entrypoint: finds the data directory, opens the SQLite store and
+//! launches the app on it.
+
 use std::sync::Arc;
 
 use cairn::inbound::ui::{App, SharedStore};
@@ -5,6 +8,10 @@ use cairn::outbound::paths;
 use cairn::outbound::sqlite::SqliteStore;
 use orangui::{BOOT_BG, BOOT_HEAD};
 
+#[expect(
+    clippy::print_stderr,
+    reason = "with no store there is no window yet, so stderr is the only place the reason can go"
+)]
 fn main() {
     let path = match paths::database() {
         Ok(p) => p,

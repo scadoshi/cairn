@@ -8,6 +8,7 @@
 //! Both sheets hang off the screen rather than off a card, because a fixed
 //! overlay inside a card is clipped by the card's rounded corners.
 
+use std::sync::Arc;
 use std::time::Duration;
 
 use chrono::Datelike;
@@ -58,7 +59,7 @@ pub fn Home() -> Element {
     let prefs = use_prefs();
     let date_format = use_date_format();
 
-    let load_store = store.clone();
+    let load_store = Arc::clone(&store);
     let reload = use_callback(move |()| match load_store.list_counters() {
         Ok(list) => counters.set(list),
         Err(e) => error.set(Some(e.to_string())),

@@ -135,12 +135,15 @@ mod imp {
 
     static PICKED: Mutex<Option<String>> = Mutex::new(None);
 
-    pub fn current() -> Option<String> {
+    pub(super) fn current() -> Option<String> {
         PICKED.lock().ok()?.clone()
     }
 
-    #[allow(clippy::unnecessary_wraps)]
-    pub fn set(name: Option<&str>) -> Result<(), String> {
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "the same signature as the iOS set, which can fail"
+    )]
+    pub(super) fn set(name: Option<&str>) -> Result<(), String> {
         if let Ok(mut picked) = PICKED.lock() {
             *picked = name.map(str::to_string);
         }

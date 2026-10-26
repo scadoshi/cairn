@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 ";
 
-/// v2: goals can be per day. Exactly one of goal_per_year / goal_per_day is
+/// v2: goals can be per day. Exactly one of `goal_per_year` / `goal_per_day` is
 /// set, or neither.
 const SCHEMA_V2: &str = "ALTER TABLE counters ADD COLUMN goal_per_day INTEGER;";
 
@@ -77,6 +77,12 @@ const PREFS_KEY: &str = "prefs";
 /// is tiny, so the UI calls straight through.
 pub struct SqliteStore {
     conn: Mutex<Connection>,
+}
+
+impl std::fmt::Debug for SqliteStore {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SqliteStore").finish_non_exhaustive()
+    }
 }
 
 impl From<rusqlite::Error> for StoreError {
@@ -437,7 +443,7 @@ impl SettingsStore for SqliteStore {
     fn date_format(&self) -> Result<DateFormat, StoreError> {
         Ok(self
             .setting(DATE_FORMAT_KEY)?
-            .map_or(DateFormat::default(), |k| DateFormat::from_key(&k)))
+            .map_or_else(DateFormat::default, |k| DateFormat::from_key(&k)))
     }
 
     fn set_date_format(&self, format: DateFormat) -> Result<(), StoreError> {

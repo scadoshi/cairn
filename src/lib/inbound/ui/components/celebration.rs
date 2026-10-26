@@ -125,7 +125,7 @@ const SPARKS: [(u32, u32, u32, i32); 12] = [
 
 /// What is currently playing: the resolved animation and the line that goes
 /// with it, since two of them draw the line themselves.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Playing {
     /// Never `Random`; that is resolved before it gets here.
     pub how: Celebration,
@@ -143,6 +143,7 @@ pub struct Playing {
 ///
 /// Two kinds, because the line sets rotate so the same words do not come up
 /// twice running, while a figure worked out at the tap is whatever it is.
+#[derive(Debug)]
 pub enum Saying {
     /// This exact text, such as "40% of the year".
     Fixed(String),
@@ -160,6 +161,12 @@ const MAX_LAYERS: usize = 8;
 /// each running out its own time.
 #[derive(Clone, Copy)]
 pub struct CelebrationHost(pub Signal<Vec<Playing>>);
+
+impl std::fmt::Debug for CelebrationHost {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("CelebrationHost").finish_non_exhaustive()
+    }
+}
 
 /// Fires a celebration, if the setting wants one.
 ///

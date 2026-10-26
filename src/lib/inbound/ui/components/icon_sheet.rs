@@ -1,6 +1,6 @@
 //! The App icon sheet: Match theme first, then every theme as a row, each with
 //! the icon drawn in that theme's colors in the mode the icon is in now
-//! (Config's App icon row flips the mode), laid out like orangui's ThemeSheet.
+//! (Config's App icon row flips the mode), laid out like orangui's `ThemeSheet`.
 
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

@@ -1,6 +1,8 @@
 //! One counter: the odometer, today's controls, stats, trends, years, rename,
 //! delete.
 
+use std::sync::Arc;
+
 use chrono::{Datelike, Duration as ChronoDuration};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -153,7 +155,7 @@ pub fn CounterScreen(id: i64) -> Element {
     });
     let date_format = use_date_format();
 
-    let load_store = store.clone();
+    let load_store = Arc::clone(&store);
     let reload = use_callback(move |()| {
         match load_store.get_counter(id) {
             Ok(c) => counter.set(c),
@@ -170,7 +172,7 @@ pub fn CounterScreen(id: i64) -> Element {
     });
     use_effect(move || reload.call(()));
 
-    let adjust_store = store.clone();
+    let adjust_store = Arc::clone(&store);
     let host = use_context::<CelebrationHost>();
     let celebrate_pref = use_prefs();
     let adjust = use_callback(move |delta: i64| {
@@ -285,7 +287,7 @@ pub fn CounterScreen(id: i64) -> Element {
     let hint_open = use_signal(|| false);
     use_screen_hint(hint_open);
     let delete_name = c.name.to_string();
-    let delete_store = store.clone();
+    let delete_store = Arc::clone(&store);
     let delete = move |()| match delete_store.delete_counter(id) {
         Ok(()) => {
             toast.success(
@@ -314,7 +316,7 @@ pub fn CounterScreen(id: i64) -> Element {
                     }
                     TileGrid {
                         Tile { label: "today", value: compact(summary.today) }
-                        Tile { label: "this week", value: compact(week_total), hint: week_delta.clone() }
+                        Tile { label: "this week", value: compact(week_total), hint: week_delta }
                         Tile { label: "this month", value: compact(summary.this_month) }
                     }
                     ActionBar {

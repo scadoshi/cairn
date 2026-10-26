@@ -17,7 +17,7 @@ pub fn database() -> std::io::Result<PathBuf> {
 ///
 /// On iOS the sandbox's HOME is the app container, and its Documents folder
 /// is the one the Files app shows under "On My iPhone > Count" (Dioxus.toml
-/// sets UIFileSharingEnabled and LSSupportsOpeningDocumentsInPlace for
+/// sets `UIFileSharingEnabled` and `LSSupportsOpeningDocumentsInPlace` for
 /// that). The dirs crate has no iOS notion of a documents folder, and the
 /// sandbox has no Downloads folder, so this builds the path from HOME.
 /// Elsewhere it is the platform Downloads folder, falling back to the data

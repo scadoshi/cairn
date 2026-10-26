@@ -8,6 +8,8 @@
 //! is clipped by the card's own rounded corners, so the screen owns those
 //! and a card only says which counter it wants opened.
 
+use std::sync::Arc;
+
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -43,10 +45,7 @@ pub fn CounterList(
                 counter: c.clone(),
                 on_bump: move |()| on_bump.call(()),
                 on_open: move |id: i64| on_open.call(id),
-                on_edit: {
-                    let c = c.clone();
-                    move |()| on_edit.call(c.clone())
-                },
+                on_edit: move |()| on_edit.call(c.clone()),
             }
         }
     }
@@ -67,7 +66,7 @@ fn CounterCard(
     let prefs = use_prefs()();
     let summary = stats::summarize_with(&entries, counter.goal, today(), &prefs);
     let id = counter.id;
-    let bump_store = store.clone();
+    let bump_store = Arc::clone(&store);
     let toast = use_toast();
     let step = i64::from(counter.step.get());
     let confirm_minus = prefs.confirm_minus;
