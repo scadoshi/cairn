@@ -8,27 +8,13 @@ use cairn::outbound::paths;
 use cairn::outbound::sqlite::SqliteStore;
 use orangui::{BOOT_BG, BOOT_HEAD};
 
-#[expect(
-    clippy::print_stderr,
-    reason = "with no store there is no window yet, so stderr is the only place the reason can go"
-)]
-fn main() {
-    let path = match paths::database() {
-        Ok(p) => p,
-        Err(e) => {
-            eprintln!("cairn: cannot locate data directory: {e}");
-            return;
-        }
-    };
-    let store = match SqliteStore::open(&path) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("cairn: cannot open {}: {e}", path.display());
-            return;
-        }
-    };
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let path = paths::database().map_err(|e| format!("cannot locate data directory: {e}"))?;
+    let store =
+        SqliteStore::open(&path).map_err(|e| format!("cannot open {}: {e}", path.display()))?;
     let store: SharedStore = Arc::new(store);
     launch(store);
+    Ok(())
 }
 
 // The WebView paints dark and keeps #main hidden until the styles are in;
