@@ -51,7 +51,7 @@ The database lives at the platform data dir, `~/Library/Application Support/scad
 
 ## Linting
 
-Pedantic clippy with the panic family denied outside tests (`unwrap`, `expect`, `panic`, indexing, slicing), same lint set as chickadee. `clippy.toml` allows them inside tests. CI treats warnings as errors.
+The [scadoshi-rust](https://github.com/scadoshi/scadoshi-rust) lint set, in `Cargo.toml` `[lints]`. Pedantic clippy is on, and nothing may panic outside tests: `unwrap`, `expect`, `panic`, indexing and string slicing are denied. A suppression is `#[expect(lint, reason = "...")]`, never `#[allow]`. Arithmetic is overflow-safe, an `as` cast carries an `#[expect]` saying why it is exact, every public type implements `Debug`, every public function that returns `Result` has an `# Errors` section, and a store lookup is `fetch_`, never `get_`. `clippy.toml` sets the thresholds, allows panics inside tests, and lists the prose words (`WebView`, `WKWebView`, `McDougall`) docs may leave unquoted. CI treats warnings as errors.
 
 ## Commit Guidelines
 

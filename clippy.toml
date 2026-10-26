@@ -1,12 +1,18 @@
-# Thresholds and behavior only; lint levels live in Cargo.toml [lints.clippy].
+# Thresholds and behavior only. Lint levels live in Cargo.toml [lints.clippy].
 
-# Above seven arguments, reach for a struct or a builder.
 too-many-arguments-threshold = 7
 type-complexity-threshold = 250
 cognitive-complexity-threshold = 25
 
-# Panics are the right failure mode inside tests.
+# Google's bool rule: flag functions with several bools, not every bool.
+# Single bool setters stay; an unclear lone bool gets a call-site comment.
+max-fn-params-bools = 2
+
+# Panicking is the right failure mode in a test.
 allow-unwrap-in-tests = true
 allow-expect-in-tests = true
 allow-panic-in-tests = true
 allow-indexing-slicing-in-tests = true
+
+# Prose words, not code to backtick. ".." keeps clippy's defaults.
+doc-valid-idents = ["WebView", "WKWebView", "McDougall", ".."]
