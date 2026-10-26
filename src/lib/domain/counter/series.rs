@@ -30,7 +30,7 @@ pub fn rolling_average(series: &[(NaiveDate, u32)], window: usize) -> Vec<(Naive
         .iter()
         .enumerate()
         .map(|(i, (day, _))| {
-            let start = i.saturating_sub(window - 1);
+            let start = i.saturating_sub(window.saturating_sub(1));
             let slice = series.get(start..=i).unwrap_or(&[]);
             let sum: u32 = slice.iter().map(|(_, c)| c).sum();
             let n = slice.len().max(1);
@@ -57,7 +57,9 @@ pub fn this_week(entries: &[DayCount], today: NaiveDate, prefs: &Preferences) ->
     let first = week_start(today, prefs);
     let mut out = [None; 7];
     for (i, slot) in (0i64..).zip(out.iter_mut()) {
-        let day = first + Duration::days(i);
+        let Some(day) = first.checked_add_signed(Duration::days(i)) else {
+            continue;
+        };
         if day <= today {
             *slot = Some(entries.iter().find(|e| e.day == day).map_or(0, |e| e.count));
         }
@@ -67,7 +69,9 @@ pub fn this_week(entries: &[DayCount], today: NaiveDate, prefs: &Preferences) ->
 
 /// Total for the seven days ending `end` inclusive.
 pub fn window_total(entries: &[DayCount], end: NaiveDate, days: i64) -> u32 {
-    let start = end - Duration::days(days - 1);
+    let start = end
+        .checked_sub_signed(Duration::days(days.saturating_sub(1)))
+        .unwrap_or(NaiveDate::MIN);
     entries
         .iter()
         .filter(|e| e.day >= start && e.day <= end)
@@ -80,10 +84,12 @@ pub fn weekday_average(entries: &[DayCount]) -> [Option<f64>; 7] {
     let mut sums = [0u32; 7];
     let mut days = [0u32; 7];
     for e in entries.iter().filter(|e| e.count > 0) {
-        let i = e.day.weekday().num_days_from_monday() as usize;
+        let Ok(i) = usize::try_from(e.day.weekday().num_days_from_monday()) else {
+            continue;
+        };
         if let (Some(s), Some(d)) = (sums.get_mut(i), days.get_mut(i)) {
             *s = s.saturating_add(e.count);
-            *d += 1;
+            *d = d.saturating_add(1);
         }
     }
     let mut out = [None; 7];
@@ -151,7 +157,7 @@ pub fn weekly_average(
         match out.iter_mut().find(|(m, _, _)| *m == monday) {
             Some((_, total, days)) => {
                 *total = total.saturating_add(e.count);
-                *days += 1;
+                *days = days.saturating_add(1);
             }
             None => out.push((monday, e.count, 1)),
         }
@@ -170,10 +176,12 @@ pub fn monthly_totals(entries: &[DayCount], year: i32) -> [Option<(u32, u32)>; 1
         .iter()
         .filter(|e| e.day.year() == year && e.count > 0)
     {
-        let m = (e.day.month0()) as usize;
+        let Ok(m) = usize::try_from(e.day.month0()) else {
+            continue;
+        };
         if let (Some(s), Some(d)) = (sums.get_mut(m), days.get_mut(m)) {
             *s = s.saturating_add(e.count);
-            *d += 1;
+            *d = d.saturating_add(1);
         }
     }
     let mut out = [None; 12];
@@ -194,10 +202,12 @@ pub fn monthly_average(entries: &[DayCount], year: i32) -> [Option<f64>; 12] {
         .iter()
         .filter(|e| e.day.year() == year && e.count > 0)
     {
-        let m = (e.day.month0()) as usize;
+        let Ok(m) = usize::try_from(e.day.month0()) else {
+            continue;
+        };
         if let (Some(s), Some(d)) = (sums.get_mut(m), days.get_mut(m)) {
             *s = s.saturating_add(e.count);
-            *d += 1;
+            *d = d.saturating_add(1);
         }
     }
     let mut out = [None; 12];
@@ -314,9 +324,11 @@ pub fn hourly_average(events: &[Event], basis: HourlyBasis) -> [f64; 24] {
     let mut sums = [0i64; 24];
     let mut active: Vec<NaiveDate> = Vec::new();
     for e in events {
-        let h = e.at.hour() as usize;
+        let Ok(h) = usize::try_from(e.at.hour()) else {
+            continue;
+        };
         if let Some(s) = sums.get_mut(h) {
-            *s += e.delta.max(0);
+            *s = s.saturating_add(e.delta.max(0));
         }
         let d = e.at.date();
         if !active.contains(&d) {
@@ -325,7 +337,7 @@ pub fn hourly_average(events: &[Event], basis: HourlyBasis) -> [f64; 24] {
     }
     let n = match basis {
         HourlyBasis::ActiveDays => active.len().max(1),
-        HourlyBasis::AllDays { days } => days.max(1) as usize,
+        HourlyBasis::AllDays { days } => usize::try_from(days.max(1)).unwrap_or(1),
     };
     let mut out = [0.0; 24];
     for (o, sum) in out.iter_mut().zip(sums) {

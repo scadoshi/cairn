@@ -109,7 +109,7 @@ pub fn all_goals_met(store: &SharedStore, day: NaiveDate, prefs: &Preferences) -
 /// rather than a component body, and a hook there is what `dx check` flags.
 pub fn bump_store_version() {
     let mut v = consume_context::<StoreVersion>().0;
-    v += 1;
+    v.with_mut(|n| *n = n.wrapping_add(1));
 }
 
 /// Root component. The binary opens the store and provides it through launch

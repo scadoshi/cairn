@@ -37,7 +37,11 @@ impl CounterOrder {
     pub fn next(self) -> Self {
         let i = Self::ALL.iter().position(|o| *o == self).unwrap_or(0);
         Self::ALL
-            .get((i + 1) % Self::ALL.len())
+            .get(
+                i.saturating_add(1)
+                    .checked_rem(Self::ALL.len())
+                    .unwrap_or(0),
+            )
             .copied()
             .unwrap_or_default()
     }
@@ -85,7 +89,11 @@ impl Logo {
     pub fn next(self) -> Self {
         let i = Self::ALL.iter().position(|o| *o == self).unwrap_or(0);
         Self::ALL
-            .get((i + 1) % Self::ALL.len())
+            .get(
+                i.saturating_add(1)
+                    .checked_rem(Self::ALL.len())
+                    .unwrap_or(0),
+            )
             .copied()
             .unwrap_or_default()
     }
@@ -137,10 +145,8 @@ impl Celebration {
         if self != Self::Random {
             return self;
         }
-        let len = Self::ANIMATIONS.len();
-        let i = usize::try_from(nth % len as u64).unwrap_or(0);
         Self::ANIMATIONS
-            .get(i % len)
+            .get(index(nth, Self::ANIMATIONS.len()))
             .copied()
             .unwrap_or(Self::LevelUp)
     }
@@ -183,7 +189,11 @@ impl Celebration {
     pub fn next(self) -> Self {
         let i = Self::ALL.iter().position(|o| *o == self).unwrap_or(0);
         Self::ALL
-            .get((i + 1) % Self::ALL.len())
+            .get(
+                i.saturating_add(1)
+                    .checked_rem(Self::ALL.len())
+                    .unwrap_or(0),
+            )
             .copied()
             .unwrap_or_default()
     }
@@ -272,13 +282,27 @@ const ALL_DONE_LINES: [&str; 8] = [
 /// Stride through [`ALL_DONE_LINES`]; 3 is coprime with 8.
 const ALL_DONE_STRIDE: usize = 3;
 
+/// `nth` wrapped into `0..len`, for picking from a fixed list. 0 for an
+/// empty list.
+fn index(nth: u64, len: usize) -> usize {
+    u64::try_from(len)
+        .ok()
+        .and_then(|len| nth.checked_rem(len))
+        .and_then(|i| usize::try_from(i).ok())
+        .unwrap_or(0)
+}
+
 /// A line for the day being finished outright.
 #[must_use]
 pub fn all_done_line(nth: u64) -> &'static str {
     let len = ALL_DONE_LINES.len();
-    let i = usize::try_from(nth % len as u64).unwrap_or(0);
+    let i = index(nth, len);
     ALL_DONE_LINES
-        .get(i.wrapping_mul(ALL_DONE_STRIDE) % len)
+        .get(
+            i.wrapping_mul(ALL_DONE_STRIDE)
+                .checked_rem(len)
+                .unwrap_or(0),
+        )
         .copied()
         .unwrap_or("All of it, done")
 }
@@ -286,9 +310,9 @@ pub fn all_done_line(nth: u64) -> &'static str {
 /// A success line, varied by `nth` so consecutive crossings differ.
 pub fn done_line(nth: u64) -> &'static str {
     let len = DONE_LINES.len();
-    let i = usize::try_from(nth % len as u64).unwrap_or(0);
+    let i = index(nth, len);
     DONE_LINES
-        .get(i.wrapping_mul(DONE_STRIDE) % len)
+        .get(i.wrapping_mul(DONE_STRIDE).checked_rem(len).unwrap_or(0))
         .copied()
         .unwrap_or("Goal met")
 }
@@ -391,7 +415,9 @@ impl Preferences {
 
     /// The calendar day a moment belongs to, given the rollover hour.
     pub fn day_of(&self, at: NaiveDateTime) -> NaiveDate {
-        (at - chrono::Duration::hours(i64::from(self.rollover_hour))).date()
+        at.checked_sub_signed(chrono::Duration::hours(i64::from(self.rollover_hour)))
+            .unwrap_or(at)
+            .date()
     }
 
     /// Whether a weekday is a rest day.
@@ -409,6 +435,10 @@ impl Preferences {
     }
 
     /// The first day of the week containing `day`.
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "weekday numbers are 0 to 6, so the offset is 0 to 6, and stepping a real date back at most six days stays far inside chrono's range"
+    )]
     pub fn week_start_of(&self, day: NaiveDate) -> NaiveDate {
         let offset =
             (7 + day.weekday().num_days_from_monday() - self.week_start.num_days_from_monday()) % 7;
@@ -419,7 +449,12 @@ impl Preferences {
     /// Sunday-based count (first Sunday starts week 1) otherwise.
     pub fn week_number(&self, day: NaiveDate) -> u32 {
         match self.week_start {
-            Weekday::Sun => day.format("%U").to_string().parse::<u32>().unwrap_or(0) + 1,
+            Weekday::Sun => day
+                .format("%U")
+                .to_string()
+                .parse::<u32>()
+                .unwrap_or(0)
+                .saturating_add(1),
             _ => day.iso_week().week(),
         }
     }
@@ -427,10 +462,10 @@ impl Preferences {
     /// Weekday names in this week's order, short.
     pub fn weekday_labels(&self) -> [&'static str; 7] {
         const MON: [&str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-        let start = self.week_start.num_days_from_monday() as usize;
+        let start = usize::try_from(self.week_start.num_days_from_monday()).unwrap_or(0);
         let mut out = [""; 7];
         for (i, slot) in out.iter_mut().enumerate() {
-            *slot = MON.get((start + i) % 7).copied().unwrap_or("");
+            *slot = MON.get(start.saturating_add(i) % 7).copied().unwrap_or("");
         }
         out
     }
@@ -464,7 +499,7 @@ mod tests {
     fn every_success_line_is_reachable_before_any_repeats() {
         let mut seen = std::collections::HashSet::new();
         let mut last = "";
-        for n in 0..DONE_LINES.len() as u64 {
+        for n in 0..u64::try_from(DONE_LINES.len()).unwrap() {
             let line = done_line(n);
             assert_ne!(line, last, "the same line twice running at {n}");
             seen.insert(line);
@@ -477,7 +512,7 @@ mod tests {
     fn success_lines_never_repeat_consecutively_over_many_crossings() {
         // Three full cycles, the way a heavy day of counting would.
         let mut last = "";
-        for n in 0..(DONE_LINES.len() as u64 * 3) {
+        for n in 0..(u64::try_from(DONE_LINES.len()).unwrap() * 3) {
             let line = done_line(n);
             assert_ne!(line, last, "the same line twice running at {n}");
             last = line;
@@ -496,7 +531,7 @@ mod tests {
     #[test]
     fn random_reaches_every_animation_before_repeating() {
         let mut seen = Vec::new();
-        for n in 0..Celebration::ANIMATIONS.len() as u64 {
+        for n in 0..u64::try_from(Celebration::ANIMATIONS.len()).unwrap() {
             let got = Celebration::Random.resolve(n);
             assert!(
                 !seen.contains(&got),
@@ -645,7 +680,7 @@ mod tests {
 
     #[test]
     fn every_all_done_line_is_reachable_before_any_repeats() {
-        let seen: std::collections::HashSet<_> = (0..ALL_DONE_LINES.len() as u64)
+        let seen: std::collections::HashSet<_> = (0..u64::try_from(ALL_DONE_LINES.len()).unwrap())
             .map(all_done_line)
             .collect();
         assert_eq!(seen.len(), ALL_DONE_LINES.len(), "some line never shows");

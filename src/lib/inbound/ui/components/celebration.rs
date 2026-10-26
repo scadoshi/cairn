@@ -80,7 +80,12 @@ fn next_nth() -> u64 {
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| d.as_secs());
     // A losing racer just takes the next number off whoever won.
-    match FIRED.compare_exchange(u64::MAX, seed + 1, Ordering::Relaxed, Ordering::Relaxed) {
+    match FIRED.compare_exchange(
+        u64::MAX,
+        seed.saturating_add(1),
+        Ordering::Relaxed,
+        Ordering::Relaxed,
+    ) {
         Ok(_) => seed,
         Err(_) => FIRED.fetch_add(1, Ordering::Relaxed),
     }

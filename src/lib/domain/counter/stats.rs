@@ -96,6 +96,10 @@ fn ratio(total: u32, days: u32) -> f64 {
 }
 
 /// Standing against `goal` given `total_this_year` on `today`.
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "u32 values widened to u64 or i64 before multiplying or subtracting, so no product or difference can overflow"
+)]
 pub fn pace(goal: Goal, total_this_year: u32, today: NaiveDate) -> Pace {
     let year_len = days_in_year(today.year());
     let day = today.ordinal();
@@ -133,7 +137,7 @@ fn summarize_year(
     for e in in_year {
         total = total.saturating_add(e.count);
         if e.count > 0 {
-            active_days += 1;
+            active_days = active_days.saturating_add(1);
         }
     }
     let days_in_year = days_in_year(year);
@@ -188,7 +192,7 @@ fn longest_streak(entries: &[DayCount], prefs: &Preferences) -> u32 {
     let mut prev: Option<NaiveDate> = None;
     for d in days {
         run = match prev {
-            Some(p) if adjacent(p, d, prefs) => run + 1,
+            Some(p) if adjacent(p, d, prefs) => run.saturating_add(1),
             _ => 1,
         };
         best = best.max(run);
@@ -221,7 +225,7 @@ fn streak(entries: &[DayCount], today: NaiveDate, prefs: &Preferences) -> u32 {
     let mut n = 0u32;
     loop {
         if has(cursor) {
-            n += 1;
+            n = n.saturating_add(1);
         } else if !prefs.is_rest(cursor) {
             break;
         }
@@ -246,7 +250,7 @@ fn counting_days(year: i32, today: NaiveDate, prefs: &Preferences) -> u32 {
     let mut n = 0u32;
     while d <= end {
         if !prefs.is_rest(d) {
-            n += 1;
+            n = n.saturating_add(1);
         }
         match d.succ_opt() {
             Some(next) => d = next,
@@ -278,7 +282,15 @@ pub fn summarize_with(
         .fold(0u32, |acc, e| acc.saturating_add(e.count));
     let first_day = entries.iter().map(|e| e.day).min();
     let lifetime_days = first_day
-        .and_then(|first| u32::try_from((today - first).num_days() + 1).ok())
+        .and_then(|first| {
+            u32::try_from(
+                today
+                    .signed_duration_since(first)
+                    .num_days()
+                    .saturating_add(1),
+            )
+            .ok()
+        })
         .unwrap_or(0);
     let this_month = entries
         .iter()
@@ -302,7 +314,8 @@ pub fn summarize_with(
         .max_by_key(|e| (e.count, std::cmp::Reverse(e.day)))
         .copied();
     let last_logged = entries.iter().filter(|e| e.count > 0).map(|e| e.day).max();
-    let days_since_last = last_logged.and_then(|d| u32::try_from((today - d).num_days()).ok());
+    let days_since_last =
+        last_logged.and_then(|d| u32::try_from(today.signed_duration_since(d).num_days()).ok());
     let consistency = ratio(
         this_year.active_days,
         counting_days(today.year(), today, prefs)
@@ -403,7 +416,7 @@ pub fn applied_delta(today_count: u32, delta: i64) -> i64 {
     // Negate first, then clamp, then negate back. Doing it in one step reads
     // as `-(delta.min(n))`, which turns a subtraction into an addition.
     let wanted = delta.saturating_neg();
-    -wanted.min(i64::from(today_count))
+    wanted.min(i64::from(today_count)).saturating_neg()
 }
 
 /// One counter's inputs for the figures that span all of them.
@@ -452,9 +465,9 @@ pub fn across_counters(
         out.logged_today = out.logged_today.saturating_add(s.today);
         out.lifetime = out.lifetime.saturating_add(s.lifetime);
         if let Some(g) = c.goal {
-            out.with_goals += 1;
+            out.with_goals = out.with_goals.saturating_add(1);
             if remaining_today(g, s.today, days) == 0 {
-                out.goals_met += 1;
+                out.goals_met = out.goals_met.saturating_add(1);
             }
         }
     }
@@ -511,7 +524,7 @@ pub fn crosses(threshold: u64, before: u64, applied: i64) -> bool {
 #[must_use]
 pub fn goal_mark_crossed(goal: u32, year_total_before: u32, applied: i64) -> Option<u32> {
     GOAL_MARKS.into_iter().rev().find(|pct| {
-        let threshold = u64::from(goal) * u64::from(*pct) / 100;
+        let threshold = u64::from(goal).saturating_mul(u64::from(*pct)) / 100;
         crosses(threshold, u64::from(year_total_before), applied)
     })
 }

@@ -72,7 +72,7 @@ pub fn LineChart(
                 clippy::cast_precision_loss,
                 reason = "counts and indices sit far below 2^53, so the float is exact; std has no From<usize> or From<u64> for f64"
             )]
-            let t = i as f64 / (n - 1) as f64;
+            let t = i as f64 / n.saturating_sub(1) as f64;
             PAD_L + t * (W - PAD_L - PAD_R)
         }
     };
@@ -140,14 +140,14 @@ pub fn LineChart(
             clippy::cast_precision_loss,
             reason = "counts and indices sit far below 2^53, so the float is exact; std has no From<usize> or From<u64> for f64"
         )]
-        let needed = (widest + 1) as f64 * 6.2;
+        let needed = widest.saturating_add(1) as f64 * 6.2;
         let spacing = if n > 1 {
             #[expect(
                 clippy::as_conversions,
                 clippy::cast_precision_loss,
                 reason = "counts and indices sit far below 2^53, so the float is exact; std has no From<usize> or From<u64> for f64"
             )]
-            let gaps = (n - 1) as f64;
+            let gaps = n.saturating_sub(1) as f64;
             (W - PAD_L - PAD_R) / gaps
         } else {
             W
@@ -168,12 +168,12 @@ pub fn LineChart(
         points
             .iter()
             .enumerate()
-            .filter(|(i, _)| i % label_every == 0)
+            .filter(|(i, _)| i.checked_rem(label_every) == Some(0))
             .map(|(i, p)| {
                 // The ends anchor inwards so they do not hang off the chart.
                 let anchor = if i == 0 {
                     "start"
-                } else if i + label_every >= n {
+                } else if i.saturating_add(label_every) >= n {
                     "end"
                 } else {
                     "middle"

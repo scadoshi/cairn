@@ -148,7 +148,7 @@ fn CounterCard(
                         if applied >= 0 {
                             format!("{name} +{}", thousands_i64(applied))
                         } else {
-                            format!("{name} -{}", thousands_i64(-applied))
+                            format!("{name} -{}", thousands_i64(applied.saturating_neg()))
                         },
                         ToastOptions::default().duration(TOAST_QUICK),
                     );

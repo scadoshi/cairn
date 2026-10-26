@@ -61,8 +61,11 @@ pub fn heat_grid(
     week_start: Weekday,
     weeks: usize,
 ) -> HeatGrid {
-    let span = i64::try_from(weeks.max(1) * 7 - 1).unwrap_or(363);
-    let first = week_start_of(today - Duration::days(span), week_start);
+    let span = i64::try_from(weeks.max(1).saturating_mul(7).saturating_sub(1)).unwrap_or(363);
+    let back = today
+        .checked_sub_signed(Duration::days(span))
+        .unwrap_or(today);
+    let first = week_start_of(back, week_start);
     let thresholds = quartiles(entries, first, today);
     let mut cells = Vec::new();
     let mut months = Vec::new();
@@ -72,13 +75,13 @@ pub fn heat_grid(
     let mut day = first;
     while day <= today {
         let count = entries.iter().find(|e| e.day == day).map_or(0, |e| e.count);
-        let since = (day - first).num_days();
+        let since = day.signed_duration_since(first).num_days();
         let column = usize::try_from(since / 7).unwrap_or(0);
         let row = usize::try_from(since % 7).unwrap_or(0);
         if row == 0 && Some(day.month()) != last_month {
             if months
                 .last()
-                .is_some_and(|m: &HeatMonth| column < m.column + LABEL_SPAN)
+                .is_some_and(|m: &HeatMonth| column < m.column.saturating_add(LABEL_SPAN))
             {
                 months.pop();
             }
@@ -93,7 +96,7 @@ pub fn heat_grid(
         }
         total = total.saturating_add(count);
         if count > 0 {
-            active_days += 1;
+            active_days = active_days.saturating_add(1);
         }
         cells.push(HeatCell {
             day,
@@ -107,7 +110,7 @@ pub fn heat_grid(
             None => break,
         }
     }
-    let columns = cells.last().map_or(0, |c| c.column + 1);
+    let columns = cells.last().map_or(0, |c| c.column.saturating_add(1));
     HeatGrid {
         cells,
         months,
@@ -118,6 +121,10 @@ pub fn heat_grid(
 }
 
 /// The `week_start` on or before `day`.
+#[expect(
+    clippy::arithmetic_side_effects,
+    reason = "weekday numbers are 0 to 6, so the offset is 0 to 6, and stepping a real date back at most six days stays far inside chrono's range"
+)]
 fn week_start_of(day: NaiveDate, week_start: Weekday) -> NaiveDate {
     let offset = (7 + day.weekday().num_days_from_monday() - week_start.num_days_from_monday()) % 7;
     day - Duration::days(i64::from(offset))
@@ -136,7 +143,12 @@ fn quartiles(entries: &[DayCount], from: NaiveDate, to: NaiveDate) -> [u32; 3] {
         return [0; 3];
     }
     logged.sort_unstable();
-    let at = |q: usize| logged.get(logged.len() * q / 4).copied().unwrap_or(0);
+    let at = |q: usize| {
+        logged
+            .get(logged.len().saturating_mul(q) / 4)
+            .copied()
+            .unwrap_or(0)
+    };
     [at(1), at(2), at(3)]
 }
 

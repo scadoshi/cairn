@@ -4,9 +4,9 @@
 /// Groups digits in threes with commas.
 pub fn thousands(n: u32) -> String {
     let digits = n.to_string();
-    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
+    let mut out = String::with_capacity(digits.len().saturating_add(digits.len() / 3));
     for (i, c) in digits.chars().enumerate() {
-        if i > 0 && (digits.len() - i).is_multiple_of(3) {
+        if i > 0 && digits.len().saturating_sub(i).is_multiple_of(3) {
             out.push(',');
         }
         out.push(c);

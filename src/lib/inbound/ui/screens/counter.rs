@@ -234,7 +234,7 @@ pub fn CounterScreen(id: i64) -> Element {
                         if applied >= 0 {
                             format!("{name} +{}", thousands_i64(applied))
                         } else {
-                            format!("{name} -{}", thousands_i64(-applied))
+                            format!("{name} -{}", thousands_i64(applied.saturating_neg()))
                         },
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
@@ -265,17 +265,20 @@ pub fn CounterScreen(id: i64) -> Element {
         .sum();
     let last_week_total = series::window_total(
         &entries(),
-        series::week_start(now, &prefs) - ChronoDuration::days(1),
+        {
+            let start = series::week_start(now, &prefs);
+            start.pred_opt().unwrap_or(start)
+        },
         7,
     );
     let week_delta = match week_total.cmp(&last_week_total) {
         std::cmp::Ordering::Greater => format!(
             "up {} on last week",
-            thousands(week_total - last_week_total)
+            thousands(week_total.abs_diff(last_week_total))
         ),
         std::cmp::Ordering::Less => format!(
             "down {} on last week",
-            thousands(last_week_total - week_total)
+            thousands(last_week_total.abs_diff(week_total))
         ),
         std::cmp::Ordering::Equal => "level with last week".to_string(),
     };
@@ -493,10 +496,10 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
         }
         Trend::Weekday => {
             let avg = series::weekday_average(&entries);
-            let start = p.week_start.num_days_from_monday() as usize;
+            let start = usize::try_from(p.week_start.num_days_from_monday()).unwrap_or(0);
             let mut rotated = [None; 7];
             for (i, slot) in rotated.iter_mut().enumerate() {
-                *slot = avg.get((start + i) % 7).copied().flatten();
+                *slot = avg.get(start.saturating_add(i) % 7).copied().flatten();
             }
             let points = rotated
                 .iter()
@@ -516,7 +519,9 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
             )
         }
         Trend::Daily => {
-            let from = now - ChronoDuration::days(59);
+            let from = now
+                .checked_sub_signed(ChronoDuration::days(59))
+                .unwrap_or(now);
             let daily = series::daily(&entries, from, now);
             let smooth = series::rolling_average(&daily, 7);
             let points = daily
@@ -609,7 +614,12 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
         Trend::Hourly => {
             let basis = if p.hourly_all_days {
                 let first = events.first().map_or(now, |e| e.at.date());
-                let days = u32::try_from((now - first).num_days() + 1).unwrap_or(1);
+                let days = u32::try_from(
+                    now.signed_duration_since(first)
+                        .num_days()
+                        .saturating_add(1),
+                )
+                .unwrap_or(1);
                 HourlyBasis::AllDays { days }
             } else {
                 HourlyBasis::ActiveDays

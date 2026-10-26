@@ -185,10 +185,7 @@ impl Goal {
     /// answer depend on the rounding mode. Rounding up rather than to nearest:
     /// a year of days that each fell a fraction short would miss the goal.
     pub fn daily_target(self, days_in_year: u32) -> u32 {
-        let ceil_div = |n: u32, d: u32| {
-            let d = d.max(1);
-            n / d + u32::from(!n.is_multiple_of(d))
-        };
+        let ceil_div = |n: u32, d: u32| n.div_ceil(d.max(1));
         match self {
             Self::PerDay(n) => n,
             Self::PerWeek(n) => ceil_div(n, 7),

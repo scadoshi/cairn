@@ -56,13 +56,15 @@ pub fn at_hour(hours: i64) -> Option<&'static Quote> {
     // the step 25 an hour, which shares nothing with 24.
     let ticks = hours.saturating_add(hours.div_euclid(24));
     let slot = usize::try_from(ticks.rem_euclid(i64::try_from(len).ok()?)).ok()?;
-    QUOTES.get(slot.wrapping_mul(STEP) % len)
+    QUOTES.get(slot.wrapping_mul(STEP).checked_rem(len)?)
 }
 
 /// How long until the quote changes.
 pub fn until_next<Tz: TimeZone>(at: &DateTime<Tz>) -> Duration {
-    let into_hour = i64::from(at.minute()) * 60 + i64::from(at.second());
-    Duration::seconds(3600 - into_hour)
+    let into_hour = i64::from(at.minute())
+        .saturating_mul(60)
+        .saturating_add(i64::from(at.second()));
+    Duration::seconds(3600_i64.saturating_sub(into_hour))
 }
 
 /// Every quote, each one traced to a book, newsletter, or recorded interview.

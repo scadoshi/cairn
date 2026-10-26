@@ -77,7 +77,7 @@ pub fn Config() -> Element {
                     let path = dir.join(format!("count-{}.csv", c.name.slug()));
                     std::fs::write(&path, csv::render(&entries))
                         .map_err(|e| format!("{}: {e}", path.display()))?;
-                    written += 1;
+                    written = written.saturating_add(1);
                 }
                 Ok((written, dir))
             });

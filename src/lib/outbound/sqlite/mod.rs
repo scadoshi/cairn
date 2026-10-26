@@ -419,7 +419,8 @@ impl SqliteStore {
                 let (id, at, delta) = row?;
                 let at = NaiveDateTime::parse_from_str(&at, "%Y-%m-%dT%H:%M:%S")
                     .map_err(|e| StoreError(format!("bad time {at:?} in database: {e}")))?;
-                *totals.entry((id, prefs.day_of(at))).or_default() += delta;
+                let total = totals.entry((id, prefs.day_of(at))).or_default();
+                *total = total.saturating_add(delta);
             }
         }
         for ((id, day), total) in totals {
