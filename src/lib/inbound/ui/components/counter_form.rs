@@ -17,7 +17,7 @@ use crate::domain::preferences::Celebration;
 use crate::inbound::ui::{TOAST_NORMAL, bump_store_version, today, use_store};
 
 /// Which period a typed goal amount is for.
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "Day, Week and Year say what they are")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GoalUnit {
     Day,

@@ -87,7 +87,6 @@ pub fn days_in_year(year: i32) -> u32 {
     }
 }
 
-#[allow(clippy::cast_precision_loss)]
 fn ratio(total: u32, days: u32) -> f64 {
     if days == 0 {
         0.0
@@ -107,7 +106,11 @@ pub fn pace(goal: Goal, total_this_year: u32, today: NaiveDate) -> Pace {
         .unwrap_or(u32::MAX);
     let remaining = i64::from(yearly) - i64::from(total_this_year);
     let days_left = year_len.saturating_sub(day).saturating_add(1).max(1);
-    #[allow(clippy::cast_precision_loss)]
+    #[expect(
+        clippy::as_conversions,
+        clippy::cast_precision_loss,
+        reason = "counts and indices sit far below 2^53, so the float is exact; std has no From<usize> or From<u64> for f64"
+    )]
     let needed_per_day = remaining as f64 / f64::from(days_left);
     Pace {
         goal: yearly,
@@ -307,7 +310,12 @@ pub fn summarize_with(
             .max(1),
     )
     .min(1.0);
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[expect(
+        clippy::as_conversions,
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "a per-day rate times the days in a year is never negative, and an f64 to u32 cast saturates rather than wrapping"
+    )]
     let projected_year_end = (this_year.per_day * f64::from(this_year.days_in_year)).round() as u32;
 
     Summary {
@@ -372,7 +380,12 @@ pub fn pace_remaining_today(pace: &Pace, today_count: u32) -> u32 {
     if pace.needed_per_day <= 0.0 {
         return 0;
     }
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[expect(
+        clippy::as_conversions,
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "needed_per_day is positive here, checked above, and an f64 to u32 cast saturates rather than wrapping"
+    )]
     let needed = pace.needed_per_day.ceil() as u32;
     needed.saturating_sub(today_count)
 }

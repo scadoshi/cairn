@@ -67,7 +67,11 @@ pub fn LineChart(
         if n <= 1 {
             PAD_L
         } else {
-            #[allow(clippy::cast_precision_loss)]
+            #[expect(
+                clippy::as_conversions,
+                clippy::cast_precision_loss,
+                reason = "counts and indices sit far below 2^53, so the float is exact; std has no From<usize> or From<u64> for f64"
+            )]
             let t = i as f64 / (n - 1) as f64;
             PAD_L + t * (W - PAD_L - PAD_R)
         }
@@ -131,16 +135,29 @@ pub fn LineChart(
         // metrics: the viewBox is stretched horizontally to the card, so a
         // character costs more than its 8px advance. One character of gap
         // between neighbors on top.
-        #[allow(clippy::cast_precision_loss)]
+        #[expect(
+            clippy::as_conversions,
+            clippy::cast_precision_loss,
+            reason = "counts and indices sit far below 2^53, so the float is exact; std has no From<usize> or From<u64> for f64"
+        )]
         let needed = (widest + 1) as f64 * 6.2;
         let spacing = if n > 1 {
-            #[allow(clippy::cast_precision_loss)]
+            #[expect(
+                clippy::as_conversions,
+                clippy::cast_precision_loss,
+                reason = "counts and indices sit far below 2^53, so the float is exact; std has no From<usize> or From<u64> for f64"
+            )]
             let gaps = (n - 1) as f64;
             (W - PAD_L - PAD_R) / gaps
         } else {
             W
         };
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(
+            clippy::as_conversions,
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "labels per gap is a small positive ratio, and an f64 to usize cast saturates rather than wrapping"
+        )]
         let fits = (needed / spacing.max(0.1)).ceil() as usize;
         label_every.max(fits).max(1)
     } else {

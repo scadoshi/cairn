@@ -138,7 +138,12 @@ impl Goal {
             // reads as 5,214, not 5,200.
             Self::PerWeek(n) => {
                 let total = f64::from(n) * f64::from(days_in_year) / 7.0;
-                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                #[expect(
+                    clippy::as_conversions,
+                    clippy::cast_possible_truncation,
+                    clippy::cast_sign_loss,
+                    reason = "a weekly goal over a year is never negative, and an f64 to u32 cast saturates rather than wrapping"
+                )]
                 let rounded = total.round() as u32;
                 rounded
             }
@@ -211,7 +216,12 @@ impl Goal {
             Self::PerYear(n) => (f64::from(n) / days, f64::from(n) * 7.0 / days, f64::from(n)),
         };
         let show = |v: f64, exact: bool| {
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            #[expect(
+                clippy::as_conversions,
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "a goal rate is never negative, and an f64 to u32 cast saturates rather than wrapping"
+            )]
             let whole = v.round() as u32;
             if exact || (v - v.round()).abs() < 1e-9 {
                 thousands(whole)

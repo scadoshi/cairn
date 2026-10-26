@@ -34,7 +34,11 @@ pub fn rolling_average(series: &[(NaiveDate, u32)], window: usize) -> Vec<(Naive
             let slice = series.get(start..=i).unwrap_or(&[]);
             let sum: u32 = slice.iter().map(|(_, c)| c).sum();
             let n = slice.len().max(1);
-            #[allow(clippy::cast_precision_loss)]
+            #[expect(
+                clippy::as_conversions,
+                clippy::cast_precision_loss,
+                reason = "counts and indices sit far below 2^53, so the float is exact; std has no From<usize> or From<u64> for f64"
+            )]
             let avg = f64::from(sum) / n as f64;
             (*day, avg)
         })
@@ -228,7 +232,11 @@ impl Shape {
     /// the bottom of the chart.
     #[must_use]
     pub fn at(&self, i: usize) -> f64 {
-        #[allow(clippy::cast_precision_loss)]
+        #[expect(
+            clippy::as_conversions,
+            clippy::cast_precision_loss,
+            reason = "counts and indices sit far below 2^53, so the float is exact; std has no From<usize> or From<u64> for f64"
+        )]
         let x = i as f64;
         (self.intercept + self.slope * x).max(0.0)
     }
@@ -246,7 +254,11 @@ pub fn shape(values: &[Option<f64>]) -> Option<Shape> {
         .iter()
         .enumerate()
         .filter_map(|(i, v)| {
-            #[allow(clippy::cast_precision_loss)]
+            #[expect(
+                clippy::as_conversions,
+                clippy::cast_precision_loss,
+                reason = "counts and indices sit far below 2^53, so the float is exact; std has no From<usize> or From<u64> for f64"
+            )]
             let x = i as f64;
             v.map(|y| (x, y))
         })
@@ -254,7 +266,11 @@ pub fn shape(values: &[Option<f64>]) -> Option<Shape> {
     if points.len() < 2 {
         return None;
     }
-    #[allow(clippy::cast_precision_loss)]
+    #[expect(
+        clippy::as_conversions,
+        clippy::cast_precision_loss,
+        reason = "counts and indices sit far below 2^53, so the float is exact; std has no From<usize> or From<u64> for f64"
+    )]
     let n = points.len() as f64;
     let mean_x = points.iter().map(|(x, _)| x).sum::<f64>() / n;
     let mean = points.iter().map(|(_, y)| y).sum::<f64>() / n;
@@ -313,7 +329,11 @@ pub fn hourly_average(events: &[Event], basis: HourlyBasis) -> [f64; 24] {
     };
     let mut out = [0.0; 24];
     for (o, sum) in out.iter_mut().zip(sums) {
-        #[allow(clippy::cast_precision_loss)]
+        #[expect(
+            clippy::as_conversions,
+            clippy::cast_precision_loss,
+            reason = "counts and indices sit far below 2^53, so the float is exact; std has no From<usize> or From<u64> for f64"
+        )]
         let avg = sum as f64 / n as f64;
         *o = avg;
     }

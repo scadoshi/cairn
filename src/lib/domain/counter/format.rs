@@ -72,9 +72,19 @@ pub fn thousands_i64(n: i64) -> String {
 /// One decimal, thousands-grouped in the integer part: 1234.56 as 1,234.6.
 pub fn rate(v: f64) -> String {
     let rounded = (v * 10.0).round() / 10.0;
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[expect(
+        clippy::as_conversions,
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "abs() makes it non-negative, and an f64 to u32 cast saturates rather than wrapping"
+    )]
     let whole = rounded.trunc().abs() as u32;
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[expect(
+        clippy::as_conversions,
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "the tenths digit is 0 to 10 after abs(), so the cast loses nothing"
+    )]
     let tenths = ((rounded.abs() - rounded.trunc().abs()) * 10.0).round() as u32;
     let sign = if rounded < 0.0 { "-" } else { "" };
     format!("{sign}{}.{tenths}", thousands(whole))

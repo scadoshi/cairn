@@ -354,7 +354,13 @@ fn celebration_or_default<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Cele
         Known(Celebration),
         /// The name of something this build dropped. Kept as a payload so
         /// serde has a shape to match; nothing reads it.
-        Gone(#[allow(dead_code)] String),
+        Gone(
+            #[expect(
+                dead_code,
+                reason = "serde needs a payload to match a dropped name; nothing reads it"
+            )]
+            String,
+        ),
     }
     Ok(match Stored::deserialize(d)? {
         Stored::Known(c) => c,
