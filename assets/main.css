@@ -1044,8 +1044,10 @@ input {
     fill: transparent;
 }
 
-.heat-note {
-    margin: 0 1rem 0.75rem;
+/* The readout keeps orangui's gap above it and clears the card's edges. */
+.heat-readout {
+    margin-inline: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 /* Someone who has asked the OS for less motion gets none of this. */

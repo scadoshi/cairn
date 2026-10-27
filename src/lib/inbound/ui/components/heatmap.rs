@@ -1,14 +1,17 @@
 //! The last year of one counter as a grid of days, a column per week, each
 //! cell shaded by how the day ranks against the counter's other logged days.
-//! Tapping a cell names the day and its count.
+//! Tapping a cell names the day and its count: in a floating chip where the
+//! screen has room and a pointer, in the readout under the grid otherwise.
 
 use std::rc::Rc;
 
 use dioxus::prelude::*;
-use orangui::{ChartTip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, use_scroll_to_end};
+use orangui::{
+    ChartTip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatReadout, use_heat_pick,
+    use_scroll_to_end,
+};
 
 use crate::domain::counter::{DayCount, format, heat};
-use crate::inbound::ui::components::tile::Num;
 use crate::inbound::ui::{self, use_date_format, use_prefs};
 
 /// Room on the left for the weekday labels and on top for the months.
@@ -43,23 +46,38 @@ fn peaks(cells: &[heat::HeatCell]) -> Vec<bool> {
     peak
 }
 
-/// The grid, its caption, and the tap chip.
+/// The grid, its readout, and the tap chip.
 #[component]
 pub fn Heatmap(entries: Vec<DayCount>) -> Element {
     let prefs = use_prefs()();
     let df = use_date_format()();
     let mut tip: Signal<Option<Tip>> = use_signal(|| None);
+    let pick = use_heat_pick();
     let grid = heat::heat_grid(&entries, ui::today(), prefs.week_start, WEEKS);
     let labels = prefs.weekday_labels();
     let width = LEFT + orangui::heat_span(grid.columns);
     let height = TOP + orangui::heat_span(HEAT_ROWS);
     let days = grid.cells.len();
-    // What each cell's chip says, by the cell's index.
+    // What each cell's chip and readout say, by the cell's index.
     let texts: Rc<[String]> = grid
         .cells
         .iter()
         .map(|cell| format!("{} on {}", format::thousands(cell.count), df.date(cell.day)))
         .collect();
+    let tags: Rc<[Vec<String>]> = grid
+        .cells
+        .iter()
+        .map(|cell| {
+            vec![
+                format!("{} logged", format::thousands(cell.count)),
+                df.date(cell.day),
+            ]
+        })
+        .collect();
+    let rest = vec![
+        format!("{} logged", format::thousands(grid.total)),
+        format!("{} of {days} days", grid.active_days),
+    ];
     let cells: Vec<HeatCell> = grid
         .cells
         .iter()
@@ -85,7 +103,17 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                     view_box: "0 0 {width} {height}",
                     role: "img",
                     // Clears the chip when the tap lands on nothing.
-                    rect { class: "heat-backdrop", x: "0", y: "0", width: "{width}", height: "{height}", onclick: move |_| tip.set(None) }
+                    rect {
+                        class: "heat-backdrop",
+                        x: "0",
+                        y: "0",
+                        width: "{width}",
+                        height: "{height}",
+                        onclick: move |_| {
+                            tip.set(None);
+                            pick.clear();
+                        },
+                    }
                     for m in grid.months.iter() {
                         text { class: "heat-label", x: "{LEFT + orangui::heat_span(m.column)}", y: "{TOP - 4.0}", "{m.name}" }
                     }
@@ -104,6 +132,9 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                                 let top = hit.y / height * 100.0;
                                 tip.set(Some(Tip { text: text.clone(), left, top }));
                             }
+                            if let Some(tags) = tags.get(hit.index) {
+                                pick.show(tags.clone());
+                            }
                         },
                     }
                 }
@@ -112,17 +143,12 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                         text: t.text,
                         left: t.left,
                         top: t.top,
-                        class: "stat-chip",
+                        class: "stat-chip heat-float",
                     }
                 }
             }
         }
-        p { class: "chart-note heat-note",
-            Num { text: format::thousands(grid.total) }
-            " across "
-            Num { text: grid.active_days.to_string() }
-            " of {days} days"
-        }
+        HeatReadout { rest, pick }
     }
 }
 
