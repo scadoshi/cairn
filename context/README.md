@@ -32,7 +32,9 @@ There is a write-up at [scottyfermo.com/side-quests/cairn](https://scottyfermo.c
 
 **2026-10-27: 1.1.2 uploaded** through Transporter as iOS build 9, built on scotland-halo. It brings a quote that types out in full when it turns while the app stays open, the heatmap's totals as tags under the grid, and the lifetime number in a box; 1.1.1 (build 8, Flexoki and Synthwave '84) went to review on 2026-10-21. Notes are at [`operations/store-submissions/1.1.2/whats_new.md`](operations/store-submissions/1.1.2/whats_new.md), and portfolio's changelog keeps 1.1.2 under UPCOMING until it goes live, when it moves to RELEASES with that day; move this repo's changelog heading to the same day if it differs from 2026-10-27.
 
-**Next:** submit 1.1.2 for review once the build finishes processing, and draw the Cairn mark properly.
+**2026-10-28: 1.1.3 built** as iOS build 10 on scotland-halo with 1.1.2 submitted, and opened in Transporter. It brings Settings naming the theme's mode Dark or Light (orangui `1bd3943`). Notes are at [`operations/store-submissions/1.1.3/whats_new.md`](operations/store-submissions/1.1.3/whats_new.md). Portfolio's changelog keeps 1.1.2 and 1.1.3 under UPCOMING until each goes live.
+
+**Next:** upload and submit 1.1.3 once 1.1.2 clears review, and draw the Cairn mark properly.
 
 Two features are scoped but not started: [`plans/celebrations.md`](plans/celebrations.md) and [`plans/big_step.md`](plans/big_step.md).
 
