@@ -10,7 +10,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 - Settings names the theme's mode Dark or Light, capitalized.
 
-## 1.1.2, 2026-10-27
+## 1.1.2, 2026-10-28
 
 - The changelog page's version chips list each minor version with its patches, not every patch.
 - A new quote that arrives while the app stays open types out in full, with its author, source and countdown, instead of keeping the old words.
