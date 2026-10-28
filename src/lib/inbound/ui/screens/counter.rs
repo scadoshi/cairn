@@ -317,7 +317,12 @@ pub fn CounterScreen(id: i64) -> Element {
                             class: if summary.lifetime >= 10_000_000 { "odometer-value odometer-value-xl" } else if summary.lifetime >= 100_000 { "odometer-value odometer-value-l" } else { "odometer-value" },
                             Num { text: format::thousands(summary.lifetime) }
                         }
-                        span { class: "odometer-label", "lifetime since {date_format().date(c.created_on)}" }
+                        // A counter made today could only count since today.
+                        if c.created_on == ui::today() {
+                            span { class: "odometer-label", "lifetime" }
+                        } else {
+                            span { class: "odometer-label", "lifetime since {date_format().date(c.created_on)}" }
+                        }
                     }
                     TileGrid {
                         Tile { label: "today", value: format::compact(summary.today) }

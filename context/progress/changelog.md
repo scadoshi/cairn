@@ -10,6 +10,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - A new quote that arrives while the app stays open types out in full, with its author, source and countdown, instead of keeping the old words.
 - The heatmap's total and logged days sit under it as tags. On the phone, a tapped day's count and date replace them for a few seconds instead of floating over the grid.
 - A counter's lifetime number sits in a box, matching the tiles under it.
+- A counter made today reads lifetime, without a since date.
 
 ## 1.1.1, 2026-10-21
 
