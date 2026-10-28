@@ -34,7 +34,7 @@ There is a write-up at [scottyfermo.com/side-quests/cairn](https://scottyfermo.c
 
 **2026-10-28: 1.1.3 submitted** as iOS build 10, built on scotland-halo, the day 1.1.2 went live on the App Store; portfolio's changelog lists 1.1.2 as released on 2026-10-28. It brings Settings naming the theme's mode Dark or Light (orangui `1bd3943`). Notes are at [`operations/store-submissions/1.1.3/whats_new.md`](operations/store-submissions/1.1.3/whats_new.md). It went live on the App Store the same day, and portfolio's changelog lists it as released on 2026-10-28.
 
-**2026-10-28: 1.1.4 cut** as iOS build 11, built on scotland-halo and opened in Transporter. It brings the "!" in the header linking to the changelog on scottyfermo.com. Notes are at [`operations/store-submissions/1.1.4/whats_new.md`](operations/store-submissions/1.1.4/whats_new.md). Portfolio's changelog lists it as released on 2026-10-28; move both dates if it goes live on another day.
+**2026-10-28: 1.1.4 submitted** as iOS build 11, built on scotland-halo. It brings the "!" in the header linking to the changelog on scottyfermo.com. Notes are at [`operations/store-submissions/1.1.4/whats_new.md`](operations/store-submissions/1.1.4/whats_new.md). Portfolio's changelog lists it as released on 2026-10-28; move both dates if it goes live on another day.
 
 **Next:** draw the Cairn mark properly.
 
