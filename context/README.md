@@ -30,7 +30,9 @@ There is a write-up at [scottyfermo.com/side-quests/cairn](https://scottyfermo.c
 
 **2026-10-20: 1.0.0 live on the App Store.** 1.1.0 took everything since and went to review the same night as iOS build 7, which replaces build 6 (uploaded, never submitted). It was signed on scotland-halo, which needed the Count App Store profile downloaded again to `~/certs`. The runbook is `operations/ios/app-store/submission/overview.md`.
 
-**Next:** watch 1.1.0's review, and draw the Cairn mark properly.
+**2026-10-27: 1.1.2 uploaded** through Transporter as iOS build 9, built on scotland-halo. It brings a quote that types out in full when it turns while the app stays open, the heatmap's totals as tags under the grid, and the lifetime number in a box; 1.1.1 (build 8, Flexoki and Synthwave '84) went to review on 2026-10-21. Notes are at [`operations/store-submissions/1.1.2/whats_new.md`](operations/store-submissions/1.1.2/whats_new.md), and portfolio's changelog lists 1.1.2 as released on 2026-10-27; move that date and this repo's changelog heading if it goes live on another day.
+
+**Next:** submit 1.1.2 for review once the build finishes processing, and draw the Cairn mark properly.
 
 Two features are scoped but not started: [`plans/celebrations.md`](plans/celebrations.md) and [`plans/big_step.md`](plans/big_step.md).
 
