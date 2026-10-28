@@ -451,11 +451,22 @@ input {
     color: var(--text-subtle);
 }
 
+/* The lifetime figure in the tiles' box, inset to line up with the tile
+   grid under it, which closes up to the tiles' own gap. */
 .odometer {
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin: 0.75rem 1rem 0;
     padding: 1.25rem 1rem 1rem;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.8rem;
+    background-color: var(--bg-sink);
+    box-shadow: var(--shadow-sm);
+}
+
+.odometer + .tile-grid {
+    padding-top: 0.5rem;
 }
 
 .odometer-value {
