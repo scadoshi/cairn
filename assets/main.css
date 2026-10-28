@@ -1029,17 +1029,15 @@ input {
       heatmap
  ==================== */
 
-/* The heatmap's field: the backdrop's sink and tiles, edge to edge between
-   the card's header rule and the rule over its readout. The tiles run under
-   the card's edges as they scroll, the way the backdrop runs off a screen. */
-.heat-field {
-    background-color: var(--bg-sink);
-}
-
 /* Wider than a phone, so it scrolls sideways (the shared .chart-scroll) and
    opens on the newest weeks. */
 .heat-scroll {
     scrollbar-width: none;
+    padding: 0.25rem 1rem 0.5rem;
+    /* Weeks fade out under the side gutters as they scroll past. The fade is
+       the gutter's width, so the first and last weeks rest clear of it. */
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
 }
 
 .heat-scroll::-webkit-scrollbar {
@@ -1057,42 +1055,10 @@ input {
     fill: transparent;
 }
 
-/* The backdrop's tiles at the grid's pitch, in its five shades of the text
-   color (orangui's grid-cells.js). They hold still under the days. */
-.heat-tile {
-    fill: var(--text-primary);
-}
-
-.heat-tile-0 {
-    fill-opacity: 0.015;
-}
-
-.heat-tile-1 {
-    fill-opacity: 0.03;
-}
-
-.heat-tile-2 {
-    fill-opacity: 0.05;
-}
-
-.heat-tile-3 {
-    fill-opacity: 0.075;
-}
-
-.heat-tile-4 {
-    fill-opacity: 0.1;
-}
-
-/* An empty day is its tile; only a logged day draws over it. */
-.heat-field .heat-0 {
-    fill: transparent;
-}
-
-/* The readout under a full-bleed rule, padded like the card's action bar. */
+/* The readout keeps orangui's gap above it and clears the card's edges. */
 .heat-readout {
-    margin-top: 0;
-    padding: 0.75rem 1rem;
-    border-top: 1px solid var(--border-secondary);
+    margin-inline: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 /* Someone who has asked the OS for less motion gets none of this. */

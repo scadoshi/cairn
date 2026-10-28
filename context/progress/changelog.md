@@ -6,8 +6,6 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
-- The heatmap sits on a field of the backdrop's tiles, edge to edge in its card, with its tags under a rule.
-
 ## 1.1.2, 2026-10-27
 
 - The changelog page's version chips list each minor version with its patches, not every patch.
