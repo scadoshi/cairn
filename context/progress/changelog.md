@@ -6,6 +6,8 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
+- Settings names the theme's mode Dark or Light, capitalized.
+
 ## 1.1.2, 2026-10-27
 
 - The changelog page's version chips list each minor version with its patches, not every patch.
