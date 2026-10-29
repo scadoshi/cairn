@@ -6,7 +6,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
-## 1.1.4, 2026-10-28
+## 1.1.4, 2026-10-29
 
 - The "!" in the header links to this changelog.
 
