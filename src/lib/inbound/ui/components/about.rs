@@ -1,6 +1,6 @@
 //! The "!" in the header's left corner, zwiper's support button, opening a
 //! note from the developer with links to Cairn's changelog and
-//! scottyfermo.com.
+//! scottyfermo.com, which open in the in-app browser.
 
 use dioxus::prelude::*;
 use orangui::{AlertDialog, DialogAction, HintLine};
