@@ -6,6 +6,8 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
+## 1.2.0, 2026-11-01
+
 - Links open inside Cairn instead of switching to Safari.
 
 ## 1.1.4, 2026-10-29
