@@ -20,7 +20,7 @@ dioxus = { version = "0.7.10", features = ["router"] }
 # ThemeSheet, the hint pieces, the overlay back stack and the OS back
 # gesture; `toast` adds ToastStack). Cargo.lock pins the exact commit;
 # `cargo update -p orangui` pulls the latest deliberately.
-orangui = { git = "https://github.com/scadoshi/orangui", features = ["toast"] }
+orangui = { git = "https://github.com/scadoshi/orangui", features = ["toast", "links"] }
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -35,18 +35,12 @@ dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "0
 # Timers for the entrances; dioxus-desktop already brings the runtime in.
 tokio = { version = "1", features = ["time"] }
 
-# UIApplication's alternate icon calls, for the App icon sheet, and the
-# in-app browser for links. The same versions tao already brings in.
+# UIApplication's alternate icon calls, for the App icon sheet. The same
+# versions tao already brings in.
 [target.'cfg(target_os = "ios")'.dependencies]
 objc2 = "0.6"
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSDictionary"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString"] }
 block2 = "0.6"
-
-# The desktop build opens links in the default browser; iOS uses
-# SFSafariViewController (`outbound/open_url.rs`). The version dioxus-desktop
-# already brings in.
-[target.'cfg(not(target_os = "ios"))'.dependencies]
-webbrowser = "1"
 
 [features]
 default = ["desktop"]

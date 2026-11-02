@@ -125,7 +125,7 @@ pub fn App() -> Element {
         let _ = crate::outbound::app_icon::replace_retired();
     });
     // Links open in the in-app browser instead of leaving for Safari.
-    components::in_app_links::use_in_app_links();
+    orangui::use_in_app_links();
     // Closed until the splash starts to fade; the entrances wait on it.
     use_context_provider(|| orangui::SplashGate(Signal::new(false)));
     use_context_provider(|| StoreVersion(Signal::new(0)));
