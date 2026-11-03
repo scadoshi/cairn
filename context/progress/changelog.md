@@ -6,6 +6,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
+- Home and Settings are icons in the menu's footer, beside the "!"; the menu is just that band.
 - The header is the shared nav bar: the screen's title and its "?" in the middle, a hamburger on the right opening a menu with Home and Settings and the "!" in its footer, and a back arrow on the left on every screen but Home. It slides away as you scroll down and back as you scroll up.
 - Config is now Settings.
 - The bottom footers are gone. Create is a + floating at the bottom right of Home, and Settings is in the menu.
