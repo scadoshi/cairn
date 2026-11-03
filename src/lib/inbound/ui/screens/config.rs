@@ -114,9 +114,10 @@ pub fn Config() -> Element {
     // Every row says what it did, in the same voice and for the same
     // length, because a setting that changes something you cannot see from
     // Config (when a day starts, how counters sort) is otherwise a button
-    // that looks like it did nothing.
+    // that looks like it did nothing. An info toast, with the plain border:
+    // a changed setting is a note, not an outcome.
     let said = use_callback(move |what: String| {
-        toast.success(what, ToastOptions::default().duration(TOAST_NORMAL));
+        toast.info(what, ToastOptions::default().duration(TOAST_QUICK));
     });
 
     // A kept theme, never a preview, carries the icon along when it follows.
