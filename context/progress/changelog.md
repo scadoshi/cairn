@@ -10,7 +10,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - Config is now Settings.
 - The bottom footers are gone. Create is a + floating at the bottom right of Home, and Settings is in the menu.
 - On a counter's screen, Edit is a pencil floating at the bottom right and Delete sits in a Danger zone panel at the bottom.
-- The step buttons sit inside their counter's card and panel.
+- The step buttons sit inside their counter's card and panel, and the card's Edit is a pencil.
 - Sheets close with an x in their title bar or a drag down, and save from a checkmark at their bottom right; Goal animation's Test is a play button beside it.
 
 ## 1.2.0, 2026-11-01

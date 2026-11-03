@@ -1,5 +1,5 @@
 //! The counter list, the main body of the home screen. Each card shows the
-//! headline numbers and carries its own row with plus, minus and Edit;
+//! headline numbers and carries its own row with plus, minus and a pencil;
 //! tapping the name and numbers opens the counter, so that handler sits on
 //! that region rather than the whole card and never has to compete with the
 //! buttons below it.
@@ -17,6 +17,7 @@ use orangui::{Button, ButtonVariant};
 
 use crate::domain::counter::{Counter, format, stats};
 use crate::domain::preferences::{self, CounterOrder};
+use crate::inbound::ui::components::action_dock::EditIcon;
 use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
 use crate::inbound::ui::components::celebration::{self, CelebrationHost, Saying};
 use crate::inbound::ui::components::reveal::Reveal;
@@ -224,10 +225,12 @@ fn CounterCard(
                         "+{big}"
                     }
                 }
-                Button {
-                    variant: ButtonVariant::Action,
+                button {
+                    class: "btn-action btn-icon",
+                    r#type: "button",
+                    aria_label: "Edit",
                     onclick: move |_| on_edit.call(()),
-                    "Edit"
+                    EditIcon {}
                 }
             }
             if let Some(big) = big {

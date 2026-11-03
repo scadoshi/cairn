@@ -180,6 +180,7 @@ pub fn Home() -> Element {
                     " is what today still owes, and turns into "
                     HintChip { class: "stat-chip-success", "goal met" }
                 }
+                HintBullet { "The pencil on a card edits that counter" }
                 HintBullet { "Up top is every counter added together" }
                 HintBullet { "The + at the bottom right starts a counter" }
             }

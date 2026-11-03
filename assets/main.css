@@ -301,6 +301,18 @@ input {
     padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
 }
 
+/* An icon in a button the height of its text siblings: the card's pencil. */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon .icon-pill-icon {
+    width: 1.1em;
+    height: 1.1em;
+}
+
 /* ==================
      danger zone
  ==================== */
