@@ -1,6 +1,5 @@
-//! The action dock, zwiper's: a screen's or a sheet's icon actions in one
-//! floating squircle bar at the bottom right. Styled by the "action dock"
-//! block of `main.css`.
+//! The icons for orangui's action dock: a screen's or a sheet's actions in
+//! one floating squircle bar at the bottom right.
 
 use dioxus::prelude::*;
 
@@ -16,7 +15,7 @@ pub const PLAY: &str = "M7 5v14l11-7z";
 pub fn DockIcon(path: &'static str) -> Element {
     rsx! {
         svg {
-            class: "icon-pill-icon",
+            class: "action-dock-icon",
             view_box: "0 0 24 24",
             xmlns: "http://www.w3.org/2000/svg",
             "aria-hidden": "true",
@@ -30,7 +29,7 @@ pub fn DockIcon(path: &'static str) -> Element {
 pub fn EditIcon() -> Element {
     rsx! {
         svg {
-            class: "icon-pill-icon",
+            class: "action-dock-icon",
             view_box: "0 0 24 24",
             xmlns: "http://www.w3.org/2000/svg",
             "aria-hidden": "true",

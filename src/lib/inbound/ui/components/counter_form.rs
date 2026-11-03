@@ -414,14 +414,12 @@ pub fn EditSheet(
             closable: true,
             CounterForm { state: form }
             // Save as the action dock's checkmark, pinned bottom right.
-            div { class: "app-float app-float-right",
-                div { class: "icon-pill",
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": "Save",
-                        onclick: save,
-                        DockIcon { path: action_dock::CHECK }
-                    }
+            div { class: "action-dock action-dock-right sheet-dock",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Save",
+                    onclick: save,
+                    DockIcon { path: action_dock::CHECK }
                 }
             }
         }

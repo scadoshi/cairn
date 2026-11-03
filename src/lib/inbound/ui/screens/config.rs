@@ -468,23 +468,21 @@ fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 }
             }
             // Save as the action dock's checkmark, pinned bottom right.
-            div { class: "app-float app-float-right",
-                div { class: "icon-pill",
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": "Save",
-                        disabled: draft() == saved,
-                        onclick: move |_| {
-                            let picked = draft();
-                            prefs.with_mut(|q| q.logo = picked);
-                            toast.success(
-                                format!("Mark: {}", picked.label()),
-                                ToastOptions::default().duration(TOAST_NORMAL),
-                            );
-                            open.set(false);
-                        },
-                        DockIcon { path: action_dock::CHECK }
-                    }
+            div { class: "action-dock action-dock-right sheet-dock",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Save",
+                    disabled: draft() == saved,
+                    onclick: move |_| {
+                        let picked = draft();
+                        prefs.with_mut(|q| q.logo = picked);
+                        toast.success(
+                            format!("Mark: {}", picked.label()),
+                            ToastOptions::default().duration(TOAST_NORMAL),
+                        );
+                        open.set(false);
+                    },
+                    DockIcon { path: action_dock::CHECK }
                 }
             }
         }
@@ -544,38 +542,36 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 }
             }
             // Test and Save in the action dock, pinned bottom right.
-            div { class: "app-float app-float-right",
-                div { class: "icon-pill",
-                    // Plays the pick as a goal would, toast and all, before
-                    // it is saved. Random steps through its rotation on
-                    // each tap.
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": "Test",
-                        disabled: draft() == Celebration::Off,
-                        onclick: move |_| {
-                            if let Some(line) = celebration::celebrate(host, draft()) {
-                                toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
-                            }
-                        },
-                        DockIcon { path: action_dock::PLAY }
-                    }
-                    span { class: "icon-pill-divider" }
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": "Save",
-                        disabled: draft() == saved,
-                        onclick: move |_| {
-                            let picked = draft();
-                            prefs.with_mut(|q| q.celebration = picked);
-                            toast.success(
-                                format!("Goal animation: {}", picked.label()),
-                                ToastOptions::default().duration(TOAST_NORMAL),
-                            );
-                            open.set(false);
-                        },
-                        DockIcon { path: action_dock::CHECK }
-                    }
+            div { class: "action-dock action-dock-right sheet-dock",
+                // Plays the pick as a goal would, toast and all, before
+                // it is saved. Random steps through its rotation on
+                // each tap.
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Test",
+                    disabled: draft() == Celebration::Off,
+                    onclick: move |_| {
+                        if let Some(line) = celebration::celebrate(host, draft()) {
+                            toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
+                        }
+                    },
+                    DockIcon { path: action_dock::PLAY }
+                }
+                span { class: "action-dock-divider" }
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Save",
+                    disabled: draft() == saved,
+                    onclick: move |_| {
+                        let picked = draft();
+                        prefs.with_mut(|q| q.celebration = picked);
+                        toast.success(
+                            format!("Goal animation: {}", picked.label()),
+                            ToastOptions::default().duration(TOAST_NORMAL),
+                        );
+                        open.set(false);
+                    },
+                    DockIcon { path: action_dock::CHECK }
                 }
             }
         }
@@ -757,28 +753,26 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 }
             }
             // Save as the action dock's checkmark, pinned bottom right.
-            div { class: "app-float app-float-right",
-                div { class: "icon-pill",
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": "Save",
-                        disabled: draft() == saved,
-                        onclick: move |_| {
-                            let picked = draft();
-                            prefs.with_mut(|q| q.rest_days = picked);
-                            let count = picked.count_ones();
-                            toast.success(
-                                match count {
-                                    0 => "No rest days".to_string(),
-                                    1 => "1 rest day".to_string(),
-                                    n => format!("{n} rest days"),
-                                },
-                                ToastOptions::default().duration(TOAST_NORMAL),
-                            );
-                            open.set(false);
-                        },
-                        DockIcon { path: action_dock::CHECK }
-                    }
+            div { class: "action-dock action-dock-right sheet-dock",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Save",
+                    disabled: draft() == saved,
+                    onclick: move |_| {
+                        let picked = draft();
+                        prefs.with_mut(|q| q.rest_days = picked);
+                        let count = picked.count_ones();
+                        toast.success(
+                            match count {
+                                0 => "No rest days".to_string(),
+                                1 => "1 rest day".to_string(),
+                                n => format!("{n} rest days"),
+                            },
+                            ToastOptions::default().duration(TOAST_NORMAL),
+                        );
+                        open.set(false);
+                    },
+                    DockIcon { path: action_dock::CHECK }
                 }
             }
         }

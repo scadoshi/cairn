@@ -112,15 +112,13 @@ pub fn IconSheet(
             on_dismiss: move |()| discard.call(()),
             closable: true,
             // Save as the action dock's checkmark, pinned bottom right.
-            div { class: "app-float app-float-right",
-                div { class: "icon-pill",
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": "Save",
-                        disabled: draft() == saved(),
-                        onclick: save,
-                        DockIcon { path: action_dock::CHECK }
-                    }
+            div { class: "action-dock action-dock-right sheet-dock",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Save",
+                    disabled: draft() == saved(),
+                    onclick: save,
+                    DockIcon { path: action_dock::CHECK }
                 }
             }
             IconRow { label: "Match theme", pick: None, tile: theme(), draft }

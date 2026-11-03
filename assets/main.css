@@ -148,7 +148,7 @@ input {
     border-radius: 0.4rem;
     color: var(--text-primary);
     cursor: pointer;
-    opacity: 0.55;
+    opacity: var(--fade-corner);
 }
 
 .app-nav-back:active {
@@ -263,42 +263,10 @@ input {
    floating actions
  ==================== */
 
-/* A screen's main actions, floating just above the bottom edge with no bar
-   behind them; the content scrolls underneath. Each keeps the page
-   background so it reads over whatever passes under it, and the screen's
-   content ends with room to scroll its last row clear of them. */
-.app-float {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.4rem);
-    z-index: 50;
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    pointer-events: none;
-}
-
-.app-float > * {
-    pointer-events: auto;
-    background-color: var(--bg-primary);
-    box-shadow: var(--shadow-sm);
-}
-
-/* Floating at the bottom right instead of centered. */
-.app-float.app-float-right {
-    justify-content: flex-end;
-    padding-right: 0.6rem;
-}
-
-.screen:has(> .app-float) > .screen-content {
+/* A screen with a dock ends its content with room to scroll the last row
+   clear of it; the kit does the same for a sheet. */
+.screen:has(> .action-dock) > .screen-content {
     padding-bottom: 5rem;
-}
-
-/* A sheet's dock floats inside the sheet (the slide's transform contains
-   it), so its content ends with the same room to scroll clear. */
-.sheet-content:has(.app-float) {
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* An icon in a button the height of its text siblings: the card's pencil. */
@@ -308,7 +276,7 @@ input {
     justify-content: center;
 }
 
-.btn-icon .icon-pill-icon {
+.btn-icon .action-dock-icon {
     width: 1.1em;
     height: 1.1em;
 }
@@ -321,63 +289,6 @@ input {
    the danger color. Compound selector so it outranks orangui's title color. */
 .settings-list-title.danger-zone-title {
     color: var(--color-error);
-}
-
-/* ==================
-     action dock
- ==================== */
-
-/* The action dock: a screen's icon actions as one floating squircle bar,
-   icons only. */
-.icon-pill {
-    display: flex;
-    align-items: stretch;
-    gap: 0.25rem;
-    padding: 0 0.4rem;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.9rem;
-}
-
-.icon-pill-btn {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.4rem;
-    height: 2.4rem;
-    margin: 0.3rem 0;
-    padding: 0;
-    border: none;
-    border-radius: 0.6rem;
-    background: transparent;
-    color: var(--text-primary);
-    cursor: pointer;
-}
-
-.icon-pill-btn:active {
-    background-color: var(--bg-secondary);
-}
-
-.icon-pill-btn:disabled {
-    opacity: 0.35;
-    cursor: default;
-}
-
-.icon-pill-icon {
-    width: 1.3rem;
-    height: 1.3rem;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.icon-pill-divider {
-    flex: 0 0 1px;
-    align-self: stretch;
-    margin: 0 0.25rem;
-    background-color: var(--border-primary);
 }
 
 /* The box under the logo on home, zwiper's .home-flavor construct. */

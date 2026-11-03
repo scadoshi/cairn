@@ -400,14 +400,12 @@ pub fn CounterScreen(id: i64) -> Element {
             }
         }
         // Edit as the action dock's pencil, pinned bottom right.
-        div { class: "app-float app-float-right",
-            div { class: "icon-pill",
-                button {
-                    class: "icon-pill-btn",
-                    "aria-label": "Edit",
-                    onclick: move |_| rename_open.set(true),
-                    EditIcon {}
-                }
+        div { class: "action-dock action-dock-right",
+            button {
+                class: "action-dock-btn",
+                "aria-label": "Edit",
+                onclick: move |_| rename_open.set(true),
+                EditIcon {}
             }
         }
         CounterHintDialog { open: hints.open, which: (hints.which)() }

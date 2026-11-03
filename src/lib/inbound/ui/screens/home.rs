@@ -162,14 +162,12 @@ pub fn Home() -> Element {
             }
         }
         // Create as the action dock's plus, pinned bottom right.
-        div { class: "app-float app-float-right",
-            div { class: "icon-pill",
-                button {
-                    class: "icon-pill-btn",
-                    "aria-label": "Create",
-                    onclick: move |_| create_open.set(true),
-                    DockIcon { path: action_dock::PLUS }
-                }
+        div { class: "action-dock action-dock-right",
+            button {
+                class: "action-dock-btn",
+                "aria-label": "Create",
+                onclick: move |_| create_open.set(true),
+                DockIcon { path: action_dock::PLUS }
             }
         }
         HintDialog { open: hint_open, title: "Counters",
@@ -249,14 +247,12 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
             closable: true,
             CounterForm { state: form }
             // Save as the action dock's checkmark, pinned bottom right.
-            div { class: "app-float app-float-right",
-                div { class: "icon-pill",
-                    button {
-                        class: "icon-pill-btn",
-                        "aria-label": "Save",
-                        onclick: save,
-                        DockIcon { path: action_dock::CHECK }
-                    }
+            div { class: "action-dock action-dock-right sheet-dock",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Save",
+                    onclick: save,
+                    DockIcon { path: action_dock::CHECK }
                 }
             }
         }
