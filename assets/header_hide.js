@@ -40,4 +40,21 @@
         },
         { capture: true, passive: true },
     );
+
+    // The header is shared across screens, so a new screen inherits the push
+    // the last one left it with, and its content at the top sends no scroll
+    // event to undo it. A mount that brings a fresh scroll area at its top
+    // shows the header in full.
+    let lastArea = null;
+    const observer = new MutationObserver(() => {
+        for (const area of document.querySelectorAll(".screen-content")) {
+            if (area === lastArea) continue;
+            lastArea = area;
+            const nav = area.parentElement && area.parentElement.querySelector(":scope > .app-nav");
+            if (!nav || area.scrollTop > 0) continue;
+            offset.set(nav, 0);
+            nav.style.transform = "";
+        }
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
 })();
