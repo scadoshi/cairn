@@ -271,7 +271,7 @@ input {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.4rem);
     z-index: 50;
     display: flex;
     justify-content: center;
@@ -288,7 +288,7 @@ input {
 /* Floating at the bottom right instead of centered. */
 .app-float.app-float-right {
     justify-content: flex-end;
-    padding-right: 1.25rem;
+    padding-right: 0.6rem;
 }
 
 .screen:has(> .app-float) > .screen-content {
