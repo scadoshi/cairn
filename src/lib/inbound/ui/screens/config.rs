@@ -8,15 +8,14 @@ use chrono::Weekday;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
-    ActionBar, BottomSheet, Button, ButtonVariant, Chip, DarkModeButton, HintBullet, HintBullets,
-    HintDialog, HintKey, HintLine, InfoButton, ModeIcon, ThemeConfig, ThemeSheet, use_screen_hint,
+    BottomSheet, Button, ButtonVariant, Chip, DarkModeButton, HintBullet, HintBullets, HintDialog,
+    HintKey, HintLine, InfoButton, ModeIcon, ThemeConfig, ThemeSheet, use_screen_hint,
 };
 
 use crate::domain::counter::csv;
 use crate::domain::preferences::{self, AppIcon, Celebration, Logo, Preferences};
 use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::icon_sheet::IconSheet;
-use crate::inbound::ui::router::Route;
 use crate::inbound::ui::{TOAST_NORMAL, TOAST_QUICK, use_date_format, use_prefs, use_store};
 use crate::outbound::{app_icon, paths};
 
@@ -27,7 +26,6 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[component]
 pub fn Config() -> Element {
     let mut theme = use_context::<Signal<ThemeConfig>>();
-    let nav = use_navigator();
     let store = use_store();
     let mut preferences_open = use_signal(|| false);
     let mut notice = use_signal(|| None::<String>);
@@ -396,19 +394,6 @@ pub fn Config() -> Element {
                 }
             }
         }
-        }
-        ActionBar {
-            Button {
-                variant: ButtonVariant::Action,
-                onclick: move |_| {
-                    if nav.can_go_back() {
-                        nav.go_back();
-                    } else {
-                        nav.push(Route::Home {});
-                    }
-                },
-                "Back"
-            }
         }
         ThemeSheet {
             open: preferences_open,

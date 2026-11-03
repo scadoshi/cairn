@@ -1,7 +1,8 @@
 //! Status colors mean an outcome. Decoration draws from the palette slots. Every
-//! status reference in the stylesheet must be one of these selectors.
+//! status reference in the stylesheet must be one of these selectors: an
+//! error line, and the Danger zone title that warns of a delete.
 
-const ALLOWED: [&str; 1] = [".form-error"];
+const ALLOWED: [&str; 2] = [".form-error", ".settings-list-title.danger-zone-title"];
 
 #[test]
 fn status_colors_only_where_they_mean_something() {

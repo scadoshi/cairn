@@ -296,6 +296,16 @@ input {
 }
 
 /* ==================
+     danger zone
+ ==================== */
+
+/* The Danger zone panel at the foot of the counter screen, under a title in
+   the danger color. Compound selector so it outranks orangui's title color. */
+.settings-list-title.danger-zone-title {
+    color: var(--color-error);
+}
+
+/* ==================
      action dock
  ==================== */
 

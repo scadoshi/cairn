@@ -1,5 +1,5 @@
-//! One counter: the odometer, today's controls, stats, trends, years, rename,
-//! delete.
+//! One counter: the odometer, today's controls, stats, trends, years, then
+//! Delete in its Danger zone. Edit is the action dock's pencil.
 
 use std::sync::Arc;
 
@@ -17,9 +17,11 @@ use crate::domain::counter::{
     Counter, CounterId, DayCount, Event, Goal, Step, format, series, stats,
 };
 use crate::domain::preferences;
+use crate::inbound::ui::components::action_dock::EditIcon;
 use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
 use crate::inbound::ui::components::celebration::{self, CelebrationHost, Saying};
 use crate::inbound::ui::components::counter_form::EditSheet;
+use crate::inbound::ui::components::danger_zone::DangerZoneAction;
 use crate::inbound::ui::components::heatmap::Heatmap;
 use crate::inbound::ui::components::line_chart::{LineChart, Point};
 use crate::inbound::ui::components::reveal::Reveal;
@@ -390,26 +392,22 @@ pub fn CounterScreen(id: i64) -> Element {
                         }
                     }
                 }
+                DangerZoneAction {
+                    label: "Delete this counter",
+                    button: "Delete",
+                    onclick: move |()| confirm_delete.set(true),
+                }
             }
         }
-        ActionBar {
-            Button {
-                variant: ButtonVariant::Action,
-                onclick: move |_| {
-                    if nav.can_go_back() {
-                        nav.go_back();
-                    } else {
-                        nav.push(Route::Home {});
-                    }
-                },
-                "Back"
-            }
-            Button { variant: ButtonVariant::Action, onclick: move |_| rename_open.set(true), "Edit" }
-            Button {
-                variant: ButtonVariant::Action,
-                danger: true,
-                onclick: move |_| confirm_delete.set(true),
-                "Delete"
+        // Edit as the action dock's pencil, pinned bottom right.
+        div { class: "app-float app-float-right",
+            div { class: "icon-pill",
+                button {
+                    class: "icon-pill-btn",
+                    "aria-label": "Edit",
+                    onclick: move |_| rename_open.set(true),
+                    EditIcon {}
+                }
             }
         }
         CounterHintDialog { open: hints.open, which: (hints.which)() }
@@ -418,7 +416,8 @@ pub fn CounterScreen(id: i64) -> Element {
             HintBullets {
                 HintBullet { "Tap a card's " HintKey { color: "--palette-6", "?" } " for what it shows" }
                 HintBullet { "Subtracting stops at zero" }
-                HintBullet { HintKey { color: "--color-error", "Delete" } " takes the whole history with it" }
+                HintBullet { "The pencil at the bottom right edits the counter" }
+                HintBullet { HintKey { color: "--color-error", "Delete" } " at the bottom takes the whole history with it" }
             }
         }
         EditSheet {
