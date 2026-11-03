@@ -8,7 +8,7 @@
 use dioxus::prelude::*;
 use orangui::{InfoButton, NavBar, use_overlay_back};
 
-use super::menu::{MenuFooter, MenuLinks};
+use super::menu::{MenuFooter, MenuLinks, MenuOpen};
 use crate::inbound::ui::router::Route;
 
 /// The header bar with the main menu, titled `title`.
@@ -23,12 +23,14 @@ pub fn ScreenHeader(
     back: Option<Callback<()>>,
 ) -> Element {
     let route: Route = use_route();
-    let mut open = use_signal(|| false);
+    let mut open = use_context::<MenuOpen>().0;
     // While the menu is open, the OS back intent closes it instead of
     // leaving the screen.
     use_overlay_back(open);
 
-    // A new route closes the menu.
+    // A new route closes the menu. The menu's open state is app-wide, so
+    // the panel is still open here and the kit's close transition plays
+    // over the new screen.
     use_effect(use_reactive!(|route| {
         let _ = route;
         open.set(false);

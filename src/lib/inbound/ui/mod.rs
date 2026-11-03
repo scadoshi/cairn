@@ -130,6 +130,9 @@ pub fn App() -> Element {
     orangui::use_in_app_links();
     // Closed until the splash starts to fade; the entrances wait on it.
     use_context_provider(|| orangui::SplashGate(Signal::new(false)));
+    // The main menu's open state, above the router so it carries across
+    // screens.
+    use_context_provider(|| components::navigation::menu::MenuOpen(Signal::new(false)));
     use_context_provider(|| StoreVersion(Signal::new(0)));
     let saved_prefs = store.preferences().unwrap_or_default();
     let prefs = use_signal(move || saved_prefs);

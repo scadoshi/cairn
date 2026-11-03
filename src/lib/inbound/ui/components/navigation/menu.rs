@@ -1,14 +1,11 @@
 //! The main menu behind the header's hamburger: Home and Settings, the one
 //! on view lit, then a footer row with the About "!".
 //!
-//! A tap on an entry closes the menu first and navigates once the panel's
-//! close transition has played, so the menu folds shut over the old screen
-//! instead of vanishing with it.
-
-use std::time::Duration;
+//! The open state is app-wide ([`MenuOpen`], provided at the root), so a tap
+//! on an entry only navigates: the header then folds the panel shut over
+//! the new screen.
 
 use dioxus::prelude::*;
-use tokio::time;
 
 use crate::inbound::ui::components::about::AboutButton;
 use crate::inbound::ui::router::Route;
@@ -52,13 +49,14 @@ impl Section {
     }
 }
 
-/// How long the kit's folded nav panel takes to close: the longest of the
-/// `.nav-panel` transitions in orangui's `assets/components.css`
-/// (`grid-template-rows 0.25s`, and `visibility` flips at the same delay).
-const PANEL_CLOSE: Duration = Duration::from_millis(250);
+/// Whether the main menu is open, shared by the header on every screen.
+/// Provided once at the app root so the panel outlives the screen it was
+/// opened on and its close transition plays over the next one.
+#[derive(Debug, Clone, Copy)]
+pub struct MenuOpen(pub Signal<bool>);
 
-/// The menu's link rows, for the nav's `links` slot. Each closes the menu,
-/// then navigates once the panel has closed.
+/// The menu's link rows, for the nav's `links` slot. Each navigates and
+/// leaves the menu to the header to close.
 #[component]
 pub fn MenuLinks(open: Signal<bool>, route: Route) -> Element {
     let current = Section::of(&route);
@@ -69,9 +67,8 @@ pub fn MenuLinks(open: Signal<bool>, route: Route) -> Element {
     }
 }
 
-/// One section's row, lit when it is `current`. A tap closes the menu and,
-/// after [`PANEL_CLOSE`], pushes the section's route; on the screen it
-/// opens, it only closes the menu.
+/// One section's row, lit when it is `current`. A tap pushes the section's
+/// route; on the screen it opens, it closes the menu instead.
 #[component]
 fn SectionLink(section: Section, current: Section, mut open: Signal<bool>) -> Element {
     let route: Route = use_route();
@@ -81,14 +78,11 @@ fn SectionLink(section: Section, current: Section, mut open: Signal<bool>) -> El
             button {
                 class: if current == section { "nav-link active" } else { "nav-link" },
                 onclick: move |_| {
-                    open.set(false);
                     if section.route() == route {
-                        return;
-                    }
-                    spawn(async move {
-                        time::sleep(PANEL_CLOSE).await;
+                        open.set(false);
+                    } else {
                         nav.push(section.route());
-                    });
+                    }
                 },
                 "{section.label()}"
             }
