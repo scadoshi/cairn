@@ -5,7 +5,8 @@
 //! On Android the generated `MainActivity` is patched post-bundle
 //! (`scripts/android/back_handler.sh`) to dispatch a `cairn:back` DOM event
 //! for the OS back intent; this layout names that event. On iOS it hands over
-//! the WKWebView the edge swipe attaches to. The desktop build is untouched.
+//! the WKWebView the edge swipe attaches to, and first stretches it over the
+//! whole window. The desktop build is untouched.
 
 use std::ffi::c_void;
 use std::ptr::NonNull;
@@ -25,6 +26,11 @@ pub fn BackHandlerLayout() -> Element {
             nav.go_back();
         }
         can
+    });
+    use_hook(|| {
+        if let Some(view) = webview() {
+            crate::outbound::webview::fill_window(view);
+        }
     });
     orangui::use_os_back("cairn:back", webview, go_back);
 

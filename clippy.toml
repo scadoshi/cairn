@@ -15,4 +15,4 @@ allow-panic-in-tests = true
 allow-indexing-slicing-in-tests = true
 
 # Prose words, not code to backtick. ".." keeps clippy's defaults.
-doc-valid-idents = ["WebView", "WKWebView", "McDougall", ".."]
+doc-valid-idents = ["WebView", "WKWebView", "WebKit", "UIKit", "McDougall", ".."]
