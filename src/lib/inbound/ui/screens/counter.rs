@@ -7,7 +7,7 @@ use chrono::{Datelike, Duration as ChronoDuration};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
+    Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
     InfoButton, use_screen_hint,
 };
 
@@ -331,8 +331,8 @@ pub fn CounterScreen(id: i64) -> Element {
                         Tile { label: "this week", value: format::compact(week_total), hint: week_delta }
                         Tile { label: "this month", value: format::compact(summary.this_month) }
                     }
-                    ActionBar {
-                        // Big on the outside, matching the card's bar.
+                    div { class: "step-row",
+                        // Big on the outside, matching the card's row.
                         if let Some(big) = big {
                             Button {
                                 variant: ButtonVariant::Action,

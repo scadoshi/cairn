@@ -539,7 +539,20 @@ input {
     color: var(--text-muted);
 }
 
-/* A bar inside a card is tighter than the screen bar. */
+/* The step row, a counter's own controls, at the foot of its card or
+   panel: the action bar's shape, inside the card and tighter. */
+.step-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-secondary);
+    background-color: var(--bg-primary);
+}
+
 /* The quote sits in the same card as everything else, but reads as prose
    rather than data: no tiles, no numbers, just the words and who said them. */
 .quote-card {

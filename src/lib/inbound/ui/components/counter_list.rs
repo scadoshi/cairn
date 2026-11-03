@@ -1,5 +1,5 @@
 //! The counter list, the main body of the home screen. Each card shows the
-//! headline numbers and carries its own bar with plus, minus and Edit;
+//! headline numbers and carries its own row with plus, minus and Edit;
 //! tapping the name and numbers opens the counter, so that handler sits on
 //! that region rather than the whole card and never has to compete with the
 //! buttons below it.
@@ -13,7 +13,7 @@ use std::sync::Arc;
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use orangui::{ActionBar, Button, ButtonVariant};
+use orangui::{Button, ButtonVariant};
 
 use crate::domain::counter::{Counter, format, stats};
 use crate::domain::preferences::{self, CounterOrder};
@@ -48,7 +48,7 @@ pub fn CounterList(
 }
 
 /// One counter on the home list: name and goal up top, the headline numbers,
-/// and a bar that adjusts today's count or edits the counter. Tapping the
+/// and a row that adjusts today's count or edits the counter. Tapping the
 /// numbers opens it.
 #[component]
 fn CounterCard(
@@ -197,9 +197,9 @@ fn CounterCard(
                     }
                 }
             }
-            ActionBar {
+            div { class: "step-row",
                 // Big on the outside: distance from the center matching
-                // magnitude is what makes the bar readable without labels.
+                // magnitude is what makes the row readable without labels.
                 if let Some(big) = big {
                     Button {
                         variant: ButtonVariant::Action,
