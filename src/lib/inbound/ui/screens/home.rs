@@ -15,12 +15,13 @@ use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
-    ActionBar, BottomSheet, Button, ButtonVariant, Decode, HintBullet, HintBullets, HintChip,
-    HintDialog, HintLine, use_screen_hint,
+    BottomSheet, Button, ButtonVariant, Decode, HintBullet, HintBullets, HintChip, HintDialog,
+    HintLine, use_screen_hint,
 };
 
 use crate::domain::counter::{Counter, DayCount, Goal, format, stats};
 use crate::domain::preferences::Logo;
+use crate::inbound::ui::components::action_dock::{self, DockIcon};
 use crate::inbound::ui::components::counter_form::{CounterForm, CounterFormState, EditSheet};
 use crate::inbound::ui::components::counter_list::CounterList;
 use crate::inbound::ui::components::quote_card::QuoteCard;
@@ -120,7 +121,7 @@ pub fn Home() -> Element {
                     }
                     if counters().is_empty() {
                         p { class: "pref-note", style: "padding: 1rem;",
-                            "No counters yet. Create starts one."
+                            "No counters yet. The + below starts one."
                         }
                     } else {
                         div { class: "tile-grid tile-grid-2",
@@ -161,18 +162,15 @@ pub fn Home() -> Element {
                 }
             }
         }
-        ActionBar {
-            Button {
-                variant: ButtonVariant::Action,
-                onclick: move |_| create_open.set(true),
-                "Create"
-            }
-            Button {
-                variant: ButtonVariant::Action,
-                onclick: move |_| {
-                    nav.push(Route::Config {});
-                },
-                "Settings"
+        // Create as the action dock's plus, pinned bottom right.
+        div { class: "app-float app-float-right",
+            div { class: "icon-pill",
+                button {
+                    class: "icon-pill-btn",
+                    "aria-label": "Create",
+                    onclick: move |_| create_open.set(true),
+                    DockIcon { path: action_dock::PLUS }
+                }
             }
         }
         HintDialog { open: hint_open, title: "Counters",
@@ -184,6 +182,7 @@ pub fn Home() -> Element {
                     HintChip { class: "stat-chip-success", "goal met" }
                 }
                 HintBullet { "Up top is every counter added together" }
+                HintBullet { "The + at the bottom right starts a counter" }
             }
         }
         CreateSheet { open: create_open, on_created: move |()| reload.call(()) }
