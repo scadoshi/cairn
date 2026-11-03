@@ -14,6 +14,7 @@ use orangui::{
 
 use crate::domain::counter::csv;
 use crate::domain::preferences::{self, AppIcon, Celebration, Logo, Preferences};
+use crate::inbound::ui::components::action_dock::{self, DockIcon};
 use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::icon_sheet::IconSheet;
 use crate::inbound::ui::{TOAST_NORMAL, TOAST_QUICK, use_date_format, use_prefs, use_store};
@@ -455,33 +456,33 @@ fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             title: "Mark",
             hint,
             on_dismiss: move |()| discard.call(()),
-            footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| discard.call(()),
-                    "Back"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: draft() == saved,
-                    onclick: move |_| {
-                        let picked = draft();
-                        prefs.with_mut(|q| q.logo = picked);
-                        toast.success(
-                            format!("Mark: {}", picked.label()),
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        );
-                        open.set(false);
-                    },
-                    "Save"
-                }
-            },
+            closable: true,
             div { class: "chip-row chip-row-center", style: "flex-wrap: wrap;",
                 for l in Logo::ALL {
                     Chip {
                         selected: draft() == l,
                         onclick: move |_| draft.set(l),
                         "{l.label()}"
+                    }
+                }
+            }
+            // Save as the action dock's checkmark, pinned bottom right.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": "Save",
+                        disabled: draft() == saved,
+                        onclick: move |_| {
+                            let picked = draft();
+                            prefs.with_mut(|q| q.logo = picked);
+                            toast.success(
+                                format!("Mark: {}", picked.label()),
+                                ToastOptions::default().duration(TOAST_NORMAL),
+                            );
+                            open.set(false);
+                        },
+                        DockIcon { path: action_dock::CHECK }
                     }
                 }
             }
@@ -531,48 +532,48 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             title: "Goal animation",
             hint,
             on_dismiss: move |()| discard.call(()),
-            footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Action,
-                    // Said out loud, because the pick is still on screen
-                    // as the sheet slides away and it otherwise looks
-                    // like it took.
-                    onclick: move |_| discard.call(()),
-                    "Back"
-                }
-                // Plays the pick as a goal would, toast and all, before it
-                // is saved. Random steps through its rotation on each tap.
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: draft() == Celebration::Off,
-                    onclick: move |_| {
-                        if let Some(line) = celebration::celebrate(host, draft()) {
-                            toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
-                        }
-                    },
-                    "Test"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: draft() == saved,
-                    onclick: move |_| {
-                        let picked = draft();
-                        prefs.with_mut(|q| q.celebration = picked);
-                        toast.success(
-                            format!("Goal animation: {}", picked.label()),
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        );
-                        open.set(false);
-                    },
-                    "Save"
-                }
-            },
+            closable: true,
             div { class: "chip-row chip-row-center", style: "flex-wrap: wrap;",
                 for c in Celebration::ALL {
                     Chip {
                         selected: draft() == c,
                         onclick: move |_| draft.set(c),
                         "{c.label()}"
+                    }
+                }
+            }
+            // Test and Save in the action dock, pinned bottom right.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                    // Plays the pick as a goal would, toast and all, before
+                    // it is saved. Random steps through its rotation on
+                    // each tap.
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": "Test",
+                        disabled: draft() == Celebration::Off,
+                        onclick: move |_| {
+                            if let Some(line) = celebration::celebrate(host, draft()) {
+                                toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
+                            }
+                        },
+                        DockIcon { path: action_dock::PLAY }
+                    }
+                    span { class: "icon-pill-divider" }
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": "Save",
+                        disabled: draft() == saved,
+                        onclick: move |_| {
+                            let picked = draft();
+                            prefs.with_mut(|q| q.celebration = picked);
+                            toast.success(
+                                format!("Goal animation: {}", picked.label()),
+                                ToastOptions::default().duration(TOAST_NORMAL),
+                            );
+                            open.set(false);
+                        },
+                        DockIcon { path: action_dock::CHECK }
                     }
                 }
             }
@@ -744,38 +745,38 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             title: "Rest days",
             hint,
             on_dismiss: move |()| discard.call(()),
-            footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| discard.call(()),
-                    "Back"
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: draft() == saved,
-                    onclick: move |_| {
-                        let picked = draft();
-                        prefs.with_mut(|q| q.rest_days = picked);
-                        let count = picked.count_ones();
-                        toast.success(
-                            match count {
-                                0 => "No rest days".to_string(),
-                                1 => "1 rest day".to_string(),
-                                n => format!("{n} rest days"),
-                            },
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        );
-                        open.set(false);
-                    },
-                    "Save"
-                }
-            },
+            closable: true,
             div { class: "chip-row chip-row-center", style: "flex-wrap: wrap;",
                 for (day, name) in DAYS {
                     Chip {
                         selected: preferences::rest_mask_has(draft(), day),
                         onclick: move |_| draft.with_mut(|d| *d = preferences::rest_mask_toggled(*d, day)),
                         "{name}"
+                    }
+                }
+            }
+            // Save as the action dock's checkmark, pinned bottom right.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": "Save",
+                        disabled: draft() == saved,
+                        onclick: move |_| {
+                            let picked = draft();
+                            prefs.with_mut(|q| q.rest_days = picked);
+                            let count = picked.count_ones();
+                            toast.success(
+                                match count {
+                                    0 => "No rest days".to_string(),
+                                    1 => "1 rest day".to_string(),
+                                    n => format!("{n} rest days"),
+                                },
+                                ToastOptions::default().duration(TOAST_NORMAL),
+                            );
+                            open.set(false);
+                        },
+                        DockIcon { path: action_dock::CHECK }
                     }
                 }
             }

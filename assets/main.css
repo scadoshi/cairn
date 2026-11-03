@@ -295,6 +295,12 @@ input {
     padding-bottom: 5rem;
 }
 
+/* A sheet's dock floats inside the sheet (the slide's transform contains
+   it), so its content ends with the same room to scroll clear. */
+.sheet-content:has(.app-float) {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+
 /* ==================
      danger zone
  ==================== */

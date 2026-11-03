@@ -6,12 +6,11 @@
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use orangui::{
-    BottomSheet, Button, ButtonVariant, Chip, FieldLabel, HintDialog, HintKey, HintLine, TextInput,
-};
+use orangui::{BottomSheet, Chip, FieldLabel, HintDialog, HintKey, HintLine, TextInput};
 
 use crate::domain::counter::{self, CounterId, CounterName, Goal, Step, ValidationError, stats};
 use crate::domain::preferences::Celebration;
+use crate::inbound::ui::components::action_dock::{self, DockIcon};
 use crate::inbound::ui::{self, TOAST_NORMAL, use_store};
 
 /// Which period a typed goal amount is for.
@@ -412,11 +411,19 @@ pub fn EditSheet(
         BottomSheet {
             open,
             title: "Edit counter",
-            footer: rsx! {
-                Button { variant: ButtonVariant::Action, onclick: move |_| open.set(false), "Back" }
-                Button { variant: ButtonVariant::Action, onclick: save, "Save" }
-            },
+            closable: true,
             CounterForm { state: form }
+            // Save as the action dock's checkmark, pinned bottom right.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": "Save",
+                        onclick: save,
+                        DockIcon { path: action_dock::CHECK }
+                    }
+                }
+            }
         }
     }
 }

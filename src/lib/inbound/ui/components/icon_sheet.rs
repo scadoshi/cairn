@@ -4,9 +4,10 @@
 
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use orangui::{BottomSheet, Button, ButtonVariant, THEME_GROUPS, ThemeConfig};
+use orangui::{BottomSheet, THEME_GROUPS, ThemeConfig};
 
 use crate::domain::preferences::AppIcon;
+use crate::inbound::ui::components::action_dock::{self, DockIcon};
 use crate::inbound::ui::screens::home::LOGO_CAIRN;
 use crate::inbound::ui::{TOAST_NORMAL, TOAST_QUICK, use_prefs};
 use crate::outbound::app_icon;
@@ -109,19 +110,19 @@ pub fn IconSheet(
             title: "App icon",
             hint,
             on_dismiss: move |()| discard.call(()),
-            footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| discard.call(()),
-                    "Back"
+            closable: true,
+            // Save as the action dock's checkmark, pinned bottom right.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": "Save",
+                        disabled: draft() == saved(),
+                        onclick: save,
+                        DockIcon { path: action_dock::CHECK }
+                    }
                 }
-                Button {
-                    variant: ButtonVariant::Action,
-                    disabled: draft() == saved(),
-                    onclick: save,
-                    "Save"
-                }
-            },
+            }
             IconRow { label: "Match theme", pick: None, tile: theme(), draft }
             for group in THEME_GROUPS {
                 div { class: "pref-section-label", "{group.label}" }

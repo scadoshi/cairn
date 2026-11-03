@@ -15,8 +15,7 @@ use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
-    BottomSheet, Button, ButtonVariant, Decode, HintBullet, HintBullets, HintChip, HintDialog,
-    HintLine, use_screen_hint,
+    BottomSheet, Decode, HintBullet, HintBullets, HintChip, HintDialog, HintLine, use_screen_hint,
 };
 
 use crate::domain::counter::{Counter, DayCount, Goal, format, stats};
@@ -246,11 +245,19 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
         BottomSheet {
             open,
             title: "Create counter",
-            footer: rsx! {
-                Button { variant: ButtonVariant::Action, onclick: move |_| open.set(false), "Back" }
-                Button { variant: ButtonVariant::Action, onclick: save, "Save" }
-            },
+            closable: true,
             CounterForm { state: form }
+            // Save as the action dock's checkmark, pinned bottom right.
+            div { class: "app-float app-float-right",
+                div { class: "icon-pill",
+                    button {
+                        class: "icon-pill-btn",
+                        "aria-label": "Save",
+                        onclick: save,
+                        DockIcon { path: action_dock::CHECK }
+                    }
+                }
+            }
         }
     }
 }
