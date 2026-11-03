@@ -433,7 +433,7 @@ pub fn Config() -> Element {
         MarkSheet { open: mark_open, hint: hint_open }
         IconSheet { open: icon_open, icon, hint: hint_open }
         ConfigHintDialog { open: hint_open, which: hint() }
-        HintDialog { open: screen_hint_open, title: "Config",
+        HintDialog { open: screen_hint_open, title: "Settings",
             HintLine { "Settings only. Nothing here edits your counts" }
             HintLine { "Tap any row's " HintKey { color: "--palette-6", "?" } " to learn what it does" }
         }

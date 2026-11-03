@@ -9,8 +9,7 @@ use std::sync::Arc;
 use chrono::{Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
 use orangui::{
-    APP_CSS, COMPONENTS_CSS, DialogHostView, PageHeader, THEMES_CSS, TOAST_CSS, ToastStack,
-    use_dialog_host,
+    APP_CSS, COMPONENTS_CSS, DialogHostView, THEMES_CSS, TOAST_CSS, ToastStack, use_dialog_host,
 };
 use router::Route;
 
@@ -20,6 +19,9 @@ use crate::domain::preferences::Preferences;
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const ENTRANCE_JS: Asset = asset!("/assets/entrance.js");
+/// Slides the header away as the content scrolls down and back as it scrolls
+/// up. Inline, so it runs before the first scroll.
+const HEADER_HIDE_JS: &str = include_str!("../../../../assets/header_hide.js");
 const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
 const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
 
@@ -196,6 +198,7 @@ pub fn App() -> Element {
         // Reveals cards and rolls their figures from inside the page, where it
         // keeps running while the page scrolls.
         document::Script { src: ENTRANCE_JS, defer: true }
+        document::Script { {HEADER_HIDE_JS} }
         // Last of the head elements: shows #main, which the launch config
         // hides, once every stylesheet above is in.
         orangui::BootReveal {}
@@ -223,13 +226,14 @@ pub fn App() -> Element {
     }
 }
 
-/// The app shell, laid out like zwiper's: a header naming the screen, then whatever the screen renders
-/// (its content and its own action bar) as siblings in the column.
+/// The app shell, laid out like zwiper's: the header naming the screen, with
+/// the menu behind its hamburger, over whatever the screen renders.
 #[component]
 pub fn Shell() -> Element {
     let theme = use_context::<orangui::ThemeFollow>().shown;
     let css_class = theme.read().css_class();
     let route = use_route::<Route>();
+    let nav = use_navigator();
     let store = use_store();
     // Read so a rename re-renders the title.
     let _ = use_context::<StoreVersion>().0.read();
@@ -238,7 +242,7 @@ pub fn Shell() -> Element {
     // lookup. The rest are static.
     let title = match &route {
         Route::Home {} => "Cairn".to_string(),
-        Route::Config {} => "Config".to_string(),
+        Route::Config {} => "Settings".to_string(),
         Route::CounterScreen { id } => store
             .fetch_counter(CounterId(*id))
             .ok()
@@ -246,18 +250,28 @@ pub fn Shell() -> Element {
             .map_or_else(|| "Counter".to_string(), |c| c.name.to_string()),
     };
 
-    // Only screens that registered one get a "?", so the corner stays empty
+    // Only screens that registered one get a "?", so the title stands alone
     // rather than offering a dialog with nothing in it.
     let hint = use_context::<orangui::ScreenHint>();
 
+    // Every screen below Home shows the back arrow: the previous screen, or
+    // Home when the app opened here.
+    let back = (route != Route::Home {}).then(|| {
+        Callback::new(move |()| {
+            if nav.can_go_back() {
+                nav.go_back();
+            } else {
+                nav.push(Route::Home {});
+            }
+        })
+    });
+
     rsx! {
         div { class: "screen theme-wrapper {css_class}",
-            PageHeader {
+            components::navigation::screen_header::ScreenHeader {
                 title,
-                leading: rsx! {
-                    components::about::AboutButton {}
-                },
-                on_hint: hint.opener(),
+                hint: hint.opener(),
+                back,
             }
             Outlet::<Route> {}
         }

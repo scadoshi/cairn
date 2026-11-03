@@ -121,7 +121,7 @@ fn CounterHintDialog(open: Signal<bool>, which: Option<CounterHint>) -> Element 
         CounterHint::Habit => rsx! {
             HintDialog { open, title: "Habit",
                 HintLine { "How often you show up rather than how much" }
-                HintLine { "Rest days set in Config are stepped over, not counted against you" }
+                HintLine { "Rest days set in Settings are stepped over, not counted against you" }
             }
         },
         CounterHint::ByYear => rsx! {

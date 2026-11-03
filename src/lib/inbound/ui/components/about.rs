@@ -1,4 +1,4 @@
-//! The "!" in the header's left corner, zwiper's support button, opening a
+//! The "!" in the menu's footer row, zwiper's support button, opening a
 //! note from the developer with links to Cairn's changelog and
 //! scottyfermo.com, which open in the in-app browser.
 
@@ -10,7 +10,7 @@ const SITE_URL: &str = "https://scottyfermo.com";
 /// Cairn's changelog, which the portfolio serves; the app has no other.
 const CHANGELOG_URL: &str = "https://scottyfermo.com/projects/cairn/changelog/";
 
-/// The corner button and the dialog it opens.
+/// The "!" and the dialog it opens.
 #[component]
 pub fn AboutButton() -> Element {
     let mut open = use_signal(|| false);
@@ -35,7 +35,7 @@ pub fn AboutButton() -> Element {
             }
         }
         button {
-            class: "btn-action page-header-support",
+            class: "btn-action app-nav-support",
             r#type: "button",
             aria_label: "About the developer",
             onclick: move |_| open.set(true),

@@ -172,7 +172,7 @@ pub fn Home() -> Element {
                 onclick: move |_| {
                     nav.push(Route::Config {});
                 },
-                "Config"
+                "Settings"
             }
         }
         HintDialog { open: hint_open, title: "Counters",
