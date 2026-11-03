@@ -908,6 +908,12 @@ input {
     white-space: nowrap;
 }
 
+/* The pace chip keeps the muted fill with the primary text color: the muted
+   tone on its own tint is the faintest chip on a light page. */
+.stat-chip-muted.pace-chip {
+    color: var(--text-primary);
+}
+
 .chip-row-basis {
     justify-content: center;
     margin-bottom: 0.5rem;

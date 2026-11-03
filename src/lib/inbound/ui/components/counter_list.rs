@@ -184,7 +184,7 @@ fn CounterCard(
                             span { class: "stat-chip stat-chip-success", "goal met" }
                         }
                         if let Some(left) = pace_today {
-                            span { class: "stat-chip stat-chip-muted", Num { text: format::thousands(left) } " to pace" }
+                            span { class: "stat-chip stat-chip-muted pace-chip", Num { text: format::thousands(left) } " to pace" }
                         }
                     }
                 }
