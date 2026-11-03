@@ -2,7 +2,6 @@
 //! on view lit, then a footer row with the About "!".
 
 use dioxus::prelude::*;
-use orangui::GridCells;
 
 use crate::inbound::ui::components::about::AboutButton;
 use crate::inbound::ui::router::Route;
@@ -74,12 +73,10 @@ fn SectionLink(section: Section, current: Section, mut open: Signal<bool>) -> El
 }
 
 /// The menu's footer, for the nav's `trailing` slot: the About "!" on the
-/// left. It also carries the panel's still copy of the grid backdrop, which
-/// sits under the whole menu as the bottom sheet's does.
+/// left.
 #[component]
 pub fn MenuFooter() -> Element {
     rsx! {
-        GridCells { still: true }
         div { class: "app-nav-footer",
             AboutButton {}
         }
