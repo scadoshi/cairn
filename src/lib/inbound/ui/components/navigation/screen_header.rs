@@ -62,10 +62,10 @@ pub fn ScreenHeader(
                     }
                 },
                 links: rsx! {
-                    MenuLinks { open, route }
+                    MenuLinks { open, route: route.clone() }
                 },
                 trailing: rsx! {
-                    MenuFooter {}
+                    MenuFooter { open, route }
                 },
             }
         }

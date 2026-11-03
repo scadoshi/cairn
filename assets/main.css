@@ -211,15 +211,25 @@ input {
     border-bottom-color: var(--border-secondary);
 }
 
-/* Every entry shows. The kit caps the links at three and a half rows for
-   zite, whose menu carries more. */
-.app-nav .nav-panel .nav-links {
-    max-height: none;
-    overflow: visible;
+/* The list is empty: every section is an icon in the footer, so the menu
+   is the footer band alone, flush under the header's rule with no room
+   where the list would sit and no second rule of its own. */
+.app-nav .nav-panel .nav-links:empty {
+    display: none;
+}
+
+.app-nav .nav-panel-open:has(.nav-links:empty) {
+    padding-top: 0;
+    border-top-color: transparent;
+}
+
+.app-nav .nav-panel:has(.nav-links:empty) .nav-trailing {
+    border-top: none;
 }
 
 /* The menu's footer, a sheet's action bar made slim: a full-bleed bar under
-   a rule, flush with the menu's bottom edge, the ! at its left end. */
+   a rule, flush with the menu's bottom edge, the ! at its left end and the
+   Home and Settings icons beside it. */
 .app-nav-footer {
     display: flex;
     align-items: center;
@@ -227,7 +237,14 @@ input {
     padding-bottom: 0.6rem;
 }
 
-.app-nav-support {
+.app-nav-footer-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.app-nav-support,
+.app-nav-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -235,6 +252,25 @@ input {
     padding: 0.2rem 0.6rem;
     font-size: 0.85rem;
     opacity: 0.7;
+}
+
+/* An icon button is as wide as the !, and the one for the screen on view
+   is lit the way a list entry is. The kit's lit nav-link style reaches only
+   the list, so the footer carries its own. */
+.app-nav-icon {
+    width: 2.1rem;
+    padding: 0;
+}
+
+.app-nav-icon .action-dock-icon {
+    width: 1.1em;
+    height: 1.1em;
+}
+
+.app-nav-icon.active {
+    opacity: 1;
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
 }
 
 /* No footer sits over the home indicator, so the kit's band behind it goes
