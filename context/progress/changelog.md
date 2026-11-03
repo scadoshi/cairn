@@ -6,6 +6,13 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
+- The header is the shared nav bar: the screen's title and its "?" in the middle, a hamburger on the right opening a menu with Home and Settings and the "!" in its footer, and a back arrow on the left on every screen but Home. It slides away as you scroll down and back as you scroll up.
+- Config is now Settings.
+- The bottom footers are gone. Create is a + floating at the bottom right of Home, and Settings is in the menu.
+- On a counter's screen, Edit is a pencil floating at the bottom right and Delete sits in a Danger zone panel at the bottom.
+- The step buttons sit inside their counter's card and panel.
+- Sheets close with an x in their title bar or a drag down, and save from a checkmark at their bottom right; Goal animation's Test is a play button beside it.
+
 ## 1.2.0, 2026-11-01
 
 - Links open inside Cairn instead of switching to Safari.
