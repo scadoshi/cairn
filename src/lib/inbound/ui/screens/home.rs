@@ -121,7 +121,7 @@ pub fn Home() -> Element {
                     }
                     if counters().is_empty() {
                         p { class: "pref-note", style: "padding: 1rem;",
-                            "Nothing counted yet. Start your first counter with "
+                            "Create a counter with "
                             HintKey { DockIcon { path: icons::PLUS } }
                         }
                     } else {
