@@ -66,7 +66,7 @@ pub fn VersionButton() -> Element {
             }
         }
         button {
-            class: if open() { "btn-action app-nav-icon active" } else { "btn-action app-nav-icon" },
+            class: if open() { "btn-action nav-icon active" } else { "btn-action nav-icon" },
             r#type: "button",
             aria_label: "About",
             onclick: move |_| open.set(true),

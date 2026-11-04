@@ -331,7 +331,7 @@ pub fn CounterScreen(id: i64) -> Element {
                         Tile { label: "this week", value: format::compact(week_total), hint: week_delta }
                         Tile { label: "this month", value: format::compact(summary.this_month) }
                     }
-                    div { class: "step-row",
+                    div { class: "action-bar step-row",
                         // Big on the outside, matching the card's row.
                         if let Some(big) = big {
                             Button {

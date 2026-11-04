@@ -198,7 +198,7 @@ fn CounterCard(
                     }
                 }
             }
-            div { class: "step-row",
+            div { class: "action-bar step-row",
                 // Big on the outside: distance from the center matching
                 // magnitude is what makes the row readable without labels.
                 if let Some(big) = big {

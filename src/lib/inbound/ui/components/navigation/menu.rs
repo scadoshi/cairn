@@ -132,7 +132,7 @@ fn SectionButton(section: Section, current: Section, mut open: Signal<bool>) -> 
     let nav = use_navigator();
     rsx! {
         button {
-            class: if current == section { "btn-action app-nav-icon nav-link active" } else { "btn-action app-nav-icon nav-link" },
+            class: if current == section { "btn-action nav-icon nav-link active" } else { "btn-action nav-icon nav-link" },
             r#type: "button",
             aria_label: section.label(),
             onclick: move |_| {
@@ -160,15 +160,15 @@ pub fn MenuFooter(open: Signal<bool>, route: Route) -> Element {
     let mut open = open;
     let is_dark = theme.read().is_dark;
     rsx! {
-        div { class: "app-nav-footer",
-            div { class: "app-nav-footer-group",
+        div { class: "nav-trailing-row",
+            div { class: "nav-trailing-group",
                 AboutButton {}
                 for section in Section::ALL {
                     SectionButton { key: "{section.label()}", section, current, open }
                 }
                 VersionButton {}
                 button {
-                    class: "btn-action app-nav-icon",
+                    class: "btn-action nav-icon",
                     r#type: "button",
                     aria_label: "Theme",
                     onclick: move |_| {
@@ -178,7 +178,7 @@ pub fn MenuFooter(open: Signal<bool>, route: Route) -> Element {
                     DockIcon { path: PALETTE }
                 }
                 button {
-                    class: "btn-action app-nav-icon",
+                    class: "btn-action nav-icon",
                     r#type: "button",
                     aria_label: if is_dark { "Switch to light" } else { "Switch to dark" },
                     onclick: move |_| toggle_dark.call(()),

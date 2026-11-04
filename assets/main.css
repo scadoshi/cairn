@@ -66,24 +66,14 @@ input {
     color: var(--text-primary);
 }
 
-/* A pressed sheet-header corner lights up. */
-.page-header-corner:active {
-    opacity: 1;
-}
-
 /* ==================
   header and main menu
  ==================== */
 
 /* The header sits over the top of the screen, under the status bar strip,
    and header_hide.js slides it up behind that strip as the content scrolls
-   down. Its height is fixed (the bar's 0.5rem padding around a 1.7rem row,
-   the corner buttons' height, and its 1px rule), so each screen's scroll area
-   opens with a spacer that tall and nothing moves at rest. */
-.screen {
-    --app-nav-h: calc(2.7rem + 1px);
-}
-
+   down. Its height is the kit's --app-nav-h, and the kit opens each screen's
+   scroll area with a spacer that tall. */
 .screen > .app-nav {
     position: absolute;
     top: env(safe-area-inset-top, 0px);
@@ -97,13 +87,6 @@ input {
    which then covered only the bar, so a tap outside the menu missed it. */
 .screen > .app-nav:has(.nav-panel-open) {
     transform: none !important;
-}
-
-.screen > .app-nav ~ .screen-content::before {
-    content: "";
-    display: block;
-    flex: 0 0 var(--app-nav-h);
-    width: 100%;
 }
 
 /* The status bar strip (orangui's .screen::before) stays over the header as it
@@ -211,20 +194,13 @@ input {
     border-bottom-color: var(--border-secondary);
 }
 
-/* The counter rows show five and scroll the rest. The kit's cap of three
-   and a half is for a menu whose trailing item is one theme row; this
-   footer is two rows, so the list gives the band its height back by
-   showing whole rows. A row is its padding, the 0.95rem line and a 1px
-   border each side. */
+/* The counter rows show five and scroll the rest, the kit's scroll fade
+   marking the cut. The kit's cap of three and a half is for a menu whose
+   trailing item is one theme row; this footer is one row of icons, so the
+   list gives the band's spare height back by showing whole rows. A row is
+   its padding, the 0.95rem line and a 1px border each side. */
 .app-nav .nav-panel .nav-links {
     max-height: calc(5 * (2 * var(--nav-row-pad) + 0.95rem + 2px) + 4 * var(--nav-row-gap));
-}
-
-/* Six rows or more: the list's bottom edge fades into the band, so the
-   sixth row reads as scrollable rather than cut. */
-.app-nav .nav-panel .nav-links:has(> li:nth-child(6)) {
-    mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5rem), transparent);
-    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5rem), transparent);
 }
 
 /* A counter's name on one line, cut with an ellipsis when it is long. */
@@ -256,80 +232,18 @@ input {
     border-top: none;
 }
 
-/* The menu's footer, a sheet's action bar made slim: a full-bleed bar under
-   a rule, flush with the menu's bottom edge, the ! at the left end with the
-   Home, Settings and About icons, the Theme paintbrush and the mode's sun
-   or moon beside it. */
-.app-nav-footer {
-    display: flex;
-    align-items: center;
-    padding-bottom: 0.6rem;
-}
-
-.app-nav-footer-group {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.app-nav-support,
-.app-nav-icon {
+/* The menu's footer is the kit's .nav-trailing-row: the ! at the left end
+   with the Home, Settings and About icons, the Theme palette and the mode's
+   sun or moon beside it. The ! is a text button at the icons' height and
+   fade. */
+.app-nav-support {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     height: 1.7rem;
     padding: 0.2rem 0.6rem;
     font-size: 0.85rem;
-    opacity: 0.7;
-}
-
-/* An icon button is as wide as the !, and the one for the screen on view
-   is lit the way a list entry is. The kit's lit nav-link style reaches only
-   the list, so the footer carries its own. */
-.app-nav-icon {
-    width: 2.1rem;
-    padding: 0;
-}
-
-.app-nav-icon .action-dock-icon,
-.app-nav-icon .mode-icon {
-    width: 1.1em;
-    height: 1.1em;
-    vertical-align: 0;
-}
-
-.app-nav-icon.active {
-    opacity: 1;
-    color: var(--accent-primary);
-    border-color: var(--accent-primary);
-}
-
-/* No footer sits over the home indicator, so the kit's band behind it goes
-   and the backdrop runs to the bottom edge. */
-.screen::after {
-    display: none;
-}
-
-/* ==================
-   floating actions
- ==================== */
-
-/* A screen with a dock ends its content with room to scroll the last row
-   clear of it; the kit does the same for a sheet. */
-.screen:has(> .action-dock) > .screen-content {
-    padding-bottom: 5rem;
-}
-
-/* An icon in a button the height of its text siblings: the card's pencil. */
-.btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-icon .action-dock-icon {
-    width: 1.1em;
-    height: 1.1em;
+    opacity: var(--fade-corner);
 }
 
 /* ==================
@@ -520,17 +434,9 @@ input {
 }
 
 /* The step row, a counter's own controls, at the foot of its card or
-   panel: the action bar's shape, inside the card and tighter. */
+   panel: the kit's action bar, inside the card and tighter. */
 .step-row {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
     padding: 0.75rem 1rem;
-    border-top: 1px solid var(--border-secondary);
-    background-color: var(--bg-primary);
 }
 
 /* The quote sits in the same card as everything else, headed like them, but
