@@ -118,11 +118,9 @@ pub fn Config() -> Element {
         toast.info(what, ToastOptions::default().duration(TOAST_QUICK));
     });
 
-    let flip_dark = theme_sheet::use_toggle_dark();
-    let toggle_dark = move |_| {
-        flip_dark.call(());
-        icon.set(app_icon::current());
-    };
+    let flip_dark =
+        theme_sheet::use_toggle_dark(Some(EventHandler::new(move |kept| icon.set(kept))));
+    let toggle_dark = move |_| flip_dark.call(());
 
     // The home-screen icon's own mode, apart from the app's.
     let toggle_icon_dark = move |_| {

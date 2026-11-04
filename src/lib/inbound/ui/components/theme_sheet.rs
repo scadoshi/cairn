@@ -25,22 +25,23 @@ pub fn use_theme_sheet_open() -> Signal<bool> {
 }
 
 /// Redraws the home-screen icon in `kept` when the icon follows the theme.
-/// `Ok(true)` when it did.
+/// The icon now shown, or `None` when the icon keeps its own look.
 ///
 /// # Errors
 ///
 /// The platform's message when the icon could not be switched.
-pub fn follow_icon(prefs: &Preferences, kept: &ThemeConfig) -> Result<bool, String> {
+pub fn follow_icon(prefs: &Preferences, kept: &ThemeConfig) -> Result<Option<ThemeConfig>, String> {
     if prefs.app_icon != AppIcon::MatchesTheme {
-        return Ok(false);
+        return Ok(None);
     }
-    app_icon::show(kept).map(|()| true)
+    app_icon::show(kept).map(|()| Some(kept.clone()))
 }
 
 /// A callback that flips the app's theme between its dark and light
 /// palettes, carries the icon along, and says which mode is on. The root
-/// effect persists the change.
-pub fn use_toggle_dark() -> Callback<()> {
+/// effect persists the change. `on_kept` hears the icon after it followed,
+/// for a host that shows the icon.
+pub fn use_toggle_dark(on_kept: Option<EventHandler<ThemeConfig>>) -> Callback<()> {
     let mut theme = use_context::<Signal<ThemeConfig>>();
     let toast = use_toast();
     let prefs = use_prefs();
@@ -52,8 +53,17 @@ pub fn use_toggle_dark() -> Callback<()> {
             is_dark: on,
         };
         theme.set(next.clone());
-        if let Err(e) = follow_icon(&prefs.peek(), &next) {
-            toast.error(e, ToastOptions::default());
+        match follow_icon(&prefs.peek(), &next) {
+            Ok(Some(icon)) => {
+                if let Some(on_kept) = on_kept {
+                    on_kept.call(icon);
+                }
+            }
+            Ok(None) => {}
+            Err(e) => {
+                toast.error(e, ToastOptions::default());
+                return;
+            }
         }
         toast.info(
             format!("Dark mode {}", if on { "on" } else { "off" }),
@@ -81,12 +91,12 @@ pub fn AppThemeSheet(
             hint,
             on_save: move |kept: ThemeConfig| {
                 match follow_icon(&prefs.peek(), &kept) {
-                    Ok(true) => {
+                    Ok(Some(icon)) => {
                         if let Some(on_kept) = on_kept {
-                            on_kept.call(kept);
+                            on_kept.call(icon);
                         }
                     }
-                    Ok(false) => {}
+                    Ok(None) => {}
                     Err(e) => toast.error(e, ToastOptions::default()),
                 }
                 toast.success(

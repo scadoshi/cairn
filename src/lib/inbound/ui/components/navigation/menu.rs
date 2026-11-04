@@ -156,7 +156,7 @@ pub fn MenuFooter(open: Signal<bool>, route: Route) -> Element {
     let current = Section::of(&route);
     let theme = use_context::<Signal<ThemeConfig>>();
     let mut sheet_open = use_context::<ThemeSheetOpen>().0;
-    let toggle_dark = theme_sheet::use_toggle_dark();
+    let toggle_dark = theme_sheet::use_toggle_dark(None);
     let mut open = open;
     let is_dark = theme.read().is_dark;
     rsx! {
