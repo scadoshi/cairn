@@ -151,7 +151,6 @@ pub fn Config() -> Element {
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Theme)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
-                        PaletteIcon {}
                         span { {orangui::display_theme_name(&theme.read().name)} }
                         DarkModeButton { is_dark: theme.read().is_dark, onclick: toggle_dark }
                         Button {
@@ -160,7 +159,8 @@ pub fn Config() -> Element {
                                 hint.set(Some(ConfigHint::Theme));
                                 preferences_open.set(true);
                             },
-                            "Change"
+                            PaletteIcon {}
+                            " Change"
                         }
                     }
                 }
