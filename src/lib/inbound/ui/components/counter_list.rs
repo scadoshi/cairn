@@ -253,9 +253,9 @@ fn CounterCard(
     }
 }
 
-/// The list in the preferred order. Activity orders need each counter's
-/// figures, so they read the store; created order is free.
-fn ordered(counters: &[Counter], store: &SharedStore, order: CounterOrder) -> Vec<Counter> {
+/// The list in the preferred order, Home's and the menu's. Activity orders
+/// need each counter's figures, so they read the store; created order is free.
+pub fn ordered(counters: &[Counter], store: &SharedStore, order: CounterOrder) -> Vec<Counter> {
     let mut list = counters.to_vec();
     match order {
         CounterOrder::Created => {}

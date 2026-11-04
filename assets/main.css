@@ -211,9 +211,38 @@ input {
     border-bottom-color: var(--border-secondary);
 }
 
-/* The list is empty: every section is an icon in the footer, so the menu
-   is the footer band alone, flush under the header's rule with no room
-   where the list would sit and no second rule of its own. */
+/* The counter rows show five and scroll the rest. The kit's cap of three
+   and a half is for a menu whose trailing item is one theme row; this
+   footer is two rows, so the list gives the band its height back by
+   showing whole rows. A row is its padding, the 0.95rem line and a 1px
+   border each side. */
+.app-nav .nav-panel .nav-links {
+    max-height: calc(5 * (2 * var(--nav-row-pad) + 0.95rem + 2px) + 4 * var(--nav-row-gap));
+}
+
+/* Six rows or more: the list's bottom edge fades into the band, so the
+   sixth row reads as scrollable rather than cut. */
+.app-nav .nav-panel .nav-links:has(> li:nth-child(6)) {
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5rem), transparent);
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5rem), transparent);
+}
+
+/* A counter's name on one line, cut with an ellipsis when it is long. */
+.app-nav .nav-panel .nav-links > li > .app-nav-counter {
+    min-width: 0;
+}
+
+.app-nav-counter-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The list is empty, no counters yet: every section is an icon in the
+   footer, so the menu is the footer band alone, flush under the header's
+   rule with no room where the list would sit and no second rule of its
+   own. */
 .app-nav .nav-panel .nav-links:empty {
     display: none;
 }

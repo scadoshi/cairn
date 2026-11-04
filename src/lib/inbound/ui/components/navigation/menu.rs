@@ -1,6 +1,7 @@
-//! The main menu behind the header's hamburger: one footer row with the
-//! developer's "!", the icons for Home and Settings, the one on view lit,
-//! and the About "i". The list above it is empty and hidden.
+//! The main menu behind the header's hamburger: the counters as rows in
+//! Home's order, the one on view lit, over a footer row with the developer's
+//! "!", the icons for Home and Settings, the one on view lit, and the About
+//! "i". With no counters the list is hidden and the menu is the footer alone.
 //!
 //! The open state is app-wide ([`MenuOpen`], provided at the root), so a tap
 //! on an entry only navigates: the header then folds the panel shut over
@@ -10,7 +11,9 @@ use dioxus::prelude::*;
 
 use crate::inbound::ui::components::about::{AboutButton, VersionButton};
 use crate::inbound::ui::components::action_dock::{COG, DockIcon, HOUSE};
+use crate::inbound::ui::components::counter_list;
 use crate::inbound::ui::router::Route;
+use crate::inbound::ui::{StoreVersion, use_prefs, use_store};
 
 /// A screen the menu opens.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,16 +74,55 @@ impl Section {
 #[derive(Debug, Clone, Copy)]
 pub struct MenuOpen(pub Signal<bool>);
 
-/// The menu's link rows, for the nav's `links` slot. Each navigates and
-/// leaves the menu to the header to close.
+/// The menu's link rows, for the nav's `links` slot: the listed sections,
+/// then every counter in Home's order. Each navigates and leaves the menu to
+/// the header to close.
 #[component]
 pub fn MenuLinks(open: Signal<bool>, route: Route) -> Element {
     let current = Section::of(&route);
+    let store = use_store();
+    let prefs = use_prefs();
+    // Read so a new, renamed or deleted counter re-renders the rows.
+    let _ = use_context::<StoreVersion>().0.read();
+    let counters = store.list_counters().unwrap_or_default();
+    let counters = counter_list::ordered(&counters, &store, prefs().counter_order);
+    let open_id = match route {
+        Route::CounterScreen { id } => Some(id),
+        Route::Home {} | Route::Config {} => None,
+    };
     rsx! {
         for section in Section::LISTED {
             li { key: "{section.label()}",
                 SectionButton { section, current, open, class: "nav-link", icon: false }
             }
+        }
+        for counter in counters {
+            li { key: "counter-{counter.id}",
+                CounterRow { id: counter.id.0, name: counter.name.to_string(), lit: open_id == Some(counter.id.0), open }
+            }
+        }
+    }
+}
+
+/// One counter's row, lit while its screen is on view. A tap pushes the
+/// counter's screen; on that screen it closes the menu instead.
+#[component]
+fn CounterRow(id: i64, name: String, lit: bool, mut open: Signal<bool>) -> Element {
+    let route: Route = use_route();
+    let nav = use_navigator();
+    rsx! {
+        button {
+            class: if lit { "nav-link app-nav-counter active" } else { "nav-link app-nav-counter" },
+            r#type: "button",
+            onclick: move |_| {
+                let target = Route::CounterScreen { id };
+                if target == route {
+                    open.set(false);
+                } else {
+                    nav.push(target);
+                }
+            },
+            span { class: "app-nav-counter-name", "{name}" }
         }
     }
 }
