@@ -9,7 +9,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
     BottomSheet, Button, ButtonVariant, Chip, DarkModeButton, HintBullet, HintBullets, HintDialog,
-    HintKey, HintLine, InfoButton, ModeIcon, ThemeConfig, use_screen_hint,
+    HintKey, HintLine, InfoButton, ModeIcon, PaletteIcon, ThemeConfig, use_screen_hint,
 };
 
 use crate::domain::counter::csv;
@@ -151,6 +151,7 @@ pub fn Config() -> Element {
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Theme)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
+                        PaletteIcon {}
                         span { {orangui::display_theme_name(&theme.read().name)} }
                         DarkModeButton { is_dark: theme.read().is_dark, onclick: toggle_dark }
                         Button {

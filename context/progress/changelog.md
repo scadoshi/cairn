@@ -17,6 +17,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - The counter form outlines the field an error belongs to and puts the message under it, instead of one line at the bottom.
 - Light themes keep every chip and toast readable, and the page fills to the bottom edge.
 - Hints show an icon button as the icon itself, in the button's own squircle, instead of naming it in words; Home before any counter reads "Nothing counted yet" with the + to start one.
+- Settings' Theme row leads the theme's name with the palette in the theme's accent.
 
 ## 1.2.0, 2026-11-01
 
