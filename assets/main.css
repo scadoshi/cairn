@@ -257,21 +257,13 @@ input {
 }
 
 /* The menu's footer, a sheet's action bar made slim: a full-bleed bar under
-   a rule, flush with the menu's bottom edge. The theme row sits on top, as
-   on the websites' phone-width menu, and under it the ! at the left end
-   with the Home, Settings and About icons beside it. */
+   a rule, flush with the menu's bottom edge, the ! at the left end with the
+   Home, Settings and About icons, the Theme paintbrush and the mode's sun
+   or moon beside it. */
 .app-nav-footer {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.6rem;
+    align-items: center;
     padding-bottom: 0.6rem;
-}
-
-/* The theme row: the name leads with its dot in the accent, the switch
-   beside it, centered like the kit's picker in a folded menu. */
-.app-nav-theme {
-    justify-content: center;
 }
 
 .app-nav-footer-group {
@@ -299,9 +291,11 @@ input {
     padding: 0;
 }
 
-.app-nav-icon .action-dock-icon {
+.app-nav-icon .action-dock-icon,
+.app-nav-icon .mode-icon {
     width: 1.1em;
     height: 1.1em;
+    vertical-align: 0;
 }
 
 .app-nav-icon.active {

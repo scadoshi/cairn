@@ -15,6 +15,8 @@ pub const COG: &str = "M19.4 10.3L21.9 10.7L21.9 13.3L19.4 13.7L18.4 16.1L19.9 1
 pub const PLAY: &str = "M7 5v14l11-7z";
 /// The About icon: an i in a circle.
 pub const INFO: &str = "M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18M12 11v5M12 8v0.01";
+/// The Theme icon: a paintbrush.
+pub const BRUSH: &str = "M18.4 2.6a2 2 0 0 1 2.8 2.8L12 14.6l-3-3 9.4-9ZM9 11.6 12.4 15c-.4 2.8-2.3 4.6-6.4 5 .9-1.2 1-2.6 1.2-3.9.2-1.8 1-2.8 1.8-4.5Z";
 
 /// One stroke icon for a dock button, drawn from a single SVG path.
 #[component]
