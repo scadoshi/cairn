@@ -81,13 +81,6 @@ pub struct FormErrors {
     pub form: Option<String>,
 }
 
-impl FormErrors {
-    /// Whether no field and not the form carries a message.
-    pub fn is_empty(&self) -> bool {
-        *self == Self::default()
-    }
-}
-
 /// The form's state, owned by the host sheet.
 #[derive(Clone, Copy, PartialEq)]
 pub struct CounterFormState {
@@ -457,5 +450,28 @@ pub fn EditSheet(
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn validate_marks_every_wrong_field_at_once() {
+        let mut dom = VirtualDom::new(|| rsx! {});
+        dom.rebuild_in_place();
+        dom.in_scope(ScopeId::APP, || {
+            let mut state = CounterFormState::default();
+            state.name.set("   ".to_string());
+            state.step.set(10);
+            state.big_step.set(5);
+            assert!(state.validate().is_none());
+            let errors = (state.errors)();
+            assert!(errors.name.is_some(), "{errors:?}");
+            assert!(errors.big_step.is_some(), "{errors:?}");
+            assert!(errors.goal.is_none(), "{errors:?}");
+            assert!(errors.step.is_none(), "{errors:?}");
+        });
     }
 }
