@@ -1,7 +1,7 @@
 //! The main menu behind the header's hamburger: the counters as rows in
 //! Home's order, the one on view lit, over a footer row with the developer's
 //! "!", the icons for Home and Settings, the one on view lit, the About
-//! "i", the theme's paintbrush and the mode's sun or moon. With no counters
+//! "i", the theme's palette and the mode's sun or moon. With no counters
 //! the list is hidden and the menu is the footer alone.
 //!
 //! The open state is app-wide ([`MenuOpen`], provided at the root), so a tap
@@ -12,7 +12,7 @@ use dioxus::prelude::*;
 use orangui::{ModeIcon, ThemeConfig};
 
 use crate::inbound::ui::components::about::{AboutButton, VersionButton};
-use crate::inbound::ui::components::action_dock::{BRUSH, COG, DockIcon, HOUSE};
+use crate::inbound::ui::components::action_dock::{COG, DockIcon, HOUSE, PALETTE};
 use crate::inbound::ui::components::counter_list;
 use crate::inbound::ui::components::theme_sheet::{self, ThemeSheetOpen};
 use crate::inbound::ui::router::Route;
@@ -165,7 +165,7 @@ fn SectionButton(
 }
 
 /// The menu's footer, for the nav's `trailing` slot: the "!" on the left,
-/// the Home and Settings icons, the About "i", then the paintbrush, which
+/// the Home and Settings icons, the About "i", then the palette, which
 /// folds the menu and raises the theme sheet, and the sun or moon naming
 /// the mode in use, which flips Dark/Light and saves at once.
 #[component]
@@ -199,7 +199,7 @@ pub fn MenuFooter(open: Signal<bool>, route: Route) -> Element {
                         open.set(false);
                         sheet_open.set(true);
                     },
-                    DockIcon { path: BRUSH }
+                    DockIcon { path: PALETTE }
                 }
                 button {
                     class: "btn-action app-nav-icon",

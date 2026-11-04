@@ -11,7 +11,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - An "i" in the menu's footer opens About, with the version and a link to this changelog.
 - The "!" no longer links the changelog, and Settings no longer shows the version.
 - The menu lists your counters; tap one to open it.
-- The menu's footer has a paintbrush for the theme and a sun or moon for Dark/Light.
+- The menu's footer has a palette for the theme and a sun or moon for Dark/Light.
 - Home and Settings are icons in the menu's footer, beside the "!"; the menu is just that band.
 - The header is the shared nav bar: the screen's title and its "?" in the middle, a hamburger on the right opening a menu with Home and Settings and the "!" in its footer, and a back arrow on the left on every screen but Home. It slides away as you scroll down and back as you scroll up.
 - Config is now Settings.
