@@ -26,16 +26,14 @@ Keep a copy at `~/certs/Count_Development.mobileprovision` alongside zwipe's, wh
 
 ## Build and deploy
 
-One script per profile, because the profile picks the output directory as well as the compiler flags:
+One script, with the profile as a flag, because the profile picks the output directory as well as the compiler flags and the script installs from the directory it just built into:
 
 ```bash
-scripts/ios/deploy_debug.sh      # the daily one
-scripts/ios/deploy_release.sh    # optimized, what the App Store will run
+scripts/ios/deploy.sh              # debug, the daily one
+scripts/ios/deploy.sh --release    # optimized, what the App Store will run
 ```
 
-Both back up the phone's database, build, and install. A failed backup stops the deploy, because a reinstall going wrong is exactly when the copy is wanted. `--no-backup` skips it, which is rarely what you want. `--device scotland-mobile` picks a phone when more than one is plugged in; with two attached and no `--device`, the script lists them and stops rather than guessing.
-
-Both are thin wrappers over `scripts/ios/deploy.sh`, which still takes `--release` if you prefer one entry point.
+It backs up the phone's database, builds, and installs. A failed backup stops the deploy, because a reinstall going wrong is exactly when the copy is wanted. `--no-backup` skips it, which is rarely what you want. Only phones on the cable count, the same rule as zwipe's scripts: a phone this Mac has paired before but is not plugged in is ignored, so scotland-mobile alone on the cable deploys without a flag. With two plugged in and no `--device`, the script lists them and stops rather than guessing; `--device matthew` picks one by any part of its name. `scripts/ios/deploy_debug.sh` is a thin wrapper over the debug form.
 
 Reinstalling over an existing app keeps its data container, so an ordinary deploy does not touch the counts. Verified: a deploy on 22 September left 53,900 push-ups, 27,400 pull-ups and 16,110 squats exactly where they were.
 
