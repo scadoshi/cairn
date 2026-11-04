@@ -9,11 +9,11 @@
 //! the new screen.
 
 use dioxus::prelude::*;
+use orangui::icons::{COG, DockIcon, HOUSE};
 use orangui::{ModeIcon, PaletteIcon, ThemeConfig};
 
 use crate::domain::counter::CounterId;
 use crate::inbound::ui::components::about::{AboutButton, VersionButton};
-use crate::inbound::ui::components::action_dock::{COG, DockIcon, HOUSE};
 use crate::inbound::ui::components::theme_sheet::{self, ThemeSheetOpen};
 use crate::inbound::ui::router::Route;
 use crate::inbound::ui::{self, StoreVersion, use_prefs, use_store};

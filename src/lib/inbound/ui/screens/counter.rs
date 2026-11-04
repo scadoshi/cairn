@@ -6,9 +6,10 @@ use std::sync::Arc;
 use chrono::{Datelike, Duration as ChronoDuration};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
+use orangui::icons::EditIcon;
 use orangui::{
-    Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    InfoButton, use_screen_hint,
+    ActionDock, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey,
+    HintLine, InfoButton, use_screen_hint,
 };
 
 use crate::domain::counter::series::HourlyBasis;
@@ -17,7 +18,6 @@ use crate::domain::counter::{
     Counter, CounterId, DayCount, Event, Goal, Step, format, series, stats,
 };
 use crate::domain::preferences;
-use crate::inbound::ui::components::action_dock::EditIcon;
 use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
 use crate::inbound::ui::components::celebration::{self, CelebrationHost, Saying};
 use crate::inbound::ui::components::counter_form::EditSheet;
@@ -400,7 +400,8 @@ pub fn CounterScreen(id: i64) -> Element {
             }
         }
         // Edit as the action dock's pencil, pinned bottom right.
-        div { class: "action-dock action-dock-right",
+        ActionDock {
+            // A button, not a DockAction: the pencil is EditIcon, not an icons path.
             button {
                 class: "action-dock-btn",
                 "aria-label": "Edit",

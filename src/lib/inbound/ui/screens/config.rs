@@ -7,14 +7,15 @@ use std::path::PathBuf;
 use chrono::Weekday;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
+use orangui::icons::{self, DockIcon, EditIcon};
 use orangui::{
-    BottomSheet, Button, ButtonVariant, Chip, DarkModeButton, HintBullet, HintBullets, HintDialog,
-    HintKey, HintLine, InfoButton, ModeIcon, PaletteIcon, ThemeConfig, use_screen_hint,
+    ActionDock, BottomSheet, Button, ButtonVariant, Chip, DarkModeButton, DockAction, DockPlace,
+    HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton, ModeIcon, PaletteIcon,
+    ThemeConfig, use_screen_hint,
 };
 
 use crate::domain::counter::csv;
 use crate::domain::preferences::{self, AppIcon, Celebration, Logo, Preferences};
-use crate::inbound::ui::components::action_dock::{self, DockIcon, EditIcon};
 use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::icon_sheet::IconSheet;
 use crate::inbound::ui::components::theme_sheet::{self, AppThemeSheet};
@@ -421,12 +422,12 @@ fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 }
             }
             // Save as the action dock's checkmark, pinned bottom right.
-            div { class: "action-dock action-dock-right sheet-dock",
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": "Save",
+            ActionDock { place: DockPlace::Sheet,
+                DockAction {
+                    label: "Save",
+                    icon: icons::CHECK,
                     disabled: draft() == saved,
-                    onclick: move |_| {
+                    onclick: move |()| {
                         let picked = draft();
                         prefs.with_mut(|q| q.logo = picked);
                         toast.success(
@@ -435,7 +436,6 @@ fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                         );
                         open.set(false);
                     },
-                    DockIcon { path: action_dock::CHECK }
                 }
             }
         }
@@ -495,27 +495,26 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 }
             }
             // Test and Save in the action dock, pinned bottom right.
-            div { class: "action-dock action-dock-right sheet-dock",
+            ActionDock { place: DockPlace::Sheet,
                 // Plays the pick as a goal would, toast and all, before
                 // it is saved. Random steps through its rotation on
                 // each tap.
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": "Test",
+                DockAction {
+                    label: "Test",
+                    icon: icons::PLAY,
                     disabled: draft() == Celebration::Off,
-                    onclick: move |_| {
+                    onclick: move |()| {
                         if let Some(line) = celebration::celebrate(host, draft()) {
                             toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
                         }
                     },
-                    DockIcon { path: action_dock::PLAY }
                 }
                 span { class: "action-dock-divider" }
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": "Save",
+                DockAction {
+                    label: "Save",
+                    icon: icons::CHECK,
                     disabled: draft() == saved,
-                    onclick: move |_| {
+                    onclick: move |()| {
                         let picked = draft();
                         prefs.with_mut(|q| q.celebration = picked);
                         toast.success(
@@ -524,7 +523,6 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                         );
                         open.set(false);
                     },
-                    DockIcon { path: action_dock::CHECK }
                 }
             }
         }
@@ -577,7 +575,7 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
             HintDialog { open, title: "Goal animation",
                 HintLine { "What plays when a counter finishes its day, clears the whole day, or passes another tenth of its year" }
                 HintLine { "A counter can pick its own from its " HintKey { EditIcon {} } " sheet" }
-                HintLine { HintKey { DockIcon { path: action_dock::PLAY } } " plays the one picked before " HintKey { DockIcon { path: action_dock::CHECK } } " saves it" }
+                HintLine { HintKey { DockIcon { path: icons::PLAY } } " plays the one picked before " HintKey { DockIcon { path: icons::CHECK } } " saves it" }
             }
         },
         ConfigHint::Dates => rsx! {
@@ -700,12 +698,12 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 }
             }
             // Save as the action dock's checkmark, pinned bottom right.
-            div { class: "action-dock action-dock-right sheet-dock",
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": "Save",
+            ActionDock { place: DockPlace::Sheet,
+                DockAction {
+                    label: "Save",
+                    icon: icons::CHECK,
                     disabled: draft() == saved,
-                    onclick: move |_| {
+                    onclick: move |()| {
                         let picked = draft();
                         prefs.with_mut(|q| q.rest_days = picked);
                         let count = picked.count_ones();
@@ -719,7 +717,6 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                         );
                         open.set(false);
                     },
-                    DockIcon { path: action_dock::CHECK }
                 }
             }
         }

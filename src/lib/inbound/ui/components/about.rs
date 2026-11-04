@@ -4,10 +4,10 @@
 //! the in-app browser.
 
 use dioxus::prelude::*;
+use orangui::icons::{DockIcon, INFO};
 use orangui::{AlertDialog, DialogAction, HintLine};
 
 use crate::inbound::ui::APP_VERSION;
-use crate::inbound::ui::components::action_dock::{DockIcon, INFO};
 
 const SITE_URL: &str = "https://scottyfermo.com";
 

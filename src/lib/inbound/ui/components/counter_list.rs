@@ -13,11 +13,11 @@ use std::sync::Arc;
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
+use orangui::icons::EditIcon;
 use orangui::{Button, ButtonVariant};
 
 use crate::domain::counter::{Counter, format, stats};
 use crate::domain::preferences;
-use crate::inbound::ui::components::action_dock::EditIcon;
 use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
 use crate::inbound::ui::components::celebration::{self, CelebrationHost, Saying};
 use crate::inbound::ui::components::reveal::Reveal;

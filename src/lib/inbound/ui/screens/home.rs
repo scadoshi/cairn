@@ -14,14 +14,14 @@ use std::time::Duration;
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
+use orangui::icons::{self, DockIcon, EditIcon};
 use orangui::{
-    BottomSheet, Decode, HintBullet, HintBullets, HintChip, HintDialog, HintKey, HintLine,
-    use_screen_hint,
+    ActionDock, BottomSheet, Decode, DockAction, DockPlace, HintBullet, HintBullets, HintChip,
+    HintDialog, HintKey, HintLine, use_screen_hint,
 };
 
 use crate::domain::counter::{Counter, DayCount, Goal, format, stats};
 use crate::domain::preferences::Logo;
-use crate::inbound::ui::components::action_dock::{self, DockIcon, EditIcon};
 use crate::inbound::ui::components::counter_form::{CounterForm, CounterFormState, EditSheet};
 use crate::inbound::ui::components::counter_list::CounterList;
 use crate::inbound::ui::components::quote_card::QuoteCard;
@@ -122,7 +122,7 @@ pub fn Home() -> Element {
                     if counters().is_empty() {
                         p { class: "pref-note", style: "padding: 1rem;",
                             "Nothing counted yet. Start your first counter with "
-                            HintKey { DockIcon { path: action_dock::PLUS } }
+                            HintKey { DockIcon { path: icons::PLUS } }
                         }
                     } else {
                         div { class: "tile-grid tile-grid-2",
@@ -164,13 +164,8 @@ pub fn Home() -> Element {
             }
         }
         // Create as the action dock's plus, pinned bottom right.
-        div { class: "action-dock action-dock-right",
-            button {
-                class: "action-dock-btn",
-                "aria-label": "Create",
-                onclick: move |_| create_open.set(true),
-                DockIcon { path: action_dock::PLUS }
-            }
+        ActionDock {
+            DockAction { label: "Create", icon: icons::PLUS, onclick: move |()| create_open.set(true) }
         }
         HintDialog { open: hint_open, title: "Counters",
             HintLine { "Tap a counter's name or numbers to open it" }
@@ -182,7 +177,7 @@ pub fn Home() -> Element {
                 }
                 HintBullet { HintKey { EditIcon {} } " on a card edits that counter" }
                 HintBullet { "Up top is every counter added together" }
-                HintBullet { HintKey { DockIcon { path: action_dock::PLUS } } " at the bottom right starts a counter" }
+                HintBullet { HintKey { DockIcon { path: icons::PLUS } } " at the bottom right starts a counter" }
             }
         }
         CreateSheet { open: create_open, on_created: move |()| reload.call(()) }
@@ -217,7 +212,7 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
         }
     });
 
-    let save = move |_| {
+    let save = move |()| {
         let Some(v) = form.validate() else {
             return;
         };
@@ -249,13 +244,8 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
             closable: true,
             CounterForm { state: form }
             // Save as the action dock's checkmark, pinned bottom right.
-            div { class: "action-dock action-dock-right sheet-dock",
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": "Save",
-                    onclick: save,
-                    DockIcon { path: action_dock::CHECK }
-                }
+            ActionDock { place: DockPlace::Sheet,
+                DockAction { label: "Save", icon: icons::CHECK, onclick: save }
             }
         }
     }

@@ -4,10 +4,9 @@
 
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use orangui::{BottomSheet, THEME_GROUPS, ThemeConfig};
+use orangui::{ActionDock, BottomSheet, DockAction, DockPlace, THEME_GROUPS, ThemeConfig, icons};
 
 use crate::domain::preferences::AppIcon;
-use crate::inbound::ui::components::action_dock::{self, DockIcon};
 use crate::inbound::ui::screens::home::LOGO_CAIRN;
 use crate::inbound::ui::{TOAST_NORMAL, TOAST_QUICK, use_prefs};
 use crate::outbound::app_icon;
@@ -73,7 +72,7 @@ pub fn IconSheet(
         open.set(false);
     });
 
-    let save = move |_| {
+    let save = move |()| {
         let picked = draft();
         let (next, message) = match &picked {
             None => (theme(), "App icon matches your theme".to_string()),
@@ -112,13 +111,12 @@ pub fn IconSheet(
             on_dismiss: move |()| discard.call(()),
             closable: true,
             // Save as the action dock's checkmark, pinned bottom right.
-            div { class: "action-dock action-dock-right sheet-dock",
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": "Save",
+            ActionDock { place: DockPlace::Sheet,
+                DockAction {
+                    label: "Save",
+                    icon: icons::CHECK,
                     disabled: draft() == saved(),
                     onclick: save,
-                    DockIcon { path: action_dock::CHECK }
                 }
             }
             IconRow { label: "Match theme", pick: None, tile: theme(), draft }
