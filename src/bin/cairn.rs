@@ -8,7 +8,16 @@ use cairn::outbound::paths;
 use cairn::outbound::sqlite::SqliteStore;
 use orangui::{BOOT_BG, BOOT_HEAD};
 
+/// The wordmark, printed to the terminal that launched the app, the way
+/// zwiper greets `dx serve`.
+const LOGO: &str = include_str!("../../assets/cairn.txt");
+
+#[expect(
+    clippy::print_stdout,
+    reason = "the logo goes to the launching terminal's own output"
+)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("{LOGO}");
     let path = paths::database().map_err(|e| format!("cannot locate data directory: {e}"))?;
     let store =
         SqliteStore::open(&path).map_err(|e| format!("cannot open {}: {e}", path.display()))?;
