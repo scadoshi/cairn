@@ -414,7 +414,7 @@ pub fn CounterScreen(id: i64) -> Element {
             HintBullets {
                 HintBullet { "Tap a card's " HintKey { color: "--palette-6", "?" } " for what it shows" }
                 HintBullet { "Subtracting stops at zero" }
-                HintBullet { "The pencil at the bottom right edits the counter" }
+                HintBullet { HintKey { EditIcon {} } " at the bottom right edits the counter" }
                 HintBullet { HintKey { color: "--color-error", "Delete" } " at the bottom takes the whole history with it" }
             }
         }

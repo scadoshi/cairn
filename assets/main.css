@@ -757,6 +757,12 @@ input {
     font-weight: 700;
 }
 
+/* A key inside a pref-note takes the note's size, so the icon squircle
+   sits level with the sentence it ends. */
+.pref-note > .hint-key {
+    font-size: inherit;
+}
+
 /* ==================
         charts
  ==================== */

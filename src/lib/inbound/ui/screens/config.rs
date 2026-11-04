@@ -14,7 +14,7 @@ use orangui::{
 
 use crate::domain::counter::csv;
 use crate::domain::preferences::{self, AppIcon, Celebration, Logo, Preferences};
-use crate::inbound::ui::components::action_dock::{self, DockIcon};
+use crate::inbound::ui::components::action_dock::{self, DockIcon, EditIcon};
 use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::icon_sheet::IconSheet;
 use crate::inbound::ui::components::theme_sheet::{self, AppThemeSheet};
@@ -575,8 +575,8 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
         ConfigHint::Celebration => rsx! {
             HintDialog { open, title: "Goal animation",
                 HintLine { "What plays when a counter finishes its day, clears the whole day, or passes another tenth of its year" }
-                HintLine { "A counter can pick its own in its " HintKey { "Edit" } " sheet" }
-                HintLine { HintKey { "Test" } " plays the one picked, before you save it" }
+                HintLine { "A counter can pick its own from its " HintKey { EditIcon {} } " sheet" }
+                HintLine { HintKey { DockIcon { path: action_dock::PLAY } } " plays the one picked before " HintKey { DockIcon { path: action_dock::CHECK } } " saves it" }
             }
         },
         ConfigHint::Dates => rsx! {

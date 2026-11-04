@@ -15,12 +15,13 @@ use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
-    BottomSheet, Decode, HintBullet, HintBullets, HintChip, HintDialog, HintLine, use_screen_hint,
+    BottomSheet, Decode, HintBullet, HintBullets, HintChip, HintDialog, HintKey, HintLine,
+    use_screen_hint,
 };
 
 use crate::domain::counter::{Counter, DayCount, Goal, format, stats};
 use crate::domain::preferences::Logo;
-use crate::inbound::ui::components::action_dock::{self, DockIcon};
+use crate::inbound::ui::components::action_dock::{self, DockIcon, EditIcon};
 use crate::inbound::ui::components::counter_form::{CounterForm, CounterFormState, EditSheet};
 use crate::inbound::ui::components::counter_list::CounterList;
 use crate::inbound::ui::components::quote_card::QuoteCard;
@@ -120,7 +121,8 @@ pub fn Home() -> Element {
                     }
                     if counters().is_empty() {
                         p { class: "pref-note", style: "padding: 1rem;",
-                            "No counters yet. The + below starts one."
+                            "Nothing counted yet. Start your first counter with "
+                            HintKey { DockIcon { path: action_dock::PLUS } }
                         }
                     } else {
                         div { class: "tile-grid tile-grid-2",
@@ -178,9 +180,9 @@ pub fn Home() -> Element {
                     " is what today still owes, and turns into "
                     HintChip { class: "stat-chip-success", "goal met" }
                 }
-                HintBullet { "The pencil on a card edits that counter" }
+                HintBullet { HintKey { EditIcon {} } " on a card edits that counter" }
                 HintBullet { "Up top is every counter added together" }
-                HintBullet { "The + at the bottom right starts a counter" }
+                HintBullet { "The " HintKey { DockIcon { path: action_dock::PLUS } } " at the bottom right starts a counter" }
             }
         }
         CreateSheet { open: create_open, on_created: move |()| reload.call(()) }
