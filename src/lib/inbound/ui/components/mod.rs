@@ -13,4 +13,5 @@ pub mod line_chart;
 pub mod navigation;
 pub mod quote_card;
 pub mod reveal;
+pub mod theme_sheet;
 pub mod tile;

@@ -1,17 +1,20 @@
 //! The main menu behind the header's hamburger: the counters as rows in
 //! Home's order, the one on view lit, over a footer row with the developer's
 //! "!", the icons for Home and Settings, the one on view lit, and the About
-//! "i". With no counters the list is hidden and the menu is the footer alone.
+//! "i", under the theme's name and the Dark/Light switch. With no counters
+//! the list is hidden and the menu is the footer alone.
 //!
 //! The open state is app-wide ([`MenuOpen`], provided at the root), so a tap
 //! on an entry only navigates: the header then folds the panel shut over
 //! the new screen.
 
 use dioxus::prelude::*;
+use orangui::{DarkModeButton, ThemeConfig};
 
 use crate::inbound::ui::components::about::{AboutButton, VersionButton};
 use crate::inbound::ui::components::action_dock::{COG, DockIcon, HOUSE};
 use crate::inbound::ui::components::counter_list;
+use crate::inbound::ui::components::theme_sheet::{self, ThemeSheetOpen};
 use crate::inbound::ui::router::Route;
 use crate::inbound::ui::{StoreVersion, use_prefs, use_store};
 
@@ -161,13 +164,35 @@ fn SectionButton(
     }
 }
 
-/// The menu's footer, for the nav's `trailing` slot: the "!" on the left,
-/// the Home and Settings icons, then the About "i".
+/// The menu's footer, for the nav's `trailing` slot: the theme's name,
+/// which folds the menu and raises the theme sheet, beside the Dark/Light
+/// switch; under them the "!" on the left, the Home and Settings icons, then
+/// the About "i".
 #[component]
 pub fn MenuFooter(open: Signal<bool>, route: Route) -> Element {
     let current = Section::of(&route);
+    let theme = use_context::<Signal<ThemeConfig>>();
+    let mut sheet_open = use_context::<ThemeSheetOpen>().0;
+    let toggle_dark = theme_sheet::use_toggle_dark();
+    let mut open = open;
     rsx! {
         div { class: "app-nav-footer",
+            div { class: "theme-picker app-nav-theme",
+                button {
+                    class: "nav-dropdown-trigger",
+                    r#type: "button",
+                    aria_label: "Change theme",
+                    onclick: move |_| {
+                        open.set(false);
+                        sheet_open.set(true);
+                    },
+                    {orangui::display_theme_name(&theme.read().name)}
+                }
+                DarkModeButton {
+                    is_dark: theme.read().is_dark,
+                    onclick: move |_| toggle_dark.call(()),
+                }
+            }
             div { class: "app-nav-footer-group",
                 AboutButton {}
                 for section in Section::FOOTER {

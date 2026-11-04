@@ -147,6 +147,8 @@ pub fn App() -> Element {
     // screens.
     use_context_provider(|| components::navigation::menu::MenuOpen(Signal::new(false)));
     use_context_provider(|| StoreVersion(Signal::new(0)));
+    let theme_sheet_open = components::theme_sheet::ThemeSheetOpen(Signal::new(false));
+    use_context_provider(|| theme_sheet_open);
     let saved_prefs = store.preferences().unwrap_or_default();
     let prefs = use_signal(move || saved_prefs);
     use_context_provider(|| prefs);
@@ -236,6 +238,9 @@ pub fn App() -> Element {
                 // Dialogs draw here, beside the router, so no screen's scroll
                 // container can trap their fixed overlay.
                 DialogHostView {}
+                // The menu's theme sheet, beside the dialogs for the same
+                // reason: the folded menu would clip it.
+                components::theme_sheet::AppThemeSheet { open: theme_sheet_open.0 }
                 // Same reason as the dialogs: a fixed overlay inside a
                 // screen is clipped by the card or the scroll column.
                 components::celebration::CelebrationHostView {}

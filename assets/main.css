@@ -257,13 +257,21 @@ input {
 }
 
 /* The menu's footer, a sheet's action bar made slim: a full-bleed bar under
-   a rule, flush with the menu's bottom edge, the ! at its left end and the
-   Home and Settings icons beside it. */
+   a rule, flush with the menu's bottom edge. The theme row sits on top, as
+   on the websites' phone-width menu, and under it the ! at the left end
+   with the Home, Settings and About icons beside it. */
 .app-nav-footer {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
     padding-bottom: 0.6rem;
+}
+
+/* The theme row: the name leads with its dot in the accent, the switch
+   beside it, centered like the kit's picker in a folded menu. */
+.app-nav-theme {
+    justify-content: center;
 }
 
 .app-nav-footer-group {

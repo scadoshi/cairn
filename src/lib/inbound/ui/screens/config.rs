@@ -9,7 +9,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{
     BottomSheet, Button, ButtonVariant, Chip, DarkModeButton, HintBullet, HintBullets, HintDialog,
-    HintKey, HintLine, InfoButton, ModeIcon, ThemeConfig, ThemeSheet, use_screen_hint,
+    HintKey, HintLine, InfoButton, ModeIcon, ThemeConfig, use_screen_hint,
 };
 
 use crate::domain::counter::csv;
@@ -17,13 +17,14 @@ use crate::domain::preferences::{self, AppIcon, Celebration, Logo, Preferences};
 use crate::inbound::ui::components::action_dock::{self, DockIcon};
 use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::icon_sheet::IconSheet;
+use crate::inbound::ui::components::theme_sheet::{self, AppThemeSheet};
 use crate::inbound::ui::{TOAST_NORMAL, TOAST_QUICK, use_date_format, use_prefs, use_store};
 use crate::outbound::{app_icon, paths};
 
 /// The config screen.
 #[component]
 pub fn Config() -> Element {
-    let mut theme = use_context::<Signal<ThemeConfig>>();
+    let theme = use_context::<Signal<ThemeConfig>>();
     let store = use_store();
     let mut preferences_open = use_signal(|| false);
     let mut notice = use_signal(|| None::<String>);
@@ -117,27 +118,10 @@ pub fn Config() -> Element {
         toast.info(what, ToastOptions::default().duration(TOAST_QUICK));
     });
 
-    // A kept theme, never a preview, carries the icon along when it follows.
-    let follow_icon = use_callback(move |kept: ThemeConfig| {
-        if prefs.peek().app_icon != AppIcon::MatchesTheme {
-            return;
-        }
-        match app_icon::show(&kept) {
-            Ok(()) => icon.set(kept),
-            Err(e) => toast.error(e, ToastOptions::default()),
-        }
-    });
-
+    let flip_dark = theme_sheet::use_toggle_dark();
     let toggle_dark = move |_| {
-        let prev = theme.read().clone();
-        let on = !prev.is_dark;
-        let next = ThemeConfig {
-            name: prev.name,
-            is_dark: on,
-        };
-        theme.set(next.clone());
-        follow_icon.call(next);
-        said.call(format!("Dark mode {}", if on { "on" } else { "off" }));
+        flip_dark.call(());
+        icon.set(app_icon::current());
     };
 
     // The home-screen icon's own mode, apart from the app's.
@@ -380,23 +364,10 @@ pub fn Config() -> Element {
             }
         }
         }
-        ThemeSheet {
+        AppThemeSheet {
             open: preferences_open,
-            theme,
             hint: Some(hint_open),
-            on_save: move |kept: ThemeConfig| {
-                follow_icon.call(kept);
-                toast.success(
-                    "Theme saved".to_string(),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
-            },
-            on_unchanged: move |()| {
-                toast.info(
-                    "Theme unchanged".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
-            },
+            on_kept: move |kept: ThemeConfig| icon.set(kept),
         }
         RestDaysSheet { open: rest_open, hint: hint_open }
         CelebrationSheet { open: celebration_open, hint: hint_open }
