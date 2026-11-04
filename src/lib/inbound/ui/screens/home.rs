@@ -236,7 +236,7 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
                 on_created.call(());
                 open.set(false);
             }
-            Err(e) => form.error.set(Some(e.to_string())),
+            Err(e) => form.fail(e.to_string()),
         }
     };
 

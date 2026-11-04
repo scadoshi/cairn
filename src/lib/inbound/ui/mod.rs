@@ -58,6 +58,16 @@ pub fn now() -> NaiveDateTime {
     Local::now().naive_local()
 }
 
+/// `message` with its first letter uppercased, for a domain error line shown
+/// to the user. Domain messages are lowercase.
+pub fn sentence_case(message: &str) -> String {
+    let mut chars = message.chars();
+    match chars.next() {
+        Some(first) => first.to_uppercase().chain(chars).collect(),
+        None => String::new(),
+    }
+}
+
 /// Bumped after any write so screens that read the store outside their own
 /// state (the shell's title, the home list) re-render. Provided by [`App`].
 #[derive(Clone, Copy)]
@@ -280,5 +290,23 @@ pub fn Shell() -> Element {
             }
             Outlet::<Route> {}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sentence_case_uppercases_only_the_first_letter() {
+        assert_eq!(
+            sentence_case("counter name cannot be empty"),
+            "Counter name cannot be empty"
+        );
+        assert_eq!(
+            sentence_case("Goal must be at least 1"),
+            "Goal must be at least 1"
+        );
+        assert_eq!(sentence_case(""), "");
     }
 }

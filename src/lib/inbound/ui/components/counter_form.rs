@@ -61,6 +61,33 @@ pub struct ValidCounter {
     pub celebration: Option<Celebration>,
 }
 
+/// What is wrong with the form, by field.
+///
+/// Each field's message sits under that field; `form` holds anything that
+/// belongs to no single field, such as a failed save, and sits at the
+/// bottom. Messages are the domain's lowercase lines; the form sentence-cases
+/// them where they show.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct FormErrors {
+    /// Under the name field.
+    pub name: Option<String>,
+    /// Under the goal field.
+    pub goal: Option<String>,
+    /// Under the step chips.
+    pub step: Option<String>,
+    /// Under the big step chips.
+    pub big_step: Option<String>,
+    /// At the bottom of the form.
+    pub form: Option<String>,
+}
+
+impl FormErrors {
+    /// Whether no field and not the form carries a message.
+    pub fn is_empty(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
 /// The form's state, owned by the host sheet.
 #[derive(Clone, Copy, PartialEq)]
 pub struct CounterFormState {
@@ -77,8 +104,8 @@ pub struct CounterFormState {
     pub big_step: Signal<u32>,
     /// This counter's celebration. `None` follows the app-wide setting.
     pub celebration: Signal<Option<Celebration>>,
-    /// Validation message to show, if any.
-    pub error: Signal<Option<String>>,
+    /// What the last validation or save found wrong.
+    pub errors: Signal<FormErrors>,
 }
 
 impl std::fmt::Debug for CounterFormState {
@@ -97,7 +124,7 @@ impl Default for CounterFormState {
             step: Signal::new(1),
             big_step: Signal::new(0),
             celebration: Signal::new(None),
-            error: Signal::new(None),
+            errors: Signal::new(FormErrors::default()),
         }
     }
 }
@@ -123,69 +150,66 @@ impl CounterFormState {
         self.step.set(step);
         self.big_step.set(big_step.unwrap_or(0));
         self.celebration.set(celebration);
-        self.error.set(None);
+        self.errors.set(FormErrors::default());
     }
 
-    /// Validates the fields into domain values, or records the error.
+    /// Records `message` at the bottom of the form, under every field.
+    pub fn fail(&mut self, message: String) {
+        self.errors.set(FormErrors {
+            form: Some(message),
+            ..FormErrors::default()
+        });
+    }
+
+    /// Validates the fields into domain values, or marks every field that
+    /// is wrong.
     pub fn validate(&mut self) -> Option<ValidCounter> {
-        let name = match CounterName::new(&(self.name)()) {
-            Ok(n) => n,
-            Err(e) => {
-                self.error.set(Some(e.to_string()));
-                return None;
-            }
-        };
+        let mut errors = FormErrors::default();
+        let name = CounterName::new(&(self.name)())
+            .map_err(|e| errors.name = Some(e.to_string()))
+            .ok();
         let raw = (self.amount)();
         let goal = if raw.trim().is_empty() {
-            None
+            Some(None)
         } else {
             let parsed = raw
                 .trim()
                 .parse::<u32>()
                 .ok()
                 .map(|n| (self.unit)().goal(n));
-            let Some(Ok(g)) = parsed else {
-                self.error.set(Some(
-                    "goal must be a whole number of at least 1".to_string(),
-                ));
-                return None;
-            };
-            Some(g)
-        };
-        let step = match Step::new((self.step)()) {
-            Ok(s) => s,
-            Err(e) => {
-                self.error.set(Some(e.to_string()));
-                return None;
+            if let Some(Ok(g)) = parsed {
+                Some(Some(g))
+            } else {
+                errors.goal = Some("goal must be a whole number of at least 1".to_string());
+                None
             }
         };
+        let step = Step::new((self.step)())
+            .map_err(|e| errors.step = Some(e.to_string()))
+            .ok();
         // Zero is the form's way of saying "none"; the domain decides
         // whether what is left is a sensible pair.
         let raw_big = (self.big_step)();
         let big = if raw_big == 0 {
-            None
+            Some(None)
         } else {
-            match Step::new(raw_big) {
-                Ok(s) => Some(s),
-                Err(e) => {
-                    self.error.set(Some(e.to_string()));
-                    return None;
-                }
-            }
+            Step::new(raw_big)
+                .map(Some)
+                .map_err(|e| errors.big_step = Some(e.to_string()))
+                .ok()
         };
-        let big_step = match counter::check_big_step(step, big) {
-            Ok(b) => b,
-            Err(e) => {
-                self.error.set(Some(e.to_string()));
-                return None;
-            }
+        let big_step = match (step, big) {
+            (Some(step), Some(big)) => counter::check_big_step(step, big)
+                .map_err(|e| errors.big_step = Some(e.to_string()))
+                .ok(),
+            _ => None,
         };
-        self.error.set(None);
+        self.errors.set(errors);
         Some(ValidCounter {
-            name,
-            goal,
-            step,
-            big_step,
+            name: name?,
+            goal: goal?,
+            step: step?,
+            big_step: big_step?,
             celebration: (self.celebration)(),
         })
     }
@@ -201,7 +225,7 @@ pub fn CounterForm(state: CounterFormState) -> Element {
         mut step,
         mut big_step,
         mut celebration,
-        error,
+        errors,
     } = state;
     let mut hint = use_signal(|| None::<FormHint>);
     let mut hint_open = use_signal(|| false);
@@ -213,6 +237,8 @@ pub fn CounterForm(state: CounterFormState) -> Element {
         .filter(|n| *n > 0)
         .and_then(|n| unit().goal(n).ok())
         .map(|g| g.breakdown(days));
+    let errors = errors();
+    let field_error = |message: &Option<String>| message.as_deref().map(ui::sentence_case);
 
     rsx! {
         form { class: "flex-col text-center", onsubmit: move |e| e.prevent_default(),
@@ -222,6 +248,7 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                 label: "Name",
                 placeholder: "Not set",
                 maxlength: CounterName::MAX_LEN,
+                error: field_error(&errors.name),
                 on_info: move |_| { hint.set(Some(FormHint::Name)); hint_open.set(true); },
             }
             // A text field, not type=number: iOS WebKit drops keystrokes when a
@@ -235,6 +262,7 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                 placeholder: "Not set",
                 inputmode: "numeric",
                 filter: move |typed: String| typed.chars().filter(char::is_ascii_digit).collect::<String>(),
+                error: field_error(&errors.goal),
                 on_info: move |_| { hint.set(Some(FormHint::Goal)); hint_open.set(true); },
             }
             div { class: "chip-row chip-row-center",
@@ -261,6 +289,9 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                     Chip { selected: step() == n, onclick: move |_| step.set(n), "{n}" }
                 }
             }
+            if let Some(e) = field_error(&errors.step) {
+                div { class: "message-error", "{e}" }
+            }
             FieldLabel {
                 label: "Big step",
                 on_info: move |_| { hint.set(Some(FormHint::BigStep)); hint_open.set(true); },
@@ -276,6 +307,9 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                 for n in Step::ALLOWED.into_iter().filter(|n| *n > step()) {
                     Chip { selected: big_step() == n, onclick: move |_| big_step.set(n), "{n}" }
                 }
+            }
+            if let Some(e) = field_error(&errors.big_step) {
+                div { class: "message-error", "{e}" }
             }
             FieldLabel {
                 label: "Goal animation",
@@ -297,7 +331,7 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                     }
                 }
             }
-            if let Some(e) = error() {
+            if let Some(e) = field_error(&errors.form) {
                 p { class: "form-error", "{e}" }
             }
         }
@@ -403,7 +437,7 @@ pub fn EditSheet(
                 on_saved.call(());
                 open.set(false);
             }
-            Err(e) => form.error.set(Some(e.to_string())),
+            Err(e) => form.fail(e.to_string()),
         }
     };
 

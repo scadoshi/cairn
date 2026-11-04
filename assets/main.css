@@ -639,6 +639,12 @@ input {
     text-align: center;
 }
 
+/* A field's own error line, sized like the form's bottom one. */
+.message-error {
+    font-size: 0.85rem;
+    letter-spacing: normal;
+}
+
 /* ==================
         tiles
  ==================== */
