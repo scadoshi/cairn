@@ -8,6 +8,8 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 - The quote panel is titled Featured quote, with the next-quote timer beside the title and only the author and source under the quote.
 - The counter form outlines the field an error belongs to and puts the message under it, instead of one line at the bottom.
+- An "i" in the menu's footer opens About, with the version and a link to this changelog.
+- The "!" no longer links the changelog, and Settings no longer shows the version.
 - Home and Settings are icons in the menu's footer, beside the "!"; the menu is just that band.
 - The header is the shared nav bar: the screen's title and its "?" in the middle, a hamburger on the right opening a menu with Home and Settings and the "!" in its footer, and a back arrow on the left on every screen but Home. It slides away as you scroll down and back as you scroll up.
 - Config is now Settings.
