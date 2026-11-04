@@ -62,7 +62,7 @@ pub fn VersionButton() -> Element {
                 },
             ],
             div { class: "hint-body",
-                HintLine { "Version v{APP_VERSION}" }
+                HintLine { "Version {APP_VERSION}" }
             }
         }
         button {

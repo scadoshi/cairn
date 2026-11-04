@@ -78,7 +78,7 @@ pub fn QuoteCard() -> Element {
         div { class: "settings-list quote-card reveal",
             div { class: "settings-list-header card-header-flow",
                 span { class: "settings-list-title", "Featured quote" }
-                span { class: "stat-chip", title: "Next quote",
+                span { class: "stat-chip", title: "Next quote", aria_label: "Next quote",
                     span { class: "quote-tick-value", "{countdown}" }
                 }
             }
