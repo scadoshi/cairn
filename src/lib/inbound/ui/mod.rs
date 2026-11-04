@@ -17,6 +17,9 @@ use crate::domain::counter::{self, CounterId, DayCount, Goal, Store};
 use crate::domain::date_format::DateFormat;
 use crate::domain::preferences::Preferences;
 
+/// The crate version, which is the release version on the stores.
+pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const ENTRANCE_JS: Asset = asset!("/assets/entrance.js");
 /// Slides the header away as the content scrolls down and back as it scrolls

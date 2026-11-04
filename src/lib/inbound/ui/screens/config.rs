@@ -20,9 +20,6 @@ use crate::inbound::ui::components::icon_sheet::IconSheet;
 use crate::inbound::ui::{TOAST_NORMAL, TOAST_QUICK, use_date_format, use_prefs, use_store};
 use crate::outbound::{app_icon, paths};
 
-/// The crate version, which is the release version on the stores.
-const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
-
 /// The config screen.
 #[component]
 pub fn Config() -> Element {
@@ -381,20 +378,6 @@ pub fn Config() -> Element {
             }
             }
             }
-            div { class: "settings-list",
-                div { class: "settings-list-header",
-                    span { class: "settings-list-title", "About" }
-                }
-                div { class: "settings-row",
-                    span { class: "row-label-with-hint",
-                        span { class: "settings-row-label", "Version" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Version)); hint_open.set(true); } }
-                    }
-                    div { class: "settings-row-value",
-                        span { "v{APP_VERSION}" }
-                    }
-                }
-            }
         }
         }
         ThemeSheet {
@@ -592,7 +575,6 @@ enum ConfigHint {
     SortCounters,
     ConfirmMinus,
     Export,
-    Version,
 }
 
 /// One dialog for the whole screen, its content picked by `which`.
@@ -682,11 +664,6 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
                     HintBullet { "Desktop: Downloads" }
                     HintBullet { "Same names overwrite" }
                 }
-            }
-        },
-        ConfigHint::Version => rsx! {
-            HintDialog { open, title: "Version",
-                HintLine { "The build you are on" }
             }
         },
     }

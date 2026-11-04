@@ -1,6 +1,6 @@
 //! The main menu behind the header's hamburger: one footer row with the
-//! About "!" and the icons for Home and Settings, the one on view lit. The
-//! list above it is empty and hidden.
+//! developer's "!", the icons for Home and Settings, the one on view lit,
+//! and the About "i". The list above it is empty and hidden.
 //!
 //! The open state is app-wide ([`MenuOpen`], provided at the root), so a tap
 //! on an entry only navigates: the header then folds the panel shut over
@@ -8,7 +8,7 @@
 
 use dioxus::prelude::*;
 
-use crate::inbound::ui::components::about::AboutButton;
+use crate::inbound::ui::components::about::{AboutButton, VersionButton};
 use crate::inbound::ui::components::action_dock::{COG, DockIcon, HOUSE};
 use crate::inbound::ui::router::Route;
 
@@ -119,8 +119,8 @@ fn SectionButton(
     }
 }
 
-/// The menu's footer, for the nav's `trailing` slot: the About "!" on the
-/// left, then the Home and Settings icons.
+/// The menu's footer, for the nav's `trailing` slot: the "!" on the left,
+/// the Home and Settings icons, then the About "i".
 #[component]
 pub fn MenuFooter(open: Signal<bool>, route: Route) -> Element {
     let current = Section::of(&route);
@@ -138,6 +138,7 @@ pub fn MenuFooter(open: Signal<bool>, route: Route) -> Element {
                         icon: true,
                     }
                 }
+                VersionButton {}
             }
         }
     }
