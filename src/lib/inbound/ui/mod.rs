@@ -173,8 +173,7 @@ pub fn App() -> Element {
     // screens.
     use_context_provider(|| components::navigation::menu::MenuOpen(Signal::new(false)));
     use_context_provider(|| StoreVersion(Signal::new(0)));
-    // Made once: the root re-renders on every shown theme, and a signal made
-    // in the body would leave the menu writing one the sheet no longer reads.
+    // Made once; the root re-renders on every shown theme.
     let theme_sheet_open = components::theme_sheet::use_theme_sheet_open();
     let saved_prefs = store.preferences().unwrap_or_default();
     let prefs = use_signal(move || saved_prefs);
