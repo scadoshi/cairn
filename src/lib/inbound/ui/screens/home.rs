@@ -182,7 +182,7 @@ pub fn Home() -> Element {
                 }
                 HintBullet { HintKey { EditIcon {} } " on a card edits that counter" }
                 HintBullet { "Up top is every counter added together" }
-                HintBullet { "The " HintKey { DockIcon { path: action_dock::PLUS } } " at the bottom right starts a counter" }
+                HintBullet { HintKey { DockIcon { path: action_dock::PLUS } } " at the bottom right starts a counter" }
             }
         }
         CreateSheet { open: create_open, on_created: move |()| reload.call(()) }

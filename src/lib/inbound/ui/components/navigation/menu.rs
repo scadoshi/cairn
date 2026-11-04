@@ -9,11 +9,11 @@
 //! the new screen.
 
 use dioxus::prelude::*;
-use orangui::{ModeIcon, ThemeConfig};
+use orangui::{ModeIcon, PaletteIcon, ThemeConfig};
 
 use crate::domain::counter::CounterId;
 use crate::inbound::ui::components::about::{AboutButton, VersionButton};
-use crate::inbound::ui::components::action_dock::{COG, DockIcon, HOUSE, PALETTE};
+use crate::inbound::ui::components::action_dock::{COG, DockIcon, HOUSE};
 use crate::inbound::ui::components::theme_sheet::{self, ThemeSheetOpen};
 use crate::inbound::ui::router::Route;
 use crate::inbound::ui::{self, StoreVersion, use_prefs, use_store};
@@ -175,7 +175,7 @@ pub fn MenuFooter(open: Signal<bool>, route: Route) -> Element {
                         open.set(false);
                         sheet_open.set(true);
                     },
-                    DockIcon { path: PALETTE }
+                    PaletteIcon {}
                 }
                 button {
                     class: "btn-action nav-icon",

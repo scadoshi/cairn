@@ -8,22 +8,17 @@ DB_DEST="Library/Application Support/scadoshi-count/count.db"
 # Sets UDID and DEVICE_NAME. With a selector, matches that name or UDID;
 # without one, requires exactly one iPhone on the cable.
 #
-# Only phones whose tunnel is "connected" count. A phone this Mac has paired
-# before still shows in the list as "disconnected" when it is not plugged in,
-# and treating it as a candidate made a one-phone day look like two: with
-# scotland-mobile on the cable and Matthew's iPhone merely remembered, the
-# deploy refused to pick. The same rule as zwipe's device.sh.
+# Only a wired phone whose tunnel is "connected" counts. A phone this Mac has
+# paired before lists as "disconnected" while unplugged and is not a candidate.
 #
-# Xcode 27 (devicectl JSON v5) moved everything under "properties" and stopped
-# sending "reality" for real hardware, so anything not "simulated" is a phone.
-# The old top-level fields are read as a fallback for older Xcodes. A phone
-# listed as "connected (no DDI)" has not had Developer Mode turned on yet,
-# and nothing can be installed on it until it has.
+# devicectl JSON v5 (Xcode 27) keeps a device under "properties" and sends no
+# "reality" for real hardware, so anything not "simulated" is a phone; the
+# top-level fields are the fallback for older Xcodes. "connected (no DDI)"
+# means Developer Mode is off and nothing can be installed until it is on.
 #
-# Xcode 27 also stopped opening the tunnel when a phone is plugged in; it only
-# comes up when a command talks to the phone. So a wired phone that lists as
-# "disconnected" gets one `device info details` call to wake it, then the list
-# is read again. A phone that is really unplugged just times out and stays out.
+# Xcode 27 opens the tunnel only when a command talks to the phone, so a wired
+# phone listed as "disconnected" gets one `device info details` call to wake
+# it before the list is read again. An unplugged phone times out and stays out.
 
 # Prints "udid tunnel name" for each wired iPhone matching the selector.
 _wired_iphones() {
