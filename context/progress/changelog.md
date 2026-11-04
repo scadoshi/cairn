@@ -6,22 +6,16 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
-- Closing a dialog opened from the main menu leaves the menu open.
-- The quote panel is titled Featured quote, with the countdown to the next quote beside the title and only the author and source under the quote.
-- The counter form outlines the field an error belongs to and puts the message under it, instead of one line at the bottom.
-- An "i" in the menu's footer opens About, with the version and a link to this changelog.
-- The "!" no longer links the changelog, and Settings no longer shows the version.
-- The menu lists your counters; tap one to open it.
-- The menu's footer has a palette for the theme and a sun or moon for Dark/Light.
-- Home and Settings are icons in the menu's footer, beside the "!"; the menu is just that band.
-- The header is the shared nav bar: the screen's title and its "?" in the middle, a hamburger on the right opening a menu with Home and Settings and the "!" in its footer, and a back arrow on the left on every screen but Home. It slides away as you scroll down and back as you scroll up.
-- Config is now Settings.
-- The bottom footers are gone. Create is a + floating at the bottom right of Home, and Settings is in the menu.
+- The header is the shared nav bar: the screen's title and its "?" in the middle, a hamburger on the right, and a back arrow on the left on every screen but Home. It slides away as you scroll down and back as you scroll up.
+- The hamburger opens a menu that lists your counters, tap one to open it, with a footer of icons: Home, Settings, an "i" with the version and a link to this changelog, a palette for the theme and a sun or moon for Dark/Light, beside the "!".
+- Config is now Settings. The "!" no longer links the changelog, and Settings no longer shows the version.
+- The bottom footers are gone. Create is a + floating at the bottom right of Home.
 - On a counter's screen, Edit is a pencil floating at the bottom right and Delete sits in a Danger zone panel at the bottom.
 - The step buttons sit inside their counter's card and panel, and the card's Edit is a pencil.
 - Sheets close with an x in their title bar or a drag down, and save from a checkmark at their bottom right; Goal animation's Test is a play button beside it.
+- The quote panel is titled Featured quote, with the countdown to the next quote beside the title and only the author and source under the quote.
+- The counter form outlines the field an error belongs to and puts the message under it, instead of one line at the bottom.
 - Light themes keep every chip and toast readable, and the page fills to the bottom edge.
-- A counter opened from a scrolled Home arrives with its header shown.
 
 ## 1.2.0, 2026-11-01
 
