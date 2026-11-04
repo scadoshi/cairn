@@ -13,10 +13,9 @@ use orangui::{ModeIcon, ThemeConfig};
 
 use crate::inbound::ui::components::about::{AboutButton, VersionButton};
 use crate::inbound::ui::components::action_dock::{COG, DockIcon, HOUSE, PALETTE};
-use crate::inbound::ui::components::counter_list;
 use crate::inbound::ui::components::theme_sheet::{self, ThemeSheetOpen};
 use crate::inbound::ui::router::Route;
-use crate::inbound::ui::{StoreVersion, use_prefs, use_store};
+use crate::inbound::ui::{self, StoreVersion, use_prefs, use_store};
 
 /// A screen the menu opens.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -88,7 +87,7 @@ pub fn MenuLinks(open: Signal<bool>, route: Route) -> Element {
     // Read so a new, renamed or deleted counter re-renders the rows.
     let _ = use_context::<StoreVersion>().0.read();
     let counters = store.list_counters().unwrap_or_default();
-    let counters = counter_list::ordered(&counters, &store, prefs().counter_order);
+    let counters = ui::ordered(&counters, &store, prefs().counter_order);
     let open_id = match route {
         Route::CounterScreen { id } => Some(id),
         Route::Home {} | Route::Config {} => None,

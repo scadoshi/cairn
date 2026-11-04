@@ -16,13 +16,13 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{Button, ButtonVariant};
 
 use crate::domain::counter::{Counter, format, stats};
-use crate::domain::preferences::{self, CounterOrder};
+use crate::domain::preferences;
 use crate::inbound::ui::components::action_dock::EditIcon;
 use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
 use crate::inbound::ui::components::celebration::{self, CelebrationHost, Saying};
 use crate::inbound::ui::components::reveal::Reveal;
 use crate::inbound::ui::components::tile::{self, Num, Tile, TileGrid};
-use crate::inbound::ui::{self, SharedStore, TOAST_NORMAL, TOAST_QUICK, use_prefs, use_store};
+use crate::inbound::ui::{self, TOAST_NORMAL, TOAST_QUICK, use_prefs, use_store};
 
 /// Every counter as a card, in the preferred order.
 #[component]
@@ -36,7 +36,7 @@ pub fn CounterList(
     let prefs = use_prefs();
 
     rsx! {
-        for c in ordered(&counters, &store, prefs().counter_order) {
+        for c in ui::ordered(&counters, &store, prefs().counter_order) {
             CounterCard {
                 key: "{c.id.0}",
                 counter: c.clone(),
@@ -251,29 +251,4 @@ fn CounterCard(
             }
         }
     }
-}
-
-/// The list in the preferred order, Home's and the menu's. Activity orders
-/// need each counter's figures, so they read the store; created order is free.
-pub fn ordered(counters: &[Counter], store: &SharedStore, order: CounterOrder) -> Vec<Counter> {
-    let mut list = counters.to_vec();
-    match order {
-        CounterOrder::Created => {}
-        CounterOrder::Name => list.sort_by_key(|c| c.name.as_str().to_lowercase()),
-        CounterOrder::MostActive | CounterOrder::Lifetime => {
-            let key = |c: &Counter| {
-                let entries = store.entries(c.id).unwrap_or_default();
-                // Preferences only reach streaks and consistency, and
-                // neither is a sort key, so the default is the whole truth.
-                let s = stats::summarize(&entries, c.goal, ui::today());
-                if order == CounterOrder::Lifetime {
-                    s.lifetime
-                } else {
-                    s.this_year.total
-                }
-            };
-            list.sort_by_key(|c| std::cmp::Reverse(key(c)));
-        }
-    }
-    list
 }
