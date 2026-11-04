@@ -11,6 +11,7 @@
 use dioxus::prelude::*;
 use orangui::{ModeIcon, ThemeConfig};
 
+use crate::domain::counter::CounterId;
 use crate::inbound::ui::components::about::{AboutButton, VersionButton};
 use crate::inbound::ui::components::action_dock::{COG, DockIcon, HOUSE, PALETTE};
 use crate::inbound::ui::components::theme_sheet::{self, ThemeSheetOpen};
@@ -27,14 +28,8 @@ pub enum Section {
 }
 
 impl Section {
-    /// Every section, in footer order.
+    /// Every section, in the footer's order, left to right.
     pub const ALL: [Self; 2] = [Self::Home, Self::Config];
-
-    /// The sections the list holds. Every section sits in the footer.
-    pub const LISTED: [Self; 0] = [];
-
-    /// The sections the footer holds as icons, left to right.
-    pub const FOOTER: [Self; 2] = [Self::Home, Self::Config];
 
     /// The footer icon's path.
     pub const fn icon(self) -> &'static str {
@@ -44,7 +39,7 @@ impl Section {
         }
     }
 
-    /// The entry's label, the title of the screen it opens.
+    /// The icon's label, the title of the screen it opens.
     pub const fn label(self) -> &'static str {
         match self {
             Self::Home => "Home",
@@ -52,7 +47,7 @@ impl Section {
         }
     }
 
-    /// The screen the entry opens.
+    /// The screen the icon opens.
     pub const fn route(self) -> Route {
         match self {
             Self::Home => Route::Home {},
@@ -76,31 +71,31 @@ impl Section {
 #[derive(Debug, Clone, Copy)]
 pub struct MenuOpen(pub Signal<bool>);
 
-/// The menu's link rows, for the nav's `links` slot: the listed sections,
-/// then every counter in Home's order. Each navigates and leaves the menu to
-/// the header to close.
+/// The menu's link rows, for the nav's `links` slot: every counter in
+/// Home's order, or one error row when the store cannot list them. Each
+/// navigates and leaves the menu to the header to close.
 #[component]
 pub fn MenuLinks(open: Signal<bool>, route: Route) -> Element {
-    let current = Section::of(&route);
     let store = use_store();
     let prefs = use_prefs();
     // Read so a new, renamed or deleted counter re-renders the rows.
     let _ = use_context::<StoreVersion>().0.read();
-    let counters = store.list_counters().unwrap_or_default();
-    let counters = ui::ordered(&counters, &store, prefs().counter_order);
+    let counters = match store.list_counters() {
+        Ok(counters) => ui::ordered(&counters, &store, prefs().counter_order),
+        Err(e) => {
+            return rsx! {
+                li { class: "message-error", "{e}" }
+            };
+        }
+    };
     let open_id = match route {
-        Route::CounterScreen { id } => Some(id),
+        Route::CounterScreen { id } => Some(CounterId(id)),
         Route::Home {} | Route::Config {} => None,
     };
     rsx! {
-        for section in Section::LISTED {
-            li { key: "{section.label()}",
-                SectionButton { section, current, open, class: "nav-link", icon: false }
-            }
-        }
         for counter in counters {
             li { key: "counter-{counter.id}",
-                CounterRow { id: counter.id.0, name: counter.name.to_string(), lit: open_id == Some(counter.id.0), open }
+                CounterRow { id: counter.id, name: counter.name.to_string(), lit: open_id == Some(counter.id), open }
             }
         }
     }
@@ -109,7 +104,7 @@ pub fn MenuLinks(open: Signal<bool>, route: Route) -> Element {
 /// One counter's row, lit while its screen is on view. A tap pushes the
 /// counter's screen; on that screen it closes the menu instead.
 #[component]
-fn CounterRow(id: i64, name: String, lit: bool, mut open: Signal<bool>) -> Element {
+fn CounterRow(id: CounterId, name: String, lit: bool, mut open: Signal<bool>) -> Element {
     let route: Route = use_route();
     let nav = use_navigator();
     rsx! {
@@ -117,7 +112,7 @@ fn CounterRow(id: i64, name: String, lit: bool, mut open: Signal<bool>) -> Eleme
             class: if lit { "nav-link app-nav-counter active" } else { "nav-link app-nav-counter" },
             r#type: "button",
             onclick: move |_| {
-                let target = Route::CounterScreen { id };
+                let target = Route::CounterScreen { id: id.0 };
                 if target == route {
                     open.set(false);
                 } else {
@@ -129,22 +124,15 @@ fn CounterRow(id: i64, name: String, lit: bool, mut open: Signal<bool>) -> Eleme
     }
 }
 
-/// One section's button, lit when it is `current`: its label in the list,
-/// its icon in the footer. A tap pushes the section's route; on the screen
-/// it opens, it closes the menu instead.
+/// One section's footer icon, lit when it is `current`. A tap pushes the
+/// section's route; on the screen it opens, it closes the menu instead.
 #[component]
-fn SectionButton(
-    section: Section,
-    current: Section,
-    mut open: Signal<bool>,
-    class: &'static str,
-    icon: bool,
-) -> Element {
+fn SectionButton(section: Section, current: Section, mut open: Signal<bool>) -> Element {
     let route: Route = use_route();
     let nav = use_navigator();
     rsx! {
         button {
-            class: if current == section { "{class} active" } else { "{class}" },
+            class: if current == section { "btn-action app-nav-icon nav-link active" } else { "btn-action app-nav-icon nav-link" },
             r#type: "button",
             aria_label: section.label(),
             onclick: move |_| {
@@ -154,11 +142,7 @@ fn SectionButton(
                     nav.push(section.route());
                 }
             },
-            if icon {
-                DockIcon { path: section.icon() }
-            } else {
-                "{section.label()}"
-            }
+            DockIcon { path: section.icon() }
         }
     }
 }
@@ -179,15 +163,8 @@ pub fn MenuFooter(open: Signal<bool>, route: Route) -> Element {
         div { class: "app-nav-footer",
             div { class: "app-nav-footer-group",
                 AboutButton {}
-                for section in Section::FOOTER {
-                    SectionButton {
-                        key: "{section.label()}",
-                        section,
-                        current,
-                        open,
-                        class: "btn-action app-nav-icon nav-link",
-                        icon: true,
-                    }
+                for section in Section::ALL {
+                    SectionButton { key: "{section.label()}", section, current, open }
                 }
                 VersionButton {}
                 button {
@@ -224,12 +201,11 @@ mod tests {
     }
 
     #[test]
-    fn the_listed_and_footer_sections_partition_all() {
-        let mut split: Vec<Section> = Section::LISTED.into_iter().chain(Section::FOOTER).collect();
-        let mut all: Vec<Section> = Section::ALL.to_vec();
-        split.sort_by_key(|section| section.label());
-        all.sort_by_key(|section| section.label());
-        assert_eq!(split, all);
+    fn every_section_has_its_own_label() {
+        let mut labels: Vec<&str> = Section::ALL.iter().map(|s| s.label()).collect();
+        labels.sort_unstable();
+        labels.dedup();
+        assert_eq!(labels.len(), Section::ALL.len());
     }
 
     #[test]
