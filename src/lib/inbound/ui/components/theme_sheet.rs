@@ -104,12 +104,6 @@ pub fn AppThemeSheet(
                     ToastOptions::default().duration(TOAST_NORMAL),
                 );
             },
-            on_unchanged: move |()| {
-                toast.info(
-                    "Theme unchanged".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
-            },
         }
     }
 }
