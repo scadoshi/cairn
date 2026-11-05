@@ -198,9 +198,11 @@ input {
    marking the cut. The kit's cap of three and a half is for a menu whose
    trailing item is one theme row; this footer is one row of icons, so the
    list gives the band's spare height back by showing whole rows. A row is
-   its padding, the 0.95rem line and a 1px border each side. */
+   its padding, the 0.95rem line and a 1px border each side; the list's end
+   padding is counted in, so five rows still sit clear of the footer's
+   rule. */
 .app-nav .nav-panel .nav-links {
-    max-height: calc(5 * (2 * var(--nav-row-pad) + 0.95rem + 2px) + 4 * var(--nav-row-gap));
+    max-height: calc(5 * (2 * var(--nav-row-pad) + 0.95rem + 2px) + 4 * var(--nav-row-gap) + var(--nav-list-end));
 }
 
 /* A counter's name on one line, cut with an ellipsis when it is long. */
