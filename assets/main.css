@@ -200,9 +200,9 @@ input {
    list gives the band's spare height back by showing whole rows. A row is
    its padding, the 0.95rem line and a 1px border each side; the list's end
    padding is counted in, so five rows still sit clear of the footer's
-   rule. */
+   rule. The kit's scroll fade is gone; the cut is the rule itself. */
 .app-nav .nav-panel .nav-links {
-    max-height: calc(5 * (2 * var(--nav-row-pad) + 0.95rem + 2px) + 4 * var(--nav-row-gap) + var(--nav-list-end));
+    max-height: calc(var(--nav-list-start) + 5 * (2 * var(--nav-row-pad) + 0.95rem + 2px) + 4 * var(--nav-row-gap) + var(--nav-list-end));
 }
 
 /* A counter's name on one line, cut with an ellipsis when it is long. */
@@ -220,13 +220,13 @@ input {
 /* The list is empty, no counters yet: every section is an icon in the
    footer, so the menu is the footer band alone, flush under the header's
    rule with no room where the list would sit and no second rule of its
-   own. */
+   own. The gap under the rule is the list's own padding, so none is left
+   when the list is gone. */
 .app-nav .nav-panel .nav-links:empty {
     display: none;
 }
 
 .app-nav .nav-panel-open:has(.nav-links:empty) {
-    padding-top: 0;
     border-top-color: transparent;
 }
 
