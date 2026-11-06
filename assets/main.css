@@ -70,10 +70,11 @@ input {
   header and main menu
  ==================== */
 
-/* The header sits over the top of the screen, under the status bar strip,
-   and header_hide.js slides it up behind that strip as the content scrolls
-   down. Its height is the kit's --app-nav-h, and the kit opens each screen's
-   scroll area with a spacer that tall. */
+/* The header sits over the top of the screen, just below the status bar
+   strip, and header_hide.js slides it up into that strip, fading its
+   contents into its background, as the content scrolls down. Its height is
+   the kit's --app-nav-h, and the kit opens each screen's scroll area with a
+   spacer that tall. */
 .screen > .app-nav {
     position: absolute;
     top: env(safe-area-inset-top, 0px);
@@ -82,17 +83,28 @@ input {
     z-index: 101;
 }
 
-/* While the menu is open the header holds still and untransformed: a
-   transform would make it the containing block of the kit's fixed backdrop,
-   which then covered only the bar, so a tap outside the menu missed it. */
+/* While the menu is open the header holds still, untransformed and unfaded:
+   a transform would make it the containing block of the kit's fixed
+   backdrop, which then covered only the bar, so a tap outside the menu
+   missed it. */
 .screen > .app-nav:has(.nav-panel-open) {
     transform: none !important;
+    --nav-fade: 1 !important;
 }
 
-/* The status bar strip (orangui's .screen::before) stays over the header as it
-   slides under. */
+/* The status bar strip (orangui's .screen::before) sits over the content
+   scrolling past and under the header, which rises into it in plain view,
+   fading as it goes. Once the header is gone the strip takes its rule;
+   header_hide.js marks the screen header-collapsed then. No rule where there
+   is no status bar to rule off. */
 .screen::before {
-    z-index: 102;
+    box-sizing: border-box;
+    border-bottom: min(1px, env(safe-area-inset-top, 0px)) solid transparent;
+    transition: border-color 0.15s ease;
+}
+
+.screen.header-collapsed:not(:has(> .app-nav .nav-panel-open))::before {
+    border-bottom-color: var(--border-secondary);
 }
 
 /* The kit's NavBar as the app's header. A phone is always under the kit's
@@ -113,6 +125,9 @@ input {
     grid-template-rows: 1.7rem;
     padding: 0.5rem 0.75rem;
     position: relative;
+    /* header_hide.js fades the bar's contents into its solid background as
+       the bar slides away. */
+    opacity: var(--nav-fade, 1);
 }
 
 /* The back arrow in the left corner, on a screen below Home, as gentle as
