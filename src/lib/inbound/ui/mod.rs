@@ -173,7 +173,7 @@ pub fn App() -> Element {
     // screens.
     use_context_provider(|| components::navigation::menu::MenuOpen(Signal::new(false)));
     use_context_provider(|| StoreVersion(Signal::new(0)));
-    // Made once; the root re-renders on every shown theme.
+    // Made once, above the router, so the menu and Settings share it.
     let theme_sheet_open = components::theme_sheet::use_theme_sheet_open();
     let saved_prefs = store.preferences().unwrap_or_default();
     let prefs = use_signal(move || saved_prefs);
@@ -248,10 +248,7 @@ pub fn App() -> Element {
         // Last of the head elements: shows #main, which the launch config
         // hides, once every stylesheet above is in.
         orangui::BootReveal {}
-        // The theme class sits here as well as on the screen, so the toast
-        // container, which mounts above the router, resolves the same
-        // palette instead of falling through to unset variables.
-        div { class: "theme-root {follow.shown.read().css_class()}",
+        ThemeRoot {
             // In place from the start; the splash is what rains.
             orangui::GridCells { still: true }
             // The opening: the field rains in under the mark, then fades to
@@ -272,6 +269,20 @@ pub fn App() -> Element {
                 components::celebration::CelebrationHostView {}
             }
         }
+    }
+}
+
+/// The element that carries the shown theme's class. The class sits here as
+/// well as on the screen, so the toast container, which mounts above the
+/// router, resolves the same palette instead of falling through to unset
+/// variables. Reading the theme here, not in [`App`], keeps a theme change
+/// from re-rendering the root and its head elements.
+#[component]
+fn ThemeRoot(children: Element) -> Element {
+    let follow = use_context::<orangui::ThemeFollow>();
+    let class = follow.shown.read().css_class();
+    rsx! {
+        div { class: "theme-root {class}", {children} }
     }
 }
 
