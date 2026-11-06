@@ -6,6 +6,8 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
+## 1.3.0, 2026-11-05
+
 - The header is the shared nav bar: the screen's title and its "?" in the middle, a hamburger on the right, and a back arrow on the left on every screen but Home. It slides away as you scroll down, its title and buttons fading into it, and back as you scroll up; once it is gone a rule sits under the status bar.
 - The hamburger opens a menu that lists your counters, tap one to open it, with a footer of icons: Home, Settings, an "i" with the version and a link to this changelog, a palette for the theme and a sun or moon for Dark/Light, with the "!" at the left end.
 - Config is now Settings.
