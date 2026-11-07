@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Every patch the dx-generated Android project needs, in one call.
 #
-# dx regenerates the android/ tree on every build, MainActivity.kt and
-# WryActivity.kt included, so each patch runs after `dx build` or
+# dx regenerates the android/ tree on every build, MainActivity.kt,
+# WryActivity.kt and AndroidManifest.xml included, so each patch runs after `dx build` or
 # `dx bundle` and before the Gradle repackage:
 #
 #   back_handler.sh    missing -> OS back exits the app instead of navigating
+#   manifest.sh        missing -> the ndk-context double-init panic on a
+#                                 second launch, and a system theme change
+#                                 closes the app
 #   wry_activity.sh    missing -> UnsatisfiedLinkError in onCreate on every
 #                                 device: the stock activity calls tao 0.34's
 #                                 native names and the vendored tao is 0.37
@@ -19,12 +22,16 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 APP_DIR="${1:-$REPO_ROOT/target/dx/cairn/release/android/app}"
-KOTLIN="$APP_DIR/app/src/main/kotlin/dev/dioxus/main"
+MAIN="$APP_DIR/app/src/main"
+KOTLIN="$MAIN/kotlin/dev/dioxus/main"
 
 [ -d "$KOTLIN" ] || { echo "generated Android project not found: $APP_DIR" >&2; exit 1; }
 
 echo "== back navigation =="
 "$HERE/back_handler.sh" "$KOTLIN/MainActivity.kt"
+
+echo "== manifest (launchMode + configChanges + screenOrientation) =="
+"$HERE/manifest.sh" "$MAIN/AndroidManifest.xml"
 
 echo "== WryActivity (tao 0.37 entry points) =="
 "$HERE/wry_activity.sh" "$KOTLIN/WryActivity.kt"
