@@ -396,11 +396,11 @@ pub fn Config() -> Element {
                     }
                     div { class: "settings-row-value",
                         Button { variant: ButtonVariant::Action, onclick: export, "CSV" }
-                if let Some(n) = notice() {
-                    p { class: "pref-note", style: "padding: 0 1rem 1rem;", "{n}" }
+                    }
                 }
-            }
-            }
+                if let Some(n) = notice() {
+                    p { class: "pref-note export-note", "{n}" }
+                }
             }
         }
         }

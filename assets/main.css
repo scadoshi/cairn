@@ -1331,6 +1331,42 @@ input {
     isolation: isolate;
 }
 
+/* A row whose value holds a button stays one row at any width, its buttons
+   at their full width. Short of room, the label gives way first, wrapping
+   between its words; only then are the value's words cut short with an
+   ellipsis. */
+.settings-row:has(> .settings-row-value > button) > .row-label-with-hint {
+    flex-shrink: 100;
+}
+
+.settings-row:has(> .settings-row-value > button) .settings-row-label {
+    flex-shrink: 1;
+    min-width: min-content;
+}
+
+.settings-row-value:has(> button) {
+    flex-wrap: nowrap;
+}
+
+.settings-row-value:has(> button) > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.settings-row-value > button {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Where the last export went, under the Data rows: a path, which breaks
+   wherever it must. */
+.export-note {
+    padding: 0 1rem 1rem;
+    overflow-wrap: anywhere;
+}
+
 /* ==================
   inks over the kit
  ==================== */
