@@ -6,6 +6,9 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
+- Home and a counter's screen move to the new day at the rollover hour, and pick up today's figures when you come back to the app, without a relaunch.
+- A tap after the day turns counts on the new day, so a minus can no longer take away from yesterday's figure.
+
 ## 1.3.0, 2026-11-05
 
 - The header is the shared nav bar: the screen's title and its "?" in the middle, a hamburger on the right, and a back arrow on the left on every screen but Home. It slides away as you scroll down, its title and buttons fading into it, and back as you scroll up; once it is gone a rule sits under the status bar.
