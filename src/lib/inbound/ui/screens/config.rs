@@ -176,15 +176,9 @@ pub fn Config() -> Element {
         }
     };
 
-    // Dark mode flips live; the App-level effect persists it.
-    // Every row says what it did, in the same voice and for the same
-    // length, because a setting that changes something you cannot see from
-    // Config (when a day starts, how counters sort) is otherwise a button
-    // that looks like it did nothing. An info toast, with the plain border:
-    // a changed setting is a note, not an outcome.
-    let said = use_callback(move |what: String| {
-        toast.info(what, ToastOptions::default().duration(TOAST_QUICK));
-    });
+    // Dark mode flips live; the App-level effect persists it. A row whose
+    // button names its new value says nothing more; the home-screen icon,
+    // out of view, says what it became.
 
     let flip_dark =
         theme_sheet::use_toggle_dark(Some(EventHandler::new(move |kept| icon.set(kept))));
@@ -199,7 +193,10 @@ pub fn Config() -> Element {
         };
         match app_icon::set(&next) {
             Ok(()) => {
-                said.call(format!("App icon {}", app_icon::mode(next.is_dark)));
+                toast.info(
+                    format!("App icon {}", app_icon::mode(next.is_dark)),
+                    ToastOptions::default().duration(TOAST_QUICK),
+                );
                 icon.set(next);
             }
             Err(e) => toast.error(e, ToastOptions::default()),
@@ -282,7 +279,6 @@ pub fn Config() -> Element {
                             onclick: move |_| {
                                 let next = date_format().next();
                                 date_format.set(next);
-                                said.call(format!("Dates as {}", next.label()));
                             },
                             "{date_format().label()}"
                         }
@@ -311,7 +307,6 @@ pub fn Config() -> Element {
                                     .copied()
                                     .unwrap_or(0);
                                 prefs.with_mut(|q| q.rollover_hour = next);
-                                said.call(format!("Day starts at {}", rollover_label(next).to_lowercase()));
                             },
                             {rollover_label(prefs().rollover_hour)}
                         }
@@ -332,7 +327,6 @@ pub fn Config() -> Element {
                                     Weekday::Mon
                                 };
                                 prefs.with_mut(|q| q.week_start = next);
-                                said.call(format!("Week starts {next}"));
                             },
                             if prefs().week_start == Weekday::Mon { "Monday" } else { "Sunday" }
                         }
@@ -371,7 +365,6 @@ pub fn Config() -> Element {
                             onclick: move |_| {
                                 let next = prefs.peek().counter_order.next();
                                 prefs.with_mut(|q| q.counter_order = next);
-                                said.call(format!("Sorted by {}", next.label().to_lowercase()));
                             },
                             "{prefs().counter_order.label()}"
                         }
@@ -405,7 +398,6 @@ pub fn Config() -> Element {
                             onclick: move |_| {
                                 let on = !prefs.peek().confirm_minus;
                                 prefs.with_mut(|q| q.confirm_minus = on);
-                                said.call(format!("Confirm minus {}", if on { "on" } else { "off" }));
                             },
                             if prefs().confirm_minus { "On" } else { "Off" }
                         }
@@ -526,10 +518,6 @@ fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                     onclick: move |()| {
                         let picked = draft();
                         prefs.with_mut(|q| q.logo = picked);
-                        toast.success(
-                            format!("Mark: {}", picked.label()),
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        );
                         open.set(false);
                     },
                 }
@@ -613,10 +601,6 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                     onclick: move |()| {
                         let picked = draft();
                         prefs.with_mut(|q| q.celebration = picked);
-                        toast.success(
-                            format!("Goal animation: {}", picked.label()),
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        );
                         open.set(false);
                     },
                 }
@@ -888,15 +872,6 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                     onclick: move |()| {
                         let picked = draft();
                         prefs.with_mut(|q| q.rest_days = picked);
-                        let count = picked.count_ones();
-                        toast.success(
-                            match count {
-                                0 => "No rest days".to_string(),
-                                1 => "1 rest day".to_string(),
-                                n => format!("{n} rest days"),
-                            },
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        );
                         open.set(false);
                     },
                 }

@@ -236,22 +236,9 @@ pub fn CounterScreen(id: i64) -> Element {
                     if let Some(line) = celebration::celebrate_saying(host, how, saying) {
                         toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
                     }
-                } else {
-                    // Named here too, so a toast reads the same wherever the
-                    // tap came from.
-                    let name = counter().map(|c| c.name.to_string()).unwrap_or_default();
-                    toast.info(
-                        if applied >= 0 {
-                            format!("{name} +{}", format::thousands_i64(applied))
-                        } else {
-                            format!(
-                                "{name} -{}",
-                                format::thousands_i64(applied.saturating_neg())
-                            )
-                        },
-                        ToastOptions::default().duration(TOAST_QUICK),
-                    );
                 }
+                // A plain tap says nothing: the count it moved is on the
+                // screen.
                 reload.call(());
             }
             Err(e) => toast.error(e.to_string(), ToastOptions::default()),

@@ -151,22 +151,9 @@ fn CounterCard(
                     if let Some(line) = celebration::celebrate_saying(host, how, saying) {
                         toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
                     }
-                } else {
-                    // Named, because toasts stack in the corner rather than
-                    // over the card that raised them, so three of them in a
-                    // row are otherwise just numbers.
-                    toast.info(
-                        if applied >= 0 {
-                            format!("{name} +{}", format::thousands_i64(applied))
-                        } else {
-                            format!(
-                                "{name} -{}",
-                                format::thousands_i64(applied.saturating_neg())
-                            )
-                        },
-                        ToastOptions::default().duration(TOAST_QUICK),
-                    );
                 }
+                // A plain tap says nothing: the count it moved is on the
+                // card.
                 on_bump.call(());
             }
             Err(e) => toast.error(e.to_string(), ToastOptions::default()),

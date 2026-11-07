@@ -8,7 +8,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::{ThemeConfig, ThemeSheet};
 
 use crate::domain::preferences::{AppIcon, Preferences};
-use crate::inbound::ui::{TOAST_NORMAL, TOAST_QUICK, use_prefs};
+use crate::inbound::ui::use_prefs;
 use crate::outbound::app_icon;
 
 /// Whether the app-wide theme sheet is up. Provided at the root so the menu,
@@ -38,7 +38,7 @@ pub fn follow_icon(prefs: &Preferences, kept: &ThemeConfig) -> Result<Option<The
 }
 
 /// A callback that flips the app's theme between its dark and light
-/// palettes, carries the icon along, and says which mode is on. The root
+/// palettes and carries the icon along. The root
 /// effect persists the change. `on_kept` hears the icon after it followed,
 /// for a host that shows the icon.
 pub fn use_toggle_dark(on_kept: Option<EventHandler<ThemeConfig>>) -> Callback<()> {
@@ -47,10 +47,9 @@ pub fn use_toggle_dark(on_kept: Option<EventHandler<ThemeConfig>>) -> Callback<(
     let prefs = use_prefs();
     use_callback(move |()| {
         let prev = theme.read().clone();
-        let on = !prev.is_dark;
         let next = ThemeConfig {
             name: prev.name,
-            is_dark: on,
+            is_dark: !prev.is_dark,
         };
         theme.set(next.clone());
         match follow_icon(&prefs.peek(), &next) {
@@ -60,15 +59,8 @@ pub fn use_toggle_dark(on_kept: Option<EventHandler<ThemeConfig>>) -> Callback<(
                 }
             }
             Ok(None) => {}
-            Err(e) => {
-                toast.error(e, ToastOptions::default());
-                return;
-            }
+            Err(e) => toast.error(e, ToastOptions::default()),
         }
-        toast.info(
-            format!("Dark mode {}", if on { "on" } else { "off" }),
-            ToastOptions::default().duration(TOAST_QUICK),
-        );
     })
 }
 
@@ -99,10 +91,6 @@ pub fn AppThemeSheet(
                     Ok(None) => {}
                     Err(e) => toast.error(e, ToastOptions::default()),
                 }
-                toast.success(
-                    "Theme saved".to_string(),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
             },
         }
     }
