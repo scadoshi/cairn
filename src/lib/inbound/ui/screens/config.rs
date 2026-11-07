@@ -56,24 +56,13 @@ pub fn Config() -> Element {
         rest_count.to_string()
     };
 
-    // One CSV per counter, day and count, into the export folder. Every
-    // attempt also appends a line to export.log beside the database: which
-    // folder, whether it existed, and how it went. The simulator's sandbox
-    // made the folder question hard to answer from the outside.
+    // One CSV per counter, day and count, into the export folder.
     let export = move |_| {
-        let mut log = String::new();
         let result = store
             .list_counters()
             .map_err(|e| e.to_string())
             .and_then(|counters| {
                 let dir = paths::exports().map_err(|e| format!("export folder: {e}"))?;
-                let _ = writeln!(
-                    log,
-                    "home={:?} dir={} exists={}",
-                    std::env::var_os("HOME"),
-                    dir.display(),
-                    dir.is_dir()
-                );
                 let mut written = 0usize;
                 for c in counters {
                     let entries = store.entries(c.id).map_err(|e| e.to_string())?;
@@ -84,28 +73,10 @@ pub fn Config() -> Element {
                 }
                 Ok((written, dir))
             });
-        match &result {
-            Ok((n, dir)) => {
-                let _ = writeln!(log, "ok {n} files in {}", dir.display());
-            }
-            Err(e) => {
-                let _ = writeln!(log, "failed: {e}");
-            }
-        }
-        if let Some(d) = paths::database()
-            .ok()
-            .and_then(|db| db.parent().map(PathBuf::from))
-        {
-            let _ = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(d.join("export.log"))
-                .and_then(|mut f| std::io::Write::write_all(&mut f, log.as_bytes()));
-        }
         match result {
             Ok((n, dir)) => {
                 toast.success(
-                    format!("Exported {n} files"),
+                    exported_line(n),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 );
                 notice.set(Some(format!("Written to {}", dir.display())));
@@ -769,6 +740,15 @@ fn read_backup(store: &(impl CounterStore + ?Sized)) -> Result<PendingImport, St
     })
 }
 
+/// "Exported 1 file", "Exported 3 files".
+fn exported_line(n: usize) -> String {
+    if n == 1 {
+        "Exported 1 file".to_string()
+    } else {
+        format!("Exported {n} files")
+    }
+}
+
 /// "1 counter is already here", "3 counters are already here".
 fn conflict_title(n: usize) -> String {
     if n == 1 {
@@ -877,5 +857,17 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_export_toast_counts_files_in_the_right_number() {
+        assert_eq!(exported_line(0), "Exported 0 files");
+        assert_eq!(exported_line(1), "Exported 1 file");
+        assert_eq!(exported_line(3), "Exported 3 files");
     }
 }
