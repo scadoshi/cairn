@@ -81,7 +81,7 @@ pub fn MenuLinks(open: Signal<bool>, route: Route) -> Element {
     // Read so a new, renamed or deleted counter re-renders the rows.
     let _ = use_context::<StoreVersion>().0.read();
     let counters = match store.list_counters() {
-        Ok(counters) => ui::ordered(&counters, &store, prefs().counter_order),
+        Ok(counters) => ui::ordered(&counters, &store, prefs().counter_order, ui::shown_day()),
         Err(e) => {
             return rsx! {
                 li { class: "message-error", "{e}" }

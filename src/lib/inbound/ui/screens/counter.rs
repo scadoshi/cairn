@@ -171,15 +171,18 @@ pub fn CounterScreen(id: i64) -> Element {
         }
     });
     use_effect(move || reload.call(()));
+    // Back from the background, the screen reads the store again.
+    orangui::use_on_resume(move || reload.call(()));
 
     let adjust_store = Arc::clone(&store);
     let host = use_context::<CelebrationHost>();
     let celebrate_pref = use_prefs();
     let adjust = use_callback(move |delta: i64| {
-        let today_count = entries()
-            .iter()
-            .find(|e| e.day == ui::today())
-            .map_or(0, |e| e.count);
+        // The day and its count as the store has them at the tap, not as
+        // the screen last loaded them: the day may have turned since.
+        let day = ui::today(&celebrate_pref.peek());
+        let stored = adjust_store.entries(id).unwrap_or_default();
+        let today_count = stored.iter().find(|e| e.day == day).map_or(0, |e| e.count);
         // Report what actually happened rather than what was asked for: a
         // day cannot go below zero, so this makes an empty day read "-0"
         // without needing a case of its own.
@@ -192,24 +195,24 @@ pub fn CounterScreen(id: i64) -> Element {
             );
             return;
         }
-        match adjust_store.adjust(id, ui::now(), ui::today(), applied) {
+        match adjust_store.adjust(id, ui::now(), day, applied) {
             Ok(_) => {
                 // What this tap crossed, if anything, asked of the tap
                 // rather than of the screen. The same three the counter
                 // list asks, so a crossing looks the same from either
                 // screen.
-                let days = stats::days_in_year(ui::today().year());
+                let days = stats::days_in_year(day.year());
                 let goal = counter().and_then(|c| c.goal);
                 let done = goal.is_some_and(|g| stats::crosses_goal(g, today_count, applied, days));
-                let year_before = entries()
+                let year_before = stored
                     .iter()
-                    .filter(|e| e.day.year() == ui::today().year())
+                    .filter(|e| e.day.year() == day.year())
                     .map(|e| e.count)
                     .sum::<u32>();
                 let mark = goal
                     .and_then(|g| stats::goal_mark_crossed(g.yearly(days), year_before, applied));
                 let all_done =
-                    done && ui::all_goals_met(&adjust_store, ui::today(), &celebrate_pref());
+                    done && ui::all_goals_met(&adjust_store, day, &celebrate_pref.peek());
 
                 let saying = if let Some(pct) = mark {
                     Some(Saying::Fixed(format!("{pct}% of the year")))
@@ -260,7 +263,7 @@ pub fn CounterScreen(id: i64) -> Element {
     };
     let step = i64::from(c.step.get());
     let big = c.big_step.map(|b| i64::from(b.get()));
-    let now = ui::today();
+    let now = ui::shown_day();
     let prefs = use_prefs()();
     let summary = stats::summarize_with(&entries(), c.goal, now, &prefs);
     let week_total: u32 = series::this_week(&entries(), now, &prefs)
@@ -320,7 +323,7 @@ pub fn CounterScreen(id: i64) -> Element {
                             Num { text: format::thousands(summary.lifetime) }
                         }
                         // A counter made today could only count since today.
-                        if c.created_on == ui::today() {
+                        if c.created_on == ui::shown_day() {
                             span { class: "odometer-label", "lifetime" }
                         } else {
                             span { class: "odometer-label", "lifetime since {date_format().date(c.created_on)}" }
@@ -462,7 +465,7 @@ pub fn CounterScreen(id: i64) -> Element {
 #[component]
 fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) -> Element {
     let mut trend = trend;
-    let now = ui::today();
+    let now = ui::shown_day();
     let year = now.year();
     let df = use_date_format()();
     let mut prefs = use_prefs();
@@ -795,7 +798,7 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
 #[component]
 fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> Element {
     let mut best = best;
-    let now = ui::today();
+    let now = ui::shown_day();
     let df = use_date_format()();
     // Read before the match: a hook inside one arm runs only for that chip,
     // and a hook count that changes between renders is fatal.

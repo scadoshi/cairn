@@ -420,6 +420,14 @@ impl Preferences {
             .date()
     }
 
+    /// When the day after the one `at` belongs to begins: the rollover hour
+    /// on the next calendar day.
+    pub fn next_day_start(&self, at: NaiveDateTime) -> NaiveDateTime {
+        let next = self.day_of(at).succ_opt().unwrap_or(NaiveDate::MAX);
+        next.and_hms_opt(self.rollover_hour, 0, 0)
+            .unwrap_or_else(|| next.and_time(chrono::NaiveTime::MIN))
+    }
+
     /// Whether a weekday is a rest day.
     pub fn is_rest(&self, day: NaiveDate) -> bool {
         rest_mask_has(self.rest_days, day.weekday())
@@ -635,6 +643,28 @@ mod tests {
         let morning = d(2026, 9, 20).and_hms_opt(4, 0, 0).unwrap();
         assert_eq!(p.day_of(morning), d(2026, 9, 20));
         assert_eq!(Preferences::default().day_of(late), d(2026, 9, 20));
+    }
+
+    #[test]
+    fn the_next_day_starts_at_the_rollover_hour() {
+        let p = Preferences {
+            rollover_hour: 4,
+            ..Default::default()
+        };
+        let late = d(2026, 9, 20).and_hms_opt(0, 30, 0).unwrap();
+        assert_eq!(
+            p.next_day_start(late),
+            d(2026, 9, 20).and_hms_opt(4, 0, 0).unwrap()
+        );
+        let evening = d(2026, 9, 20).and_hms_opt(21, 0, 0).unwrap();
+        assert_eq!(
+            p.next_day_start(evening),
+            d(2026, 9, 21).and_hms_opt(4, 0, 0).unwrap()
+        );
+        assert_eq!(
+            Preferences::default().next_day_start(evening),
+            d(2026, 9, 21).and_hms_opt(0, 0, 0).unwrap()
+        );
     }
 
     #[test]

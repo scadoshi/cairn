@@ -36,7 +36,7 @@ pub fn CounterList(
     let prefs = use_prefs();
 
     rsx! {
-        for c in ui::ordered(&counters, &store, prefs().counter_order) {
+        for c in ui::ordered(&counters, &store, prefs().counter_order, ui::shown_day()) {
             CounterCard {
                 key: "{c.id.0}",
                 counter: c.clone(),
@@ -61,13 +61,14 @@ fn CounterCard(
     let store = use_store();
     let entries = store.entries(counter.id).unwrap_or_default();
     let prefs = use_prefs()();
-    let summary = stats::summarize_with(&entries, counter.goal, ui::today(), &prefs);
+    let shown = ui::shown_day();
+    let summary = stats::summarize_with(&entries, counter.goal, shown, &prefs);
     let id = counter.id;
     let bump_store = Arc::clone(&store);
     let toast = use_toast();
     let step = i64::from(counter.step.get());
     let confirm_minus = prefs.confirm_minus;
-    let days = stats::days_in_year(ui::today().year());
+    let days = stats::days_in_year(shown.year());
     // `None` once the day is done, so the tag has two states and no zero.
     let left_today = counter
         .goal
@@ -86,13 +87,20 @@ fn CounterCard(
     let big = counter.big_step.map(|b| i64::from(b.get()));
     let mut confirm_open = use_signal(|| false);
     let mut confirm_big = use_signal(|| false);
-    let today_count = summary.today;
-    let year_before = summary.this_year.total;
     // Owned, because the callback outlives this render.
     let name = counter.name.to_string();
     let host = use_context::<CelebrationHost>();
     let card_celebration = counter.celebration;
+    let goal = counter.goal;
     let bump = use_callback(move |delta: i64| {
+        // The day and its count as the store has them at the tap, not as
+        // the last render drew them: the day may have turned since.
+        let day = ui::today(&prefs);
+        let before = bump_store.entries(id).unwrap_or_default();
+        let before = stats::summarize_with(&before, goal, day, &prefs);
+        let today_count = before.today;
+        let year_before = before.this_year.total;
+        let days = stats::days_in_year(day.year());
         // Report what actually happened rather than what was asked for: a
         // day cannot go below zero, so this makes an empty day read "-0"
         // without needing a case of its own.
@@ -104,7 +112,7 @@ fn CounterCard(
             );
             return;
         }
-        match bump_store.adjust(id, ui::now(), ui::today(), applied) {
+        match bump_store.adjust(id, ui::now(), day, applied) {
             Ok(_) => {
                 // What this tap crossed, if anything. All three are asked
                 // of the tap rather than of the screen, so nothing has to
@@ -118,7 +126,7 @@ fn CounterCard(
                     .and_then(|g| stats::goal_mark_crossed(g.yearly(days), year_before, applied));
                 // Only worth asking when this counter just finished: the
                 // day cannot have been completed by a tap that did not.
-                let all_done = done && ui::all_goals_met(&bump_store, ui::today(), &prefs);
+                let all_done = done && ui::all_goals_met(&bump_store, day, &prefs);
 
                 // Rarest first. A fraction of the year comes round a few
                 // times a year, the whole day most days, one counter's day

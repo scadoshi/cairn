@@ -53,7 +53,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
     let df = use_date_format()();
     let mut tip: Signal<Option<Tip>> = use_signal(|| None);
     let pick = use_heat_pick();
-    let grid = heat::heat_grid(&entries, ui::today(), prefs.week_start, WEEKS);
+    let grid = heat::heat_grid(&entries, ui::shown_day(), prefs.week_start, WEEKS);
     let labels = prefs.weekday_labels();
     let width = LEFT + orangui::heat_span(grid.columns);
     let height = TOP + orangui::heat_span(HEAT_ROWS);

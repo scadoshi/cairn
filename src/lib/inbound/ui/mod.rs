@@ -1,6 +1,7 @@
 //! The Dioxus app: theme signal, shared CSS, router.
 
 pub mod components;
+pub mod lifecycle;
 pub mod router;
 pub mod screens;
 
@@ -46,15 +47,59 @@ pub fn use_prefs() -> Signal<Preferences> {
     use_context::<Signal<Preferences>>()
 }
 
-/// The day the app is on: local time, shifted by the rollover hour, so a
-/// tap at 00:30 after a late session still lands on the day before. Read
-/// at the UI edge so the domain never touches the clock.
-pub fn today() -> NaiveDate {
-    let prefs = try_use_context::<Signal<Preferences>>()
-        .map(|p| p())
-        .unwrap_or_default();
+/// The day it is now: local time, shifted by the rollover hour, so a tap at
+/// 00:30 after a late session still lands on the day before. Read at the UI
+/// edge so the domain never touches the clock.
+pub fn today(prefs: &Preferences) -> NaiveDate {
     prefs.day_of(Local::now().naive_local())
 }
+
+/// The day the app shows, kept by [`App`]: it moves at the rollover hour,
+/// when the rollover hour changes and on each return to the foreground.
+#[derive(Clone, Copy, Debug)]
+pub struct Today(pub Signal<NaiveDate>);
+
+/// The day the app shows, for a render: reading it subscribes the caller,
+/// so the screen redraws when the day turns. Not a hook, so it is safe
+/// after an early return.
+pub fn shown_day() -> NaiveDate {
+    try_consume_context::<Today>().map_or_else(|| today(&Preferences::default()), |t| (t.0)())
+}
+
+/// Keeps [`Today`] on the day it is: at each rollover, when the rollover
+/// hour moves and when the app comes back to the foreground.
+fn use_day_keeper(prefs: Signal<Preferences>) -> Today {
+    let mut day = use_signal(|| today(&prefs.peek()));
+    let mut catch_up = move || {
+        let now = today(&prefs.peek());
+        if now != *day.peek() {
+            day.set(now);
+        }
+    };
+    use_effect(move || {
+        let _ = prefs.read();
+        catch_up();
+    });
+    orangui::use_on_resume(catch_up);
+    use_future(move || async move {
+        loop {
+            let now = Local::now().naive_local();
+            let until = prefs.peek().next_day_start(now).signed_duration_since(now);
+            // The clock this sleeps on stops while the device sleeps; a
+            // return to the foreground catches the day up instead.
+            let wait = until
+                .to_std()
+                .unwrap_or(DAY_CHECK)
+                .clamp(std::time::Duration::from_secs(1), DAY_CHECK);
+            tokio::time::sleep(wait).await;
+            catch_up();
+        }
+    });
+    Today(day)
+}
+
+/// The longest the day keeper sleeps between looks at the clock.
+const DAY_CHECK: std::time::Duration = std::time::Duration::from_mins(15);
 
 /// The current local wall-clock time, for recording a tap.
 pub fn now() -> NaiveDateTime {
@@ -121,7 +166,12 @@ pub fn all_goals_met(store: &SharedStore, day: NaiveDate, prefs: &Preferences) -
 /// `counters` in the preferred order, the one Home's list and the menu
 /// share. Activity orders need each counter's figures, so they read the
 /// store; created order is free.
-pub fn ordered(counters: &[Counter], store: &SharedStore, order: CounterOrder) -> Vec<Counter> {
+pub fn ordered(
+    counters: &[Counter],
+    store: &SharedStore,
+    order: CounterOrder,
+    day: NaiveDate,
+) -> Vec<Counter> {
     let mut list = counters.to_vec();
     match order {
         CounterOrder::Created => {}
@@ -131,7 +181,7 @@ pub fn ordered(counters: &[Counter], store: &SharedStore, order: CounterOrder) -
                 let entries = store.entries(c.id).unwrap_or_default();
                 // Preferences only reach streaks and consistency, and
                 // neither is a sort key, so the default is the whole truth.
-                let s = counter::stats::summarize(&entries, c.goal, today());
+                let s = counter::stats::summarize(&entries, c.goal, day);
                 if order == CounterOrder::Lifetime {
                     s.lifetime
                 } else {
@@ -178,6 +228,10 @@ pub fn App() -> Element {
     let saved_prefs = store.preferences().unwrap_or_default();
     let prefs = use_signal(move || saved_prefs);
     use_context_provider(|| prefs);
+    // The app's lifecycle, before anything that reacts to a return.
+    lifecycle::use_lifecycle_root();
+    let day = use_day_keeper(prefs);
+    use_context_provider(|| day);
     // Persist every change; when the rollover hour moves, rebuild the daily
     // entries from the events so history follows the new day boundary.
     let prefs_store = Arc::clone(&store);

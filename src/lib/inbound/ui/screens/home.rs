@@ -17,7 +17,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::icons::{self, DockIcon, EditIcon};
 use orangui::{
     ActionDock, BottomSheet, Decode, DockAction, DockPlace, HintBullet, HintBullets, HintChip,
-    HintDialog, HintKey, HintLine, use_screen_hint,
+    HintDialog, HintKey, HintLine, use_on_resume, use_screen_hint,
 };
 
 use crate::domain::counter::{Counter, DayCount, Goal, format, stats};
@@ -63,13 +63,16 @@ pub fn Home() -> Element {
         Err(e) => error.set(Some(e.to_string())),
     });
     use_effect(move || reload.call(()));
+    // Back from the background, the list reads the store again: another
+    // day's figures, or a change made while away.
+    use_on_resume(move || reload.call(()));
 
     let (logo, logo_label) = match prefs().logo {
         Logo::Cairn => (LOGO_CAIRN, "Cairn"),
         Logo::Scadoshi => (LOGO_SCADOSHI, "scadoshi"),
     };
 
-    let now = ui::today();
+    let now = ui::shown_day();
 
     // Reading is this screen's job; the arithmetic is the domain's, where it
     // can be tested. See stats::across_counters.
@@ -202,6 +205,7 @@ pub fn Home() -> Element {
 fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
     let mut open = open;
     let store = use_store();
+    let prefs = use_prefs();
     let toast = use_toast();
     let mut form = use_hook(CounterFormState::default);
 
@@ -222,7 +226,7 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
             v.step,
             v.big_step,
             v.celebration,
-            ui::today(),
+            ui::today(&prefs.peek()),
         ) {
             Ok(c) => {
                 toast.success(

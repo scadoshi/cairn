@@ -224,7 +224,7 @@ pub fn CounterForm(state: CounterFormState) -> Element {
     } = state;
     let mut hint = use_signal(|| None::<FormHint>);
     let mut hint_open = use_signal(|| false);
-    let days = stats::days_in_year(ui::today().year());
+    let days = stats::days_in_year(ui::shown_day().year());
     let preview = amount()
         .trim()
         .parse::<u32>()
