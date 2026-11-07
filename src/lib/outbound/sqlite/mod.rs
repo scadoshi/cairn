@@ -3,6 +3,7 @@
 //! All SQL in the crate lives in this file. Rows are mapped to domain types
 //! here and nowhere else.
 
+use std::collections::BTreeSet;
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard};
 
@@ -10,7 +11,7 @@ use chrono::{NaiveDate, NaiveDateTime};
 use orangui::ThemeConfig;
 use rusqlite::{Connection, OptionalExtension, params};
 
-use crate::domain::counter::backup::{Backup, OnConflict, Restored};
+use crate::domain::counter::backup::{AT_FORMAT, Backup, DAY_FORMAT, OnConflict, Restored};
 use crate::domain::counter::{
     Counter, CounterId, CounterName, CounterStore, DayCount, Event, Goal, SettingsStore, Step,
     StoreError,
@@ -328,7 +329,7 @@ impl CounterStore for SqliteStore {
         // Names the store had before the import, so a backup that holds two
         // counters of one name adds both rather than the second replacing
         // the first.
-        let had: std::collections::BTreeSet<String> = {
+        let had: BTreeSet<String> = {
             let mut stmt = tx.prepare("SELECT name FROM counters")?;
             let names = stmt.query_map([], |r| r.get::<_, String>(0))?;
             names.collect::<Result<_, _>>()?
@@ -362,7 +363,7 @@ impl CounterStore for SqliteStore {
                     per_year,
                     per_day,
                     per_week,
-                    c.created_on.format("%Y-%m-%d").to_string(),
+                    c.created_on.format(DAY_FORMAT).to_string(),
                     c.step.get(),
                     c.big_step.map(Step::get),
                     c.celebration.map(Celebration::key)
@@ -372,13 +373,13 @@ impl CounterStore for SqliteStore {
             for e in &c.entries {
                 tx.execute(
                     "INSERT INTO entries (counter_id, day, count) VALUES (?1, ?2, ?3)",
-                    params![id, e.day.format("%Y-%m-%d").to_string(), e.count],
+                    params![id, e.day.format(DAY_FORMAT).to_string(), e.count],
                 )?;
             }
             for e in &c.events {
                 tx.execute(
                     "INSERT INTO events (counter_id, at, delta) VALUES (?1, ?2, ?3)",
-                    params![id, e.at.format("%Y-%m-%dT%H:%M:%S").to_string(), e.delta],
+                    params![id, e.at.format(AT_FORMAT).to_string(), e.delta],
                 )?;
             }
         }

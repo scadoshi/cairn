@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
 
+use crate::domain::counter::backup::DAY_FORMAT;
+
 /// The database path: `<data dir>/scadoshi-count/count.db`, with the directory created.
 /// `~/Library/Application Support/scadoshi-count/count.db` on macOS. On Android the data
 /// dir is the app's private files dir. Falls back to the working directory if the platform
@@ -68,7 +70,7 @@ const BACKUP_PREFIX: &str = "cairn-backup-";
 /// Where a full backup made on `day` goes: `cairn-backup-YYYY-MM-DD.json` in
 /// `dir`. A second backup the same day overwrites the first.
 pub fn backup_file(dir: &Path, day: NaiveDate) -> PathBuf {
-    dir.join(format!("{BACKUP_PREFIX}{}.json", day.format("%Y-%m-%d")))
+    dir.join(format!("{BACKUP_PREFIX}{}.json", day.format(DAY_FORMAT)))
 }
 
 /// The newest full backup in `dir`, by the date in its name, or `None` when

@@ -1,7 +1,7 @@
 //! The preferences that change what the numbers mean, kept together so the
 //! store saves one row and the stats take one value.
 
-use chrono::{Datelike, NaiveDate, NaiveDateTime, Weekday};
+use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime, Weekday};
 use serde::{Deserialize, Serialize};
 
 /// How the counter list is ordered.
@@ -425,7 +425,7 @@ impl Preferences {
     pub fn next_day_start(&self, at: NaiveDateTime) -> NaiveDateTime {
         let next = self.day_of(at).succ_opt().unwrap_or(NaiveDate::MAX);
         next.and_hms_opt(self.rollover_hour, 0, 0)
-            .unwrap_or_else(|| next.and_time(chrono::NaiveTime::MIN))
+            .unwrap_or_else(|| next.and_time(NaiveTime::MIN))
     }
 
     /// Whether a weekday is a rest day.

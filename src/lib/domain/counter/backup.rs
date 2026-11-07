@@ -29,10 +29,10 @@ pub const FORMAT: &str = "cairn-backup";
 pub const VERSION: u32 = 1;
 
 /// How a day is written: the store's own text form.
-const DAY_FORMAT: &str = "%Y-%m-%d";
+pub const DAY_FORMAT: &str = "%Y-%m-%d";
 
 /// How a tap's time is written: the store's own text form, to the second.
-const AT_FORMAT: &str = "%Y-%m-%dT%H:%M:%S";
+pub const AT_FORMAT: &str = "%Y-%m-%dT%H:%M:%S";
 
 /// Why a file is not a backup this build can import. Nothing is written
 /// while any of these stands.

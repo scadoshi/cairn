@@ -7,6 +7,7 @@ pub mod router;
 pub mod screens;
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use chrono::{Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
@@ -91,7 +92,7 @@ fn use_day_keeper(prefs: Signal<Preferences>) -> Today {
             let wait = until
                 .to_std()
                 .unwrap_or(DAY_CHECK)
-                .clamp(std::time::Duration::from_secs(1), DAY_CHECK);
+                .clamp(Duration::from_secs(1), DAY_CHECK);
             tokio::time::sleep(wait).await;
             catch_up();
         }
@@ -100,7 +101,7 @@ fn use_day_keeper(prefs: Signal<Preferences>) -> Today {
 }
 
 /// The longest the day keeper sleeps between looks at the clock.
-const DAY_CHECK: std::time::Duration = std::time::Duration::from_mins(15);
+const DAY_CHECK: Duration = Duration::from_mins(15);
 
 /// The current local wall-clock time, for recording a tap.
 pub fn now() -> NaiveDateTime {
