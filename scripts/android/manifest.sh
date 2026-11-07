@@ -21,6 +21,14 @@
 #    phone; the layout is portrait only, as Dioxus.toml's
 #    UISupportedInterfaceOrientations says for iOS.
 #
+# 4. windowSoftInputMode="adjustResize": dx emits none, so the keyboard
+#    slides over the WebView without resizing it, and a sheet's checkmark,
+#    pinned to the bottom, sits under the keyboard. Resized, the page's
+#    bottom is the keyboard's top. This holds at dx's targetSdk 34; from 35
+#    on, edge-to-edge apps get the keyboard as an inset instead, so a
+#    release built at 35 or above needs the sheet checked with the keyboard
+#    up.
+#
 # zwipe's allowBackup="false" is left out: it keeps zwipe's session token out
 # of Auto Backup, and Cairn holds no secret, only counters worth restoring.
 #
@@ -70,12 +78,18 @@ if 'android:screenOrientation="' in patched:
 else:
     patched = patched.replace("<activity", '<activity android:screenOrientation="portrait"', 1)
 
+# 4. windowSoftInputMode: the page resizes for the keyboard.
+if 'android:windowSoftInputMode="' in patched:
+    patched = re.sub(r'android:windowSoftInputMode="[^"]*"', 'android:windowSoftInputMode="adjustResize"', patched)
+else:
+    patched = patched.replace("<activity", '<activity android:windowSoftInputMode="adjustResize"', 1)
+
 if patched != tag:
     src = src.replace(tag, patched, 1)
 
 open(path, "w").write(src)
 
-print("launchMode=singleTask, screenOrientation=portrait, configChanges=" + config_changes)
+print("launchMode=singleTask, screenOrientation=portrait, windowSoftInputMode=adjustResize, configChanges=" + config_changes)
 PY
 
 echo "Patched MainActivity attributes into $MANIFEST"

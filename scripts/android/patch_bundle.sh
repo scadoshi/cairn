@@ -7,8 +7,9 @@
 #
 #   back_handler.sh    missing -> OS back exits the app instead of navigating
 #   manifest.sh        missing -> the ndk-context double-init panic on a
-#                                 second launch, and a system theme change
-#                                 closes the app
+#                                 second launch, a system theme change
+#                                 closes the app, and the keyboard covers a
+#                                 sheet's checkmark
 #   wry_activity.sh    missing -> UnsatisfiedLinkError in onCreate on every
 #                                 device: the stock activity calls tao 0.34's
 #                                 native names and the vendored tao is 0.37
@@ -30,7 +31,7 @@ KOTLIN="$MAIN/kotlin/dev/dioxus/main"
 echo "== back navigation =="
 "$HERE/back_handler.sh" "$KOTLIN/MainActivity.kt"
 
-echo "== manifest (launchMode + configChanges + screenOrientation) =="
+echo "== manifest (launchMode + configChanges + screenOrientation + windowSoftInputMode) =="
 "$HERE/manifest.sh" "$MAIN/AndroidManifest.xml"
 
 echo "== WryActivity (tao 0.37 entry points) =="
