@@ -182,7 +182,7 @@ input {
     font-weight: 400;
     letter-spacing: 0.1em;
     margin: 0;
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -270,7 +270,7 @@ input {
 /* The Danger zone panel at the foot of the counter screen, under a title in
    the danger color. Compound selector so it outranks orangui's title color. */
 .settings-list-title.danger-zone-title {
-    color: var(--color-error);
+    color: var(--ink-color-error, var(--color-error));
 }
 
 /* The box under the logo on home, zwiper's .home-flavor construct. */
@@ -354,7 +354,7 @@ input {
 
 .field-label {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     margin-bottom: 0.4rem;
 }
 
@@ -447,7 +447,7 @@ input {
 
 .card-subtitle {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 /* The step row, a counter's own controls, at the foot of its card or
@@ -588,7 +588,7 @@ input {
  ==================== */
 
 .form-error {
-    color: var(--color-error);
+    color: var(--ink-color-error, var(--color-error));
     font-size: 0.85rem;
     text-align: center;
 }
@@ -637,7 +637,7 @@ input {
     font-weight: 700;
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
-    color: var(--palette-5);
+    color: var(--ink-palette-5, var(--palette-5));
     overflow-wrap: anywhere;
 }
 
@@ -645,14 +645,14 @@ input {
     margin-top: 0.3rem;
     font-size: 0.68rem;
     line-height: 1.2;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 .tile-hint {
     margin-top: 0.15rem;
     font-size: 0.62rem;
     line-height: 1.2;
-    color: var(--text-subtle);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 /* The lifetime figure in the tiles' box, inset to line up with the tile
@@ -679,7 +679,7 @@ input {
     line-height: 1;
     letter-spacing: 0.05em;
     font-variant-numeric: tabular-nums;
-    color: var(--palette-5);
+    color: var(--ink-palette-5, var(--palette-5));
 }
 
 /* Six-plus digits: step the type down so the full figure still fits. */
@@ -696,7 +696,7 @@ input {
 .odometer-label {
     margin-top: 0.5rem;
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 /* ==================
@@ -721,7 +721,7 @@ input {
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 .year-table tr:last-child td {
@@ -874,7 +874,7 @@ input {
 .chart-note {
     margin: 0 0 0.3rem;
     font-size: 0.7rem;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     text-align: center;
 }
 
@@ -1317,4 +1317,95 @@ input {
    each cell carries a transform. */
 .theme-root {
     isolation: isolate;
+}
+
+/* ==================
+  inks over the kit
+ ==================== */
+
+/* The kit draws these texts in a bare tone, which some themes set too
+   light (or dark) to read. Each takes its tone's ink, which the theme sets
+   to read at 4.5:1 on the page, the sink and a tone's tint. */
+.settings-list-title,
+.panel-title,
+.pref-section-label,
+.nav-dropdown-label,
+.nav-icon.active,
+.action-dock-btn.action-dock-on,
+.nav-links > li > a.active,
+.nav-links > li > button.nav-link.active {
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+.sheet-title,
+.panel-eyebrow,
+.hint-key,
+:where(.label),
+:where(.alert-dialog-title) {
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+}
+
+.nav-dropdown-item.active,
+a.nav-dropdown-item.active:visited,
+.nav-panel .nav-links .nav-dropdown-item.active {
+    color: var(--ink-accent-secondary, var(--accent-secondary));
+}
+
+.pref-row,
+.pref-note,
+.info-button,
+.input-clear-btn,
+.nav-dropdown-item,
+a.nav-dropdown-item:visited,
+.nav-panel .nav-links .nav-dropdown-item {
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
+.btn-xs {
+    color: var(--ink-palette-2, var(--palette-2));
+}
+
+.nav-cta,
+.nav-cta:visited,
+.nav-links > li > a.nav-cta,
+.nav-links > li > a.nav-cta:visited {
+    color: var(--ink-palette-5, var(--palette-5));
+}
+
+.message-error,
+.btn-danger,
+.btn-action-danger,
+.alert-dialog-action-danger {
+    color: var(--ink-color-error, var(--color-error));
+}
+
+@media (hover: hover) {
+    .nav-links > li > a:hover,
+    .nav-links > li > button.nav-link:hover,
+    .nav-panel .nav-links .nav-dropdown-item:hover,
+    .nav-dropdown-trigger:hover,
+    .mode-toggle:hover,
+    .panel-action:hover {
+        color: var(--ink-accent-primary, var(--accent-primary));
+    }
+
+    .input-clear-btn:hover {
+        color: var(--ink-palette-1, var(--palette-1));
+    }
+}
+
+/* A row's label, the sheet's × and a dialog's text read at 4.5:1 or better
+   in every theme: the text color a fifth of the way to the panel on a dark
+   theme, barely eased on a light one, where the theme's own text sits near
+   that bar. The kit fades a row's label, the sheet's × and a dialog's text with
+   opacity; each eases its color instead. */
+.settings-row-label,
+.sheet-close,
+.alert-dialog-description {
+    opacity: 1;
+    color: color-mix(in srgb, var(--text-primary) 80%, var(--bg-primary));
+}
+
+[class*="theme-"][class*="-light"] :is(.settings-row-label, .sheet-close, .alert-dialog-description) {
+    color: color-mix(in srgb, var(--text-primary) 95%, var(--bg-primary));
 }
