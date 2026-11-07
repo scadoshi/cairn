@@ -33,9 +33,10 @@ pub fn BackHandlerLayout() -> Element {
     }
 }
 
-/// The app's WKWebView, for the edge-swipe recognizer.
+/// The app's WKWebView, for the edge-swipe recognizer and the killed-page
+/// overlay.
 #[cfg(all(target_os = "ios", feature = "mobile"))]
-fn webview() -> Option<NonNull<c_void>> {
+pub fn webview() -> Option<NonNull<c_void>> {
     use dioxus::mobile::wry::WebViewExtIOS;
     let webview = dioxus::mobile::window().webview.webview();
     NonNull::new((&raw const *webview).cast_mut().cast())
@@ -43,6 +44,6 @@ fn webview() -> Option<NonNull<c_void>> {
 
 /// No WKWebView off iOS.
 #[cfg(not(all(target_os = "ios", feature = "mobile")))]
-fn webview() -> Option<NonNull<c_void>> {
+pub fn webview() -> Option<NonNull<c_void>> {
     None
 }

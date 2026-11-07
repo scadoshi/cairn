@@ -2,6 +2,7 @@
 
 pub mod components;
 pub mod lifecycle;
+pub mod rebuild;
 pub mod router;
 pub mod screens;
 
@@ -228,6 +229,12 @@ pub fn App() -> Element {
     let saved_prefs = store.preferences().unwrap_or_default();
     let prefs = use_signal(move || saved_prefs);
     use_context_provider(|| prefs);
+    // A page iOS killed comes back in a rebuilt window.
+    orangui::use_page_kill_recovery(
+        "Cairn",
+        components::navigation::back_handler::webview,
+        rebuild::use_rebuild(),
+    );
     // The app's lifecycle, before anything that reacts to a return.
     lifecycle::use_lifecycle_root();
     let day = use_day_keeper(prefs);
