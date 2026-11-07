@@ -5,6 +5,7 @@ use chrono::{NaiveDate, NaiveDateTime};
 use orangui::ThemeConfig;
 use thiserror::Error;
 
+use super::backup::{Backup, OnConflict, Restored};
 use super::{Counter, CounterId, CounterName, DayCount, Event, Goal, Step};
 use crate::domain::date_format::DateFormat;
 use crate::domain::preferences::{Celebration, Preferences};
@@ -97,6 +98,17 @@ pub trait CounterStore {
     ///
     /// Returns [`StoreError`] when the database can't run the query: the file is unreadable, locked or corrupt.
     fn rebuild_entries(&self, prefs: &Preferences) -> Result<(), StoreError>;
+    /// Adds every counter in `backup` with its entries and taps, as new
+    /// counters under new ids. A backup counter whose name the store already
+    /// has is skipped under [`OnConflict::Keep`]; under
+    /// [`OnConflict::Replace`] every store counter of that name is deleted
+    /// first. All of it happens in one transaction: on any failure the store
+    /// is left as it was.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StoreError`] when the database can't run the transaction; nothing is written then.
+    fn restore(&self, backup: &Backup, on_conflict: OnConflict) -> Result<Restored, StoreError>;
 }
 
 /// App-wide preferences.

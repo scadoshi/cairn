@@ -10,6 +10,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - A tap after the day turns counts on the new day, so a minus can no longer take away from yesterday's figure.
 - Cairn opens on Android, keeping its counters in the app's own storage there.
 - When iOS closes Cairn's page in the background to free memory, Cairn draws itself again when you come back instead of showing a frozen screen.
+- Settings has a Backup row: Export saves every counter, its settings and every tap in one file, and Import brings that file back, asking before it replaces a counter you already have.
 
 ## 1.3.0, 2026-11-05
 

@@ -3,23 +3,28 @@
 
 use std::fmt::Write as _;
 use std::path::PathBuf;
+use std::sync::Arc;
 
-use chrono::Weekday;
+use chrono::{Local, Weekday};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::icons::{self, DockIcon, EditIcon};
 use orangui::{
-    ActionDock, BottomSheet, Button, ButtonVariant, Chip, DarkModeButton, DockAction, DockPlace,
-    HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton, ModeIcon, PaletteIcon,
-    ThemeConfig, use_screen_hint,
+    ActionDock, AlertDialog, BottomSheet, Button, ButtonVariant, Chip, DarkModeButton,
+    DialogAction, DockAction, DockPlace, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
+    InfoButton, ModeIcon, PaletteIcon, ThemeConfig, use_screen_hint,
 };
 
-use crate::domain::counter::csv;
+use crate::domain::counter::backup::{self, Backup, OnConflict, Restored};
+use crate::domain::counter::{CounterName, CounterStore, csv};
 use crate::domain::preferences::{self, AppIcon, Celebration, Logo, Preferences};
 use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::icon_sheet::IconSheet;
 use crate::inbound::ui::components::theme_sheet::{self, AppThemeSheet};
-use crate::inbound::ui::{TOAST_NORMAL, TOAST_QUICK, use_date_format, use_prefs, use_store};
+use crate::inbound::ui::{
+    TOAST_NORMAL, TOAST_QUICK, bump_store_version, sentence_case, use_date_format, use_prefs,
+    use_store,
+};
 use crate::outbound::{app_icon, paths};
 
 /// The config screen.
@@ -27,6 +32,9 @@ use crate::outbound::{app_icon, paths};
 pub fn Config() -> Element {
     let theme = use_context::<Signal<ThemeConfig>>();
     let store = use_store();
+    let backup_store = Arc::clone(&store);
+    let restore_store = Arc::clone(&store);
+    let import_store = Arc::clone(&store);
     let mut preferences_open = use_signal(|| false);
     let mut notice = use_signal(|| None::<String>);
     let toast = use_toast();
@@ -106,6 +114,65 @@ pub fn Config() -> Element {
                 toast.error("Export failed".to_string(), ToastOptions::default());
                 notice.set(Some(e));
             }
+        }
+    };
+
+    // The full backup: every counter with its settings, days and taps, in
+    // one JSON file in the export folder.
+    let save_backup = move |_| match write_backup(&*backup_store) {
+        Ok(path) => {
+            toast.success(
+                "Backup saved".to_string(),
+                ToastOptions::default().duration(TOAST_NORMAL),
+            );
+            notice.set(Some(format!("Written to {}", path.display())));
+        }
+        Err(e) => {
+            toast.error("Backup failed".to_string(), ToastOptions::default());
+            notice.set(Some(e));
+        }
+    };
+
+    // A checked backup waiting on the Keep or Replace answer.
+    let mut pending = use_signal(|| None::<PendingImport>);
+    let mut conflict_open = use_signal(|| false);
+    let restore = use_callback(move |on_conflict: OnConflict| {
+        let Some(import) = pending.take() else {
+            return;
+        };
+        match restore_store.restore(&import.backup, on_conflict) {
+            Ok(done) => {
+                bump_store_version();
+                toast.success(
+                    restored_line(done),
+                    ToastOptions::default().duration(TOAST_NORMAL),
+                );
+                notice.set(Some(format!("Imported from {}", import.file.display())));
+            }
+            Err(e) => {
+                toast.error("Import failed".to_string(), ToastOptions::default());
+                notice.set(Some(format!(
+                    "{}. Nothing was changed",
+                    sentence_case(&e.to_string())
+                )));
+            }
+        }
+    });
+    // Reads and checks the newest backup before anything is written. With
+    // no name in common it imports at once; otherwise it asks.
+    let import = move |_| match read_backup(&*import_store) {
+        Ok(found) => {
+            let ask = !found.conflicts.is_empty();
+            pending.set(Some(found));
+            if ask {
+                conflict_open.set(true);
+            } else {
+                restore.call(OnConflict::Keep);
+            }
+        }
+        Err(e) => {
+            toast.error("Import failed".to_string(), ToastOptions::default());
+            notice.set(Some(e));
         }
     };
 
@@ -351,6 +418,16 @@ pub fn Config() -> Element {
             }
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
+                        span { class: "settings-row-label", "Backup" }
+                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Backup)); hint_open.set(true); } }
+                    }
+                    div { class: "settings-row-value",
+                        Button { variant: ButtonVariant::Action, onclick: save_backup, "Export" }
+                        Button { variant: ButtonVariant::Action, onclick: import, "Import" }
+                    }
+                }
+                div { class: "settings-row",
+                    span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "Export" }
                         InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Export)); hint_open.set(true); } }
                     }
@@ -374,6 +451,25 @@ pub fn Config() -> Element {
         MarkSheet { open: mark_open, hint: hint_open }
         IconSheet { open: icon_open, icon, hint: hint_open }
         ConfigHintDialog { open: hint_open, which: hint() }
+        AlertDialog {
+            open: conflict_open,
+            title: conflict_title(pending.read().as_ref().map_or(0, |p| p.conflicts.len())),
+            actions: vec![
+                DialogAction::Dismiss("Cancel".into()),
+                DialogAction::Confirm {
+                    label: "Keep mine".into(),
+                    danger: false,
+                    on_confirm: Callback::new(move |()| restore.call(OnConflict::Keep)),
+                },
+                DialogAction::Confirm {
+                    label: "Replace".into(),
+                    danger: true,
+                    on_confirm: Callback::new(move |()| restore.call(OnConflict::Replace)),
+                },
+            ],
+            p { {conflict_names(pending.read().as_ref().map(|p| p.conflicts.as_slice()).unwrap_or_default())} }
+            p { "Replace swaps yours, and their history, for the backup's. Keep mine leaves yours and imports the rest." }
+        }
         HintDialog { open: screen_hint_open, title: "Settings",
             HintLine { "Settings only. Nothing here edits your counts" }
             HintLine { "Tap any row's " HintKey { color: "--palette-6", "?" } " to learn what it does" }
@@ -542,6 +638,7 @@ enum ConfigHint {
     RestDays,
     SortCounters,
     ConfirmMinus,
+    Backup,
     Export,
 }
 
@@ -624,6 +721,17 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
                 HintLine { "Minus only touches today and never goes below zero" }
             }
         },
+        ConfigHint::Backup => rsx! {
+            HintDialog { open, title: "Backup",
+                HintLine { HintKey { "Export" } " saves every counter, its settings and every tap in one file" }
+                HintLine { HintKey { "Import" } " reads the newest backup there. If a counter's name is already here, it asks to keep yours or replace it" }
+                HintBullets {
+                    HintBullet { "iPhone: Files app, On My iPhone, Cairn" }
+                    HintBullet { "Desktop: Downloads" }
+                    HintBullet { "One file a day; the same day overwrites" }
+                }
+            }
+        },
         ConfigHint::Export => rsx! {
             HintDialog { open, title: "Export",
                 HintLine { HintKey { "CSV" } " writes one file per counter: day and count" }
@@ -635,6 +743,80 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
             }
         },
     }
+}
+
+/// A backup read from the export folder and checked, with the names it
+/// shares with the store.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PendingImport {
+    backup: Backup,
+    conflicts: Vec<CounterName>,
+    file: PathBuf,
+}
+
+/// Writes the full backup into the export folder and returns its path, or
+/// says what failed.
+fn write_backup(store: &(impl CounterStore + ?Sized)) -> Result<PathBuf, String> {
+    let text = Backup::from_store(store)
+        .map_err(|e| e.to_string())?
+        .to_json()
+        .map_err(|e| e.to_string())?;
+    let dir = paths::exports().map_err(|e| format!("export folder: {e}"))?;
+    let path = paths::backup_file(&dir, Local::now().date_naive());
+    std::fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
+    Ok(path)
+}
+
+/// Finds the newest backup in the export folder, reads and checks it, and
+/// lists the names it shares with the store. Writes nothing.
+fn read_backup(store: &(impl CounterStore + ?Sized)) -> Result<PendingImport, String> {
+    let dir = paths::exports().map_err(|e| format!("export folder: {e}"))?;
+    let file = paths::latest_backup(&dir)
+        .map_err(|e| format!("{}: {e}", dir.display()))?
+        .ok_or_else(|| format!("No backup in {}", dir.display()))?;
+    let text = std::fs::read_to_string(&file).map_err(|e| format!("{}: {e}", file.display()))?;
+    let backup = backup::parse(&text).map_err(|e| sentence_case(&e.to_string()))?;
+    let existing = store.list_counters().map_err(|e| e.to_string())?;
+    let conflicts = backup.conflicts(&existing);
+    Ok(PendingImport {
+        backup,
+        conflicts,
+        file,
+    })
+}
+
+/// "1 counter is already here", "3 counters are already here".
+fn conflict_title(n: usize) -> String {
+    if n == 1 {
+        "1 counter is already here".to_string()
+    } else {
+        format!("{n} counters are already here")
+    }
+}
+
+/// The shared names, comma separated.
+fn conflict_names(names: &[CounterName]) -> String {
+    names
+        .iter()
+        .map(CounterName::as_str)
+        .collect::<Vec<&str>>()
+        .join(", ")
+}
+
+/// What an import did, as its toast says it.
+fn restored_line(done: Restored) -> String {
+    let imported = done.added.saturating_add(done.replaced);
+    let mut line = match imported {
+        1 => "Imported 1 counter".to_string(),
+        n => format!("Imported {n} counters"),
+    };
+    if done.replaced > 0 {
+        let _ = write!(line, ", {} replaced", done.replaced);
+    }
+    if done.kept > 0 {
+        let _ = write!(line, ", kept {} of yours", done.kept);
+    }
+    line
 }
 
 /// "Midnight", "2am", "4am", "6am".

@@ -10,6 +10,7 @@ use chrono::{NaiveDate, NaiveDateTime};
 use orangui::ThemeConfig;
 use rusqlite::{Connection, OptionalExtension, params};
 
+use crate::domain::counter::backup::{Backup, OnConflict, Restored};
 use crate::domain::counter::{
     Counter, CounterId, CounterName, CounterStore, DayCount, Event, Goal, SettingsStore, Step,
     StoreError,
@@ -319,6 +320,70 @@ impl CounterStore for SqliteStore {
 
     fn rebuild_entries(&self, prefs: &Preferences) -> Result<(), StoreError> {
         self.rebuild(prefs)
+    }
+
+    fn restore(&self, backup: &Backup, on_conflict: OnConflict) -> Result<Restored, StoreError> {
+        let mut conn = self.conn()?;
+        let tx = conn.transaction()?;
+        // Names the store had before the import, so a backup that holds two
+        // counters of one name adds both rather than the second replacing
+        // the first.
+        let had: std::collections::BTreeSet<String> = {
+            let mut stmt = tx.prepare("SELECT name FROM counters")?;
+            let names = stmt.query_map([], |r| r.get::<_, String>(0))?;
+            names.collect::<Result<_, _>>()?
+        };
+        let mut restored = Restored::default();
+        if on_conflict == OnConflict::Replace {
+            for name in &had {
+                if backup.counters.iter().any(|c| c.name.as_str() == name) {
+                    tx.execute("DELETE FROM counters WHERE name = ?1", params![name])?;
+                }
+            }
+        }
+        for c in &backup.counters {
+            let clash = had.contains(c.name.as_str());
+            match (clash, on_conflict) {
+                (true, OnConflict::Keep) => {
+                    restored.kept = restored.kept.saturating_add(1);
+                    continue;
+                }
+                (true, OnConflict::Replace) => {
+                    restored.replaced = restored.replaced.saturating_add(1);
+                }
+                (false, _) => restored.added = restored.added.saturating_add(1),
+            }
+            let (per_year, per_day, per_week) = goal_columns(c.goal);
+            tx.execute(
+                "INSERT INTO counters (name, goal_per_year, goal_per_day, goal_per_week, created_on, step, big_step, celebration)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![
+                    c.name.as_str(),
+                    per_year,
+                    per_day,
+                    per_week,
+                    c.created_on.format("%Y-%m-%d").to_string(),
+                    c.step.get(),
+                    c.big_step.map(Step::get),
+                    c.celebration.map(Celebration::key)
+                ],
+            )?;
+            let id = tx.last_insert_rowid();
+            for e in &c.entries {
+                tx.execute(
+                    "INSERT INTO entries (counter_id, day, count) VALUES (?1, ?2, ?3)",
+                    params![id, e.day.format("%Y-%m-%d").to_string(), e.count],
+                )?;
+            }
+            for e in &c.events {
+                tx.execute(
+                    "INSERT INTO events (counter_id, at, delta) VALUES (?1, ?2, ?3)",
+                    params![id, e.at.format("%Y-%m-%dT%H:%M:%S").to_string(), e.delta],
+                )?;
+            }
+        }
+        tx.commit()?;
+        Ok(restored)
     }
 
     fn events(&self, id: CounterId) -> Result<Vec<Event>, StoreError> {
@@ -795,5 +860,159 @@ mod tests {
             .query_row("PRAGMA user_version", [], |r| r.get(0))
             .unwrap();
         assert_eq!(v, SCHEMA_VERSION);
+    }
+
+    /// A store with two counters, every optional setting used on one, and
+    /// entries and taps (an undo among them) on both.
+    fn filled() -> SqliteStore {
+        let s = store();
+        let push = s
+            .create_counter(
+                &CounterName::new("Push-ups").unwrap(),
+                Some(Goal::per_day(50).unwrap()),
+                Step::new(10).unwrap(),
+                Some(Step::new(25).unwrap()),
+                Celebration::ALL.last().copied(),
+                d(2025, 12, 30),
+            )
+            .unwrap();
+        let read = s
+            .create_counter(
+                &CounterName::new("Pages").unwrap(),
+                None,
+                Step::default(),
+                None,
+                None,
+                d(2026, 1, 1),
+            )
+            .unwrap();
+        s.adjust(push.id, at(2026, 1, 1), d(2026, 1, 1), 10)
+            .unwrap();
+        s.adjust(push.id, at(2026, 1, 1), d(2026, 1, 1), 25)
+            .unwrap();
+        s.adjust(push.id, at(2026, 1, 1), d(2026, 1, 1), -10)
+            .unwrap();
+        s.adjust(push.id, at(2026, 1, 3), d(2026, 1, 3), 10)
+            .unwrap();
+        s.adjust(read.id, at(2026, 1, 2), d(2026, 1, 2), 1).unwrap();
+        s
+    }
+
+    fn names(s: &SqliteStore) -> Vec<String> {
+        s.list_counters()
+            .unwrap()
+            .into_iter()
+            .map(|c| c.name.as_str().to_string())
+            .collect()
+    }
+
+    #[test]
+    fn a_backup_round_trips_through_its_file_into_an_empty_store() {
+        let from = filled();
+        let backup = Backup::from_store(&from).unwrap();
+        let text = backup.to_json().unwrap();
+        let read = crate::domain::counter::backup::parse(&text).unwrap();
+        assert_eq!(read, backup, "the file reads back as written");
+
+        let to = store();
+        let restored = to.restore(&read, OnConflict::Keep).unwrap();
+        assert_eq!(
+            restored,
+            Restored {
+                added: 2,
+                replaced: 0,
+                kept: 0
+            }
+        );
+        assert_eq!(
+            Backup::from_store(&to).unwrap(),
+            backup,
+            "every counter, setting, entry and tap is back"
+        );
+    }
+
+    #[test]
+    fn keep_leaves_a_shared_counter_and_adds_the_rest() {
+        let backup = Backup::from_store(&filled()).unwrap();
+        let s = store();
+        let mine = s
+            .create_counter(
+                &CounterName::new("Pages").unwrap(),
+                None,
+                Step::default(),
+                None,
+                None,
+                d(2026, 5, 5),
+            )
+            .unwrap();
+        s.adjust(mine.id, at(2026, 5, 5), d(2026, 5, 5), 7).unwrap();
+        let restored = s.restore(&backup, OnConflict::Keep).unwrap();
+        assert_eq!((restored.added, restored.kept), (1, 1));
+        assert_eq!(names(&s), ["Pages", "Push-ups"]);
+        assert_eq!(
+            s.entries(mine.id).unwrap().len(),
+            1,
+            "mine keeps its own day"
+        );
+        assert_eq!(s.fetch_counter(mine.id).unwrap(), Some(mine));
+    }
+
+    #[test]
+    fn replace_swaps_a_shared_counter_for_the_backups() {
+        let backup = Backup::from_store(&filled()).unwrap();
+        let s = store();
+        let mine = s
+            .create_counter(
+                &CounterName::new("Pages").unwrap(),
+                None,
+                Step::default(),
+                None,
+                None,
+                d(2026, 5, 5),
+            )
+            .unwrap();
+        s.adjust(mine.id, at(2026, 5, 5), d(2026, 5, 5), 7).unwrap();
+        let restored = s.restore(&backup, OnConflict::Replace).unwrap();
+        assert_eq!((restored.added, restored.replaced), (1, 1));
+        assert_eq!(
+            Backup::from_store(&s).unwrap(),
+            backup,
+            "only the backup's counters remain, mine and its day gone"
+        );
+    }
+
+    #[test]
+    fn a_failed_import_writes_nothing() {
+        let backup = Backup::from_store(&filled()).unwrap();
+        let s = store();
+        let mine = s
+            .create_counter(
+                &CounterName::new("Pages").unwrap(),
+                None,
+                Step::default(),
+                None,
+                None,
+                d(2026, 5, 5),
+            )
+            .unwrap();
+        let before = Backup::from_store(&s).unwrap();
+        // The last tap the import writes (Pages' only one) fails, after
+        // Push-ups and the replace's delete have gone in.
+        s.conn()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER no_pages BEFORE INSERT ON events
+                 WHEN NEW.counter_id = (SELECT MAX(id) FROM counters)
+                  AND (SELECT name FROM counters WHERE id = NEW.counter_id) = 'Pages'
+                 BEGIN SELECT RAISE(ABORT, 'disk full'); END;",
+            )
+            .unwrap();
+        assert!(s.restore(&backup, OnConflict::Replace).is_err());
+        assert_eq!(
+            Backup::from_store(&s).unwrap(),
+            before,
+            "the store is as it was"
+        );
+        assert_eq!(s.fetch_counter(mine.id).unwrap(), Some(mine));
     }
 }

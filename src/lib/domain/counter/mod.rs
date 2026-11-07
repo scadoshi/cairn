@@ -1,5 +1,6 @@
 //! Counters, their daily entries, and everything computed from them.
 
+pub mod backup;
 pub mod csv;
 pub mod format;
 pub mod heat;
