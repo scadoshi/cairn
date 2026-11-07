@@ -35,6 +35,12 @@ dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "0
 # Timers for the entrances; dioxus-desktop already brings the runtime in.
 tokio = { version = "1", features = ["time"] }
 
+# Android: the app's files dir, from Context.getFilesDir() through JNI; `dirs`
+# has no data dir there.
+[target.'cfg(target_os = "android")'.dependencies]
+ndk-context = "0.1"
+jni = "0.21"
+
 # UIApplication's alternate icon calls, for the App icon sheet. The same
 # versions tao already brings in.
 [target.'cfg(target_os = "ios")'.dependencies]

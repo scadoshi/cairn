@@ -294,6 +294,8 @@ dependencies = [
  "dioxus",
  "dioxus-primitives",
  "dirs",
+ "jni 0.21.1",
+ "ndk-context",
  "objc2",
  "objc2-foundation",
  "orangui",
