@@ -1,6 +1,8 @@
 //! Where Cairn's files live on this platform.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+use chrono::NaiveDate;
 
 /// The database path: `<data dir>/scadoshi-count/count.db`, with the directory created.
 /// `~/Library/Application Support/scadoshi-count/count.db` on macOS. On Android the data
@@ -58,4 +60,62 @@ pub fn exports() -> std::io::Result<PathBuf> {
     };
     std::fs::create_dir_all(&dir)?;
     Ok(dir)
+}
+
+/// The prefix every full backup's file name starts with.
+const BACKUP_PREFIX: &str = "cairn-backup-";
+
+/// Where a full backup made on `day` goes: `cairn-backup-YYYY-MM-DD.json` in
+/// `dir`. A second backup the same day overwrites the first.
+pub fn backup_file(dir: &Path, day: NaiveDate) -> PathBuf {
+    dir.join(format!("{BACKUP_PREFIX}{}.json", day.format("%Y-%m-%d")))
+}
+
+/// The newest full backup in `dir`, by the date in its name, or `None` when
+/// there is none.
+///
+/// # Errors
+///
+/// The I/O error from reading `dir`.
+pub fn latest_backup(dir: &Path) -> std::io::Result<Option<PathBuf>> {
+    let mut newest: Option<(String, PathBuf)> = None;
+    for entry in std::fs::read_dir(dir)? {
+        let path = entry?.path();
+        let Some(name) = path.file_name().and_then(|n| n.to_str()).map(str::to_owned) else {
+            continue;
+        };
+        let json = path
+            .extension()
+            .is_some_and(|e| e.eq_ignore_ascii_case("json"));
+        if !(json && name.starts_with(BACKUP_PREFIX)) {
+            continue;
+        }
+        if newest.as_ref().is_none_or(|(best, _)| name > *best) {
+            newest = Some((name, path));
+        }
+    }
+    Ok(newest.map(|(_, path)| path))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_latest_backup_is_the_newest_by_name() {
+        let dir = std::env::temp_dir().join(format!("cairn-paths-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        assert_eq!(latest_backup(&dir).unwrap(), None);
+        let day = |m, d| NaiveDate::from_ymd_opt(2026, m, d).unwrap();
+        for (m, d) in [(3, 9), (11, 2), (6, 30)] {
+            std::fs::write(backup_file(&dir, day(m, d)), "{}").unwrap();
+        }
+        std::fs::write(dir.join("count-pages.csv"), "day,count\n").unwrap();
+        std::fs::write(dir.join("cairn-backup-notes.txt"), "").unwrap();
+        assert_eq!(
+            latest_backup(&dir).unwrap(),
+            Some(backup_file(&dir, day(11, 2)))
+        );
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 }
