@@ -32,6 +32,18 @@ pub fn Tile(label: String, value: String, #[props(default)] hint: Option<String>
     }
 }
 
+/// A readout whose value is a date or a word rather than a figure: kept on
+/// one line and sized to its box, so a date never breaks between its digits.
+#[component]
+pub fn WordTile(label: String, value: String) -> Element {
+    rsx! {
+        div { class: "tile",
+            span { class: "tile-value tile-value-word", "{value}" }
+            span { class: "tile-label", "{label}" }
+        }
+    }
+}
+
 /// Three tiles to a row, wrapping.
 #[component]
 pub fn TileGrid(children: Element) -> Element {

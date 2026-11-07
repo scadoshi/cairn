@@ -641,6 +641,18 @@ input {
     overflow-wrap: anywhere;
 }
 
+/* A date or a word: one line, its size following the tile's width, so nine
+   characters of the monospace face (0.6em each) fit the narrowest tile. */
+.tile:has(> .tile-value-word) {
+    container-type: inline-size;
+}
+
+.tile-value-word {
+    white-space: nowrap;
+    overflow-wrap: normal;
+    font-size: min(1.3rem, 17cqi);
+}
+
 .tile-label {
     margin-top: 0.3rem;
     font-size: 0.68rem;

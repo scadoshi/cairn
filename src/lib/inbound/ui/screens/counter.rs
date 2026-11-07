@@ -25,7 +25,7 @@ use crate::inbound::ui::components::danger_zone::DangerZoneAction;
 use crate::inbound::ui::components::heatmap::Heatmap;
 use crate::inbound::ui::components::line_chart::{LineChart, Point};
 use crate::inbound::ui::components::reveal::Reveal;
-use crate::inbound::ui::components::tile::{self, Num, Tile, TileGrid};
+use crate::inbound::ui::components::tile::{self, Num, Tile, TileGrid, WordTile};
 use crate::inbound::ui::router::Route;
 use crate::inbound::ui::{self, TOAST_NORMAL, TOAST_QUICK, use_date_format, use_prefs, use_store};
 
@@ -856,7 +856,7 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
                     if let Some(r) = per_day {
                         Tile { label: "per day", value: r }
                     }
-                    Tile { label: "when", value: when }
+                    WordTile { label: "when", value: when }
                 }
             } else {
                 p { class: "pref-note", style: "padding: 1rem;", "Nothing logged this year yet." }
