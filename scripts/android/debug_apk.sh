@@ -17,7 +17,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 APP_DIR="$REPO_ROOT/target/dx/cairn/debug/android/app"
 
-: "${JAVA_HOME:?set JAVA_HOME to Android Studio's JBR}"
+: "${JAVA_HOME:?set JAVA_HOME to the JBR inside Android Studio}"
 : "${ANDROID_HOME:?set ANDROID_HOME to the Android SDK}"
 
 (cd "$REPO_ROOT" && dx build --platform android)
