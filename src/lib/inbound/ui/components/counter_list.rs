@@ -96,7 +96,13 @@ fn CounterCard(
         // The day and its count as the store has them at the tap, not as
         // the last render drew them: the day may have turned since.
         let day = ui::today(&prefs);
-        let before = bump_store.entries(id).unwrap_or_default();
+        let before = match bump_store.entries(id) {
+            Ok(before) => before,
+            Err(e) => {
+                toast.error(e.to_string(), ToastOptions::default());
+                return;
+            }
+        };
         let before = stats::summarize_with(&before, goal, day, &prefs);
         let today_count = before.today;
         let year_before = before.this_year.total;

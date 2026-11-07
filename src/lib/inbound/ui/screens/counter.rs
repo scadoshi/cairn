@@ -181,7 +181,13 @@ pub fn CounterScreen(id: i64) -> Element {
         // The day and its count as the store has them at the tap, not as
         // the screen last loaded them: the day may have turned since.
         let day = ui::today(&celebrate_pref.peek());
-        let stored = adjust_store.entries(id).unwrap_or_default();
+        let stored = match adjust_store.entries(id) {
+            Ok(stored) => stored,
+            Err(e) => {
+                toast.error(e.to_string(), ToastOptions::default());
+                return;
+            }
+        };
         let today_count = stored.iter().find(|e| e.day == day).map_or(0, |e| e.count);
         // Report what actually happened rather than what was asked for: a
         // day cannot go below zero, so this makes an empty day read "-0"
