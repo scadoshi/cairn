@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Build a debug APK that launches: `dx build`, then the post-build patches,
+# then a Gradle repackage.
+#
+# A bare `dx build --platform android` APK dies on launch with
+# UnsatisfiedLinkError (WryActivity.create): dx writes the stock activity and
+# the vendored tao needs wry_activity.sh. dx regenerates the Gradle project on
+# every build, so the patches run after it each time.
+#
+# Prints the APK path on the last line. Needs JAVA_HOME (Android Studio's JBR)
+# and ANDROID_HOME.
+#
+# Usage: scripts/android/debug_apk.sh
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$HERE/../.." && pwd)"
+APP_DIR="$REPO_ROOT/target/dx/cairn/debug/android/app"
+
+: "${JAVA_HOME:?set JAVA_HOME to Android Studio's JBR}"
+: "${ANDROID_HOME:?set ANDROID_HOME to the Android SDK}"
+
+(cd "$REPO_ROOT" && dx build --platform android)
+
+"$HERE/patch_bundle.sh" "$APP_DIR"
+
+(cd "$APP_DIR" && ./gradlew :app:assembleDebug --console=plain -q)
+
+echo "$APP_DIR/app/build/outputs/apk/debug/app-debug.apk"
