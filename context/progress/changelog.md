@@ -6,6 +6,8 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
+## 1.4.0, 2026-11-08
+
 - Home and a counter's screen move to the new day at the rollover hour, and pick up today's figures when you come back to the app, without a relaunch.
 - A tap after the day turns counts on the new day, so a minus can no longer take away from yesterday's figure.
 - Cairn opens on Android, keeping its counters in the app's own storage there.
