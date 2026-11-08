@@ -1,6 +1,6 @@
 # Changelog
 
-Unreleased entries collect at the top. At cut time they move under a version heading with the date, and `Cargo.toml` bumps in the same commit. A version's date is the day App Store Connect shows it "Ready for Distribution", when it went live; the portfolio's `RELEASES` entry uses the same date. See `development/versioning.md` for what bumps what.
+Unreleased entries collect at the top. At cut time they move under a version heading with the date, and `Cargo.toml` bumps in the same commit. A version's date is the day its build is cut and submitted, never moved to the day it goes live; the portfolio's `RELEASES` entry uses the same date. See `development/versioning.md` for what bumps what.
 
 Every entry added here also goes into portfolio's `src/changelog.rs` in the same sitting, in `UPCOMING` under the next version, reworded to zwipe's rules (one phrase, no period). At cut time the version moves there from `UPCOMING` to the top of `RELEASES`, with the date of its heading here written as `Some(Date::new(year, month, day))`. That file is what scottyfermo.com/projects/cairn/changelog shows, and the app has no other public changelog.
 
