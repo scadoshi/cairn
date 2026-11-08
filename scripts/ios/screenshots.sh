@@ -8,11 +8,11 @@
 # on the 11 Pro Max's 414x896 screen; the 16 Pro Max is 440x956, so re-measure
 # the card and action bar taps before the next screenshot run.
 #
-# Usage: scripts/ios/screenshots.sh [OUT_DIR]   # default context/.../screenshots
+# Usage: scripts/ios/screenshots.sh [OUT_DIR]   # default context/operations/store-screenshots/<today>/ios
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-OUT="${1:-$REPO_ROOT/context/operations/ios/app-store/submission/screenshots}"
+OUT="${1:-$REPO_ROOT/context/operations/store-screenshots/$(date +%F)/ios}"
 APPID=com.scadoshi.count
 UDID="$(xcrun simctl list devices booted -j | python3 -c '
 import json, sys
