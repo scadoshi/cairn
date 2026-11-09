@@ -27,6 +27,24 @@ pub struct Pace {
     pub remaining: i64,
 }
 
+impl Pace {
+    /// What is left of the goal, zero once it is reached.
+    pub fn left(&self) -> u32 {
+        u32::try_from(self.remaining.max(0)).unwrap_or(u32::MAX)
+    }
+
+    /// How far past the goal this year's total is, zero until it gets
+    /// there.
+    pub fn past(&self) -> u32 {
+        u32::try_from(self.remaining.saturating_neg().max(0)).unwrap_or(u32::MAX)
+    }
+
+    /// Whether this year's total has reached the goal.
+    pub fn is_met(&self) -> bool {
+        self.remaining <= 0
+    }
+}
+
 /// One calendar year of a counter.
 #[derive(Debug, Clone, PartialEq)]
 pub struct YearSummary {
@@ -614,6 +632,20 @@ mod tests {
         let p = pace(goal, 12, d(2026, 6, 1));
         assert_eq!(p.remaining, -2);
         assert!(p.needed_per_day < 0.0);
+    }
+
+    #[test]
+    fn past_the_goal_counts_how_far_past() {
+        let goal = Goal::per_year(10).unwrap();
+        let past = pace(goal, 12, d(2026, 6, 1));
+        assert_eq!((past.left(), past.past()), (0, 2));
+        assert!(past.is_met());
+        let exact = pace(goal, 10, d(2026, 6, 1));
+        assert_eq!((exact.left(), exact.past()), (0, 0));
+        assert!(exact.is_met(), "landing on the goal meets it");
+        let short = pace(goal, 4, d(2026, 6, 1));
+        assert_eq!((short.left(), short.past()), (6, 0));
+        assert!(!short.is_met());
     }
 
     #[test]
