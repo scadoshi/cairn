@@ -8,8 +8,9 @@ use orangui::{ActionDock, BottomSheet, DockAction, DockPlace, THEME_GROUPS, Them
 
 use crate::domain::preferences::AppIcon;
 use crate::inbound::ui::screens::home::LOGO_CAIRN;
-use crate::inbound::ui::{TOAST_NORMAL, TOAST_QUICK, use_prefs};
+use crate::inbound::ui::{self, TOAST_NORMAL, use_prefs};
 use crate::outbound::app_icon;
+use crate::screens::draft::{APP_ICON_UNCHANGED, Draft};
 
 /// One selectable row: label on the left, the icon on the right. The tile
 /// draws the mark as text in `tile`'s own class, so it is the same glyph and
@@ -20,14 +21,14 @@ fn IconRow(
     label: String,
     pick: Option<String>,
     tile: ThemeConfig,
-    mut draft: Signal<Option<String>>,
+    mut model: Signal<Draft<Option<String>>>,
 ) -> Element {
-    let is_selected = draft() == pick;
+    let is_selected = *model.read().shown() == pick;
     let mode = app_icon::mode(tile.is_dark);
     rsx! {
         button {
             class: if is_selected { "pref-row selected" } else { "pref-row" },
-            onclick: move |_| draft.set(pick.clone()),
+            onclick: move |_| model.write().pick(pick.clone()),
             div { class: "pref-row-inner",
                 span { "{label}" }
                 div { class: "app-icon-tile theme-{tile.name}-{mode}",
@@ -52,28 +53,30 @@ pub fn IconSheet(
     let mut prefs = use_prefs();
     // `None` is Match theme.
     let saved = move || (prefs().app_icon == AppIcon::Picked).then(|| icon().name);
-    let mut draft = use_signal(saved);
+    let mut model = use_signal(|| Draft::new(saved(), APP_ICON_UNCHANGED));
 
     // Every open starts from the icon actually showing.
     use_effect(move || {
         if open() {
             icon.set(app_icon::current());
-            draft.set(saved());
+            model.write().open(saved());
         }
     });
 
     let discard = use_callback(move |()| {
-        if *draft.peek() != saved() {
-            toast.info(
-                "App icon unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
+        let said = model.peek().back();
+        if let Some(said) = said {
+            ui::raise(toast, &said);
         }
         open.set(false);
     });
 
     let save = move |()| {
-        let picked = draft();
+        let picked = model.peek().save();
+        let Some(picked) = picked else {
+            open.set(false);
+            return;
+        };
         let (next, message) = match &picked {
             None => (theme(), "App icon matches your theme".to_string()),
             Some(name) => (
@@ -93,6 +96,7 @@ pub fn IconSheet(
                 } else {
                     AppIcon::Picked
                 };
+                model.write().open(picked);
             }
             Err(e) => {
                 toast.error(e, ToastOptions::default());
@@ -115,11 +119,11 @@ pub fn IconSheet(
                 DockAction {
                     label: "Save",
                     icon: icons::CHECK,
-                    disabled: draft() == saved(),
+                    disabled: !model.read().can_save(),
                     onclick: save,
                 }
             }
-            IconRow { label: "Match theme", pick: None, tile: theme(), draft }
+            IconRow { label: "Match theme", pick: None, tile: theme(), model }
             for group in THEME_GROUPS {
                 div { class: "pref-section-label", "{group.label}" }
                 for t in group.themes.iter().copied() {
@@ -127,7 +131,7 @@ pub fn IconSheet(
                         label: orangui::display_theme_name(t),
                         pick: Some(t.to_string()),
                         tile: ThemeConfig { name: t.to_string(), is_dark: icon_mode },
-                        draft,
+                        model,
                     }
                 }
             }

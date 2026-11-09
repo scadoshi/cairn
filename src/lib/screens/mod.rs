@@ -7,6 +7,7 @@
 //! (`context/plans/screen_models.md`).
 
 pub mod counter;
+pub mod draft;
 pub mod home;
 pub mod saying;
 pub mod tap;
