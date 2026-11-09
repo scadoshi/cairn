@@ -17,9 +17,8 @@ use crate::domain::counter::stats::Summary;
 use crate::domain::counter::{
     Counter, CounterId, DayCount, Event, Goal, Step, format, series, stats,
 };
-use crate::domain::preferences;
 use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
-use crate::inbound::ui::components::celebration::{self, CelebrationHost, Saying};
+use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::counter_form::EditSheet;
 use crate::inbound::ui::components::danger_zone::DangerZoneAction;
 use crate::inbound::ui::components::heatmap::Heatmap;
@@ -27,7 +26,8 @@ use crate::inbound::ui::components::line_chart::{LineChart, Point};
 use crate::inbound::ui::components::reveal::Reveal;
 use crate::inbound::ui::components::tile::{self, Num, Tile, TileGrid, WordTile};
 use crate::inbound::ui::router::Route;
-use crate::inbound::ui::{self, TOAST_NORMAL, TOAST_QUICK, use_date_format, use_prefs, use_store};
+use crate::inbound::ui::{self, TOAST_NORMAL, use_date_format, use_prefs, use_store};
+use crate::screens::tap::{Plan, Tap};
 
 /// Which series the trends card draws.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -188,57 +188,34 @@ pub fn CounterScreen(id: i64) -> Element {
                 return;
             }
         };
-        let today_count = stored.iter().find(|e| e.day == day).map_or(0, |e| e.count);
-        // Report what actually happened rather than what was asked for: a
-        // day cannot go below zero, so this makes an empty day read "-0"
-        // without needing a case of its own.
-        let applied = stats::applied_delta(today_count, delta);
-        if applied == 0 {
-            let name = counter().map(|c| c.name.to_string()).unwrap_or_default();
-            toast.info(
-                format!("{name} -0"),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-            return;
-        }
+        let shown = counter();
+        let name = shown
+            .as_ref()
+            .map(|c| c.name.to_string())
+            .unwrap_or_default();
+        let tap = Tap {
+            name: &name,
+            entries: &stored,
+            goal: shown.as_ref().and_then(|c| c.goal),
+            own: shown.as_ref().and_then(|c| c.celebration),
+            app: celebrate_pref.peek().celebration,
+            day,
+        };
+        let applied = match tap.plan(delta) {
+            Plan::Nothing(said) => {
+                ui::raise(toast, &said);
+                return;
+            }
+            Plan::Apply(applied) => applied,
+        };
         match adjust_store.adjust(id, ui::now(), day, applied) {
             Ok(_) => {
-                // What this tap crossed, if anything, asked of the tap
-                // rather than of the screen. The same three the counter
-                // list asks, so a crossing looks the same from either
-                // screen.
-                let days = stats::days_in_year(day.year());
-                let goal = counter().and_then(|c| c.goal);
-                let done = goal.is_some_and(|g| stats::crosses_goal(g, today_count, applied, days));
-                let year_before = stored
-                    .iter()
-                    .filter(|e| e.day.year() == day.year())
-                    .map(|e| e.count)
-                    .sum::<u32>();
-                let mark = goal
-                    .and_then(|g| stats::goal_mark_crossed(g.yearly(days), year_before, applied));
-                let all_done =
-                    done && ui::all_goals_met(&adjust_store, day, &celebrate_pref.peek());
-
-                let saying = if let Some(pct) = mark {
-                    Some(Saying::Fixed(format!("{pct}% of the year")))
-                } else if all_done {
-                    Some(Saying::Rotating(preferences::all_done_line))
-                } else {
-                    None
-                };
-
-                if done || mark.is_some() {
-                    // The counter's own choice wins; None follows Config.
-                    let how = counter()
-                        .and_then(|c| c.celebration)
-                        .unwrap_or_else(|| celebrate_pref().celebration);
-                    if let Some(line) = celebration::celebrate_saying(host, how, saying) {
-                        toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
-                    }
+                let outcome = tap.outcome(applied, || {
+                    ui::all_goals_met(&adjust_store, day, &celebrate_pref.peek())
+                });
+                if let Some(said) = celebration::play(host, outcome) {
+                    ui::raise(toast, &said);
                 }
-                // A plain tap says nothing: the count it moved is on the
-                // screen.
                 reload.call(());
             }
             Err(e) => toast.error(e.to_string(), ToastOptions::default()),

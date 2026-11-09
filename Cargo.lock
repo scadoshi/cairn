@@ -299,6 +299,7 @@ dependencies = [
  "objc2",
  "objc2-foundation",
  "orangui",
+ "orangui-core",
  "rusqlite",
  "serde",
  "serde_json",
