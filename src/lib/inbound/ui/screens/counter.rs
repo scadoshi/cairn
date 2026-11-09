@@ -738,13 +738,22 @@ fn YearCard(summary: Summary) -> Element {
     }
 }
 
-/// Standing against the goal. Remaining and needed go negative past it.
+/// A tile's hint once the year's goal is reached, the words Home's card uses.
+const GOAL_MET: &str = "goal met";
+
+/// Standing against the goal. Past it, remaining and needed read zero and
+/// say the goal is met.
 #[component]
 fn GoalCard(summary: Summary, goal: Goal) -> Element {
     let Some(p) = summary.this_year.pace else {
         return rsx! {};
     };
     let year_len = summary.this_year.days_in_year;
+    let needed_hint = if p.is_met() {
+        GOAL_MET
+    } else {
+        "to land on it"
+    };
     let (pace_value, pace_hint) = if p.delta >= 0 {
         (
             format!("+{}", format::compact_i64(p.delta)),
@@ -767,7 +776,11 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
                 }
             }
             TileGrid {
-                Tile { label: "remaining", value: format::compact_i64(p.remaining) }
+                Tile {
+                    label: "remaining",
+                    value: format::compact(p.left()),
+                    hint: p.is_met().then(|| GOAL_MET.to_string()),
+                }
                 Tile {
                     label: "day goal",
                     value: format::compact(goal.daily_target(year_len)),
@@ -778,7 +791,11 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
                     value: format::compact(stats::pace_remaining_today(&p, summary.today)),
                     hint: "given where you are".to_string(),
                 }
-                Tile { label: "needed per day", value: tile::rate(p.needed_per_day), hint: "to land on it".to_string() }
+                Tile {
+                    label: "needed per day",
+                    value: tile::rate(p.needed_rate()),
+                    hint: needed_hint.to_string(),
+                }
                 Tile { label: "pace", value: pace_value, hint: pace_hint.to_string() }
             }
         }
