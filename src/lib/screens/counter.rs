@@ -84,8 +84,10 @@ pub struct State {
 /// What happened on the counter screen.
 #[derive(Debug, Clone)]
 pub enum Action {
-    /// The screen opened, came back to the foreground, or the edit sheet
-    /// saved.
+    /// The screen opened on a counter, by mount or by moving from another
+    /// counter: start fresh and load it.
+    Open,
+    /// The screen came back to the foreground, or the edit sheet saved.
     Load,
     /// The store's answer to [`Effect::LoadCounter`].
     Loaded(Loaded),
@@ -154,6 +156,10 @@ impl State {
     /// Applies `action` and returns what the client should do, in order.
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         match action {
+            Action::Open => {
+                *self = Self::default();
+                vec![Effect::LoadCounter]
+            }
             Action::Load => vec![Effect::LoadCounter],
             Action::Loaded(loaded) => {
                 self.loaded(loaded);
@@ -528,5 +534,26 @@ mod tests {
         let mut state = State::default();
         assert!(tap(&mut state, 1).is_empty());
         assert!(state.update(Action::Delete).is_empty());
+    }
+
+    #[test]
+    fn opening_another_counter_starts_fresh() {
+        let mut state = loaded(Some(Goal::PerDay(10)), &[(11, 8, 3)]);
+        state.update(Action::PickTrend(Trend::Hourly));
+        state.update(Action::PickBest(Best::Week));
+        let failed = Loaded {
+            counter: Err("gone".to_owned()),
+            entries: Ok(Vec::new()),
+            events: Ok(Vec::new()),
+        };
+        state.update(Action::Loaded(failed));
+        assert!(matches!(
+            state.update(Action::Open)[..],
+            [Effect::LoadCounter]
+        ));
+        assert!(state.counter().is_none(), "the last counter is not drawn");
+        assert_eq!(state.entries().len(), 0, "no entries are drawn");
+        assert_eq!(state.notice(), None);
+        assert_eq!((state.trend(), state.best()), (Trend::ThisWeek, Best::Day));
     }
 }

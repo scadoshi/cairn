@@ -236,7 +236,9 @@ pub fn App() -> Element {
     let saved_prefs = store.preferences().unwrap_or_default();
     let prefs = use_signal(move || saved_prefs);
     use_context_provider(|| prefs);
-    // A page iOS killed comes back in a rebuilt window.
+    // A page iOS killed comes back in a rebuilt window. It needs a real
+    // window, so a test that mounts the app goes without it.
+    #[cfg(not(test))]
     orangui::use_page_kill_recovery(
         "Cairn",
         components::navigation::back_handler::webview,

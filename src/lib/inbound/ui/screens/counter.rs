@@ -220,7 +220,8 @@ pub fn CounterScreen(id: i64) -> Element {
     // the menu moves between counters by re-rendering this screen with a
     // new `id`, not by mounting a new one.
     let dispatch = use_callback(move |action: Action| driver.dispatch(action));
-    use_effect(move || dispatch.call(Action::Load));
+    // Opens on the mount and again on each new `id`.
+    use_effect(use_reactive((&id,), move |_| dispatch.call(Action::Open)));
     // Back from the background, the screen reads the store again.
     orangui::use_on_resume(move || dispatch.call(Action::Load));
 
@@ -246,6 +247,8 @@ pub fn CounterScreen(id: i64) -> Element {
             model.best(),
         )
     };
+    #[cfg(test)]
+    tests::SHOWN.with(|shown| shown.set(counter.as_ref().map(|c| c.id)));
 
     let Some(c) = counter else {
         return rsx! {
@@ -893,5 +896,74 @@ fn HabitCard(summary: Summary) -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+    use std::rc::Rc;
+    use std::sync::Arc;
+
+    use chrono::NaiveDate;
+    use dioxus::history::{History, MemoryHistory};
+
+    use super::*;
+    use crate::domain::counter::{CounterName, CounterStore, Step};
+    use crate::inbound::ui::App;
+    use crate::outbound::sqlite::SqliteStore;
+
+    thread_local! {
+        /// The counter the screen last drew.
+        pub(super) static SHOWN: Cell<Option<CounterId>> = const { Cell::new(None) };
+    }
+
+    /// Renders until the effects a render queued have run and drawn.
+    fn settle(dom: &mut VirtualDom) {
+        for _ in 0..4 {
+            dom.render_immediate_to_vec();
+        }
+    }
+
+    // The app's screens start their timers on tokio.
+    #[tokio::test]
+    async fn moving_from_one_counter_to_another_draws_the_new_one() {
+        let store = SqliteStore::in_memory().unwrap();
+        let day = NaiveDate::from_ymd_opt(2026, 11, 8).unwrap();
+        let make = |name: &str| {
+            let name = CounterName::new(name).unwrap();
+            store
+                .create_counter(&name, None, Step::new(1).unwrap(), None, None, day)
+                .unwrap()
+        };
+        let (first, second) = (make("Pushups"), make("Squats"));
+        let store: SharedStore = Arc::new(store);
+        let start = format!("/counters/{}", first.id.0);
+        let history: Rc<dyn History> = Rc::new(MemoryHistory::with_initial_path(&start));
+
+        let mut dom = VirtualDom::new(App)
+            .with_root_context(store)
+            .with_root_context(history);
+        dom.rebuild_in_place();
+        settle(&mut dom);
+        assert_eq!(
+            SHOWN.with(Cell::get),
+            Some(first.id),
+            "the first counter loads"
+        );
+
+        // What the menu does: the same screen, another id.
+        dom.in_scope(ScopeId::APP, || {
+            dioxus::router::root_router()
+                .unwrap()
+                .push(Route::CounterScreen { id: second.id.0 });
+        });
+        dom.mark_all_dirty();
+        settle(&mut dom);
+        assert_eq!(
+            SHOWN.with(Cell::get),
+            Some(second.id),
+            "the screen draws the counter it moved to"
+        );
     }
 }
