@@ -1,6 +1,6 @@
 # Screen models
 
-Building, started 2026-11-08, one PR per step into main. This brings zwipe's screen model pattern (`zwipe/zwipe-ui/context/screen-models.md`, where every screen of the app now runs on one) into Cairn, so both apps put screen logic in the same shape and the same lessons apply to both.
+Built 2026-11-08, one PR per step into main: #11 `tap`, #12 `home`, #13 `counter`, #15 `draft`, #18 `counter_form`, #19 `config`. This brings zwipe's screen model pattern (`zwipe/zwipe-ui/context/screen-models.md`, where every screen of the app now runs on one) into Cairn, so both apps put screen logic in the same shape and the same lessons apply to both.
 
 ## Why
 
@@ -63,6 +63,16 @@ Each step is its own branch off main, merged before the next starts, with the ap
 6. **`screens::config`.** Settings (`screens/config.rs`) itself: the preference toggles, the date format, export and its toasts, the hint topics. M.
 
 Then stop and look at it on the phone before anything else moves.
+
+## As built
+
+Where the build differs from the text above:
+
+- `Toast` is built only through `info`, `success` and `error`, which tie the duration to the kind, so the pairing holds by construction and a unit test replaces the run-every-toast test.
+- Home answers all-done from the rows it holds with the tap applied. The counter screen still asks the store, through an `AskAllMet` effect sent only when the tap would ask (`Tap::needs_all_met`).
+- The counter form keeps its typed fields in signals, since orangui's `TextInput` binds a `Signal<String>`; the client reads them into `Fields` before checking.
+- Settings keeps the App icon's dark toggle and the date format button in the client.
+- Building the counter screen turned up a bug: moving between counters from the menu re-rendered the screen without reloading it. #14 fixed it with `Action::Open`, run on each new id.
 
 ## Out of scope
 
