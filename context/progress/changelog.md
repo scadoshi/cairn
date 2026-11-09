@@ -6,6 +6,8 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
+## 1.4.1, 2026-11-08
+
 - Opening another counter from the menu shows its figures right away instead of the last counter's.
 - On a counter's screen the menu lights only that counter, not Home as well.
 - Past a counter's goal, its Goal card counts how far past (+494 past goal) and needed per day reads goal met, instead of negative figures.
