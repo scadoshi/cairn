@@ -33,10 +33,10 @@ impl Pace {
         u32::try_from(self.remaining.max(0)).unwrap_or(u32::MAX)
     }
 
-    /// The per-day rate still needed to land on the goal, zero once it is
-    /// reached.
-    pub fn needed_rate(&self) -> f64 {
-        self.needed_per_day.max(0.0)
+    /// How far past the goal this year's total is, zero until it gets
+    /// there.
+    pub fn past(&self) -> u32 {
+        u32::try_from(self.remaining.saturating_neg().max(0)).unwrap_or(u32::MAX)
     }
 
     /// Whether this year's total has reached the goal.
@@ -635,23 +635,17 @@ mod tests {
     }
 
     #[test]
-    fn past_the_goal_nothing_is_left_or_needed() {
+    fn past_the_goal_counts_how_far_past() {
         let goal = Goal::per_year(10).unwrap();
         let past = pace(goal, 12, d(2026, 6, 1));
-        assert_eq!(past.left(), 0);
-        assert!(
-            past.needed_rate().abs() < f64::EPSILON,
-            "{}",
-            past.needed_rate()
-        );
+        assert_eq!((past.left(), past.past()), (0, 2));
         assert!(past.is_met());
         let exact = pace(goal, 10, d(2026, 6, 1));
+        assert_eq!((exact.left(), exact.past()), (0, 0));
         assert!(exact.is_met(), "landing on the goal meets it");
-        assert_eq!(exact.left(), 0);
         let short = pace(goal, 4, d(2026, 6, 1));
-        assert_eq!(short.left(), 6);
+        assert_eq!((short.left(), short.past()), (6, 0));
         assert!(!short.is_met());
-        assert!((short.needed_rate() - short.needed_per_day).abs() < f64::EPSILON);
     }
 
     #[test]

@@ -14,7 +14,7 @@ use orangui::{
 };
 
 use crate::domain::counter::series::HourlyBasis;
-use crate::domain::counter::stats::Summary;
+use crate::domain::counter::stats::{Pace, Summary};
 use crate::domain::counter::{
     CounterId, DayCount, Event, Goal, Step, StoreError, format, series, stats,
 };
@@ -738,22 +738,39 @@ fn YearCard(summary: Summary) -> Element {
     }
 }
 
-/// A tile's hint once the year's goal is reached, the words Home's card uses.
-const GOAL_MET: &str = "goal met";
+/// The remaining tile's label and value: what is left of the goal, or how
+/// far past it the year is.
+fn remaining_tile(pace: &Pace) -> (&'static str, String) {
+    match pace.past() {
+        0 => ("remaining", format::compact(pace.left())),
+        past => ("past goal", format!("+{}", format::compact(past))),
+    }
+}
 
-/// Standing against the goal. Past it, remaining and needed read zero and
-/// say the goal is met.
+/// The needed per day tile's value and hint: the rate that lands on the
+/// goal, or the goal met once the year has reached it, where a rate would
+/// be negative and mean nothing.
+fn needed_tile(pace: &Pace) -> (String, Option<String>) {
+    if pace.is_met() {
+        ("goal met".to_owned(), None)
+    } else {
+        (
+            tile::rate(pace.needed_per_day),
+            Some("to land on it".to_owned()),
+        )
+    }
+}
+
+/// Standing against the goal. Past it, the remaining tile counts how far
+/// past, and the needed per day tile says the goal is met.
 #[component]
 fn GoalCard(summary: Summary, goal: Goal) -> Element {
     let Some(p) = summary.this_year.pace else {
         return rsx! {};
     };
     let year_len = summary.this_year.days_in_year;
-    let needed_hint = if p.is_met() {
-        GOAL_MET
-    } else {
-        "to land on it"
-    };
+    let (remaining_label, remaining_value) = remaining_tile(&p);
+    let (needed_value, needed_hint) = needed_tile(&p);
     let (pace_value, pace_hint) = if p.delta >= 0 {
         (
             format!("+{}", format::compact_i64(p.delta)),
@@ -776,11 +793,7 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
                 }
             }
             TileGrid {
-                Tile {
-                    label: "remaining",
-                    value: format::compact(p.left()),
-                    hint: p.is_met().then(|| GOAL_MET.to_string()),
-                }
+                Tile { label: remaining_label, value: remaining_value }
                 Tile {
                     label: "day goal",
                     value: format::compact(goal.daily_target(year_len)),
@@ -791,11 +804,7 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
                     value: format::compact(stats::pace_remaining_today(&p, summary.today)),
                     hint: "given where you are".to_string(),
                 }
-                Tile {
-                    label: "needed per day",
-                    value: tile::rate(p.needed_rate()),
-                    hint: needed_hint.to_string(),
-                }
+                Tile { label: "needed per day", value: needed_value, hint: needed_hint }
                 Tile { label: "pace", value: pace_value, hint: pace_hint.to_string() }
             }
         }
@@ -940,6 +949,41 @@ mod tests {
         for _ in 0..4 {
             dom.render_immediate_to_vec();
         }
+    }
+
+    fn pace_at(total: u32) -> Pace {
+        let goal = Goal::per_year(1000).unwrap();
+        stats::pace(goal, total, NaiveDate::from_ymd_opt(2026, 6, 1).unwrap())
+    }
+
+    #[test]
+    fn past_the_goal_the_remaining_tile_counts_how_far_past() {
+        assert_eq!(
+            remaining_tile(&pace_at(1494)),
+            ("past goal", "+494".to_owned())
+        );
+        assert_eq!(
+            remaining_tile(&pace_at(1000)),
+            ("remaining", "0".to_owned())
+        );
+        assert_eq!(
+            remaining_tile(&pace_at(400)),
+            ("remaining", "600".to_owned())
+        );
+    }
+
+    #[test]
+    fn once_the_goal_is_met_the_needed_tile_says_so() {
+        assert_eq!(needed_tile(&pace_at(1494)), ("goal met".to_owned(), None));
+        assert_eq!(needed_tile(&pace_at(1000)), ("goal met".to_owned(), None));
+        let short = pace_at(400);
+        assert_eq!(
+            needed_tile(&short),
+            (
+                tile::rate(short.needed_per_day),
+                Some("to land on it".to_owned())
+            )
+        );
     }
 
     // The app's screens start their timers on tokio.
