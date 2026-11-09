@@ -22,10 +22,11 @@ use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::icon_sheet::IconSheet;
 use crate::inbound::ui::components::theme_sheet::{self, AppThemeSheet};
 use crate::inbound::ui::{
-    TOAST_NORMAL, TOAST_QUICK, bump_store_version, sentence_case, use_date_format, use_prefs,
+    self, TOAST_NORMAL, TOAST_QUICK, bump_store_version, sentence_case, use_date_format, use_prefs,
     use_store,
 };
 use crate::outbound::{app_icon, paths};
+use crate::screens::draft::{ANIMATION_UNCHANGED, Draft, MARK_UNCHANGED, REST_DAYS_UNCHANGED};
 
 /// The config screen.
 #[component]
@@ -445,21 +446,18 @@ pub fn Config() -> Element {
 fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
     let mut prefs = use_prefs();
     let toast = use_toast();
-    let saved = prefs().logo;
-    let mut draft = use_signal(|| saved);
+    let mut model = use_signal(|| Draft::new(prefs.peek().logo, MARK_UNCHANGED));
 
     use_effect(move || {
         if open() {
-            draft.set(prefs.peek().logo);
+            model.write().open(prefs.peek().logo);
         }
     });
 
     let discard = use_callback(move |()| {
-        if draft.peek().to_owned() != saved {
-            toast.info(
-                "Mark unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
+        let said = model.peek().back();
+        if let Some(said) = said {
+            ui::raise(toast, &said);
         }
         open.set(false);
     });
@@ -474,8 +472,8 @@ fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             div { class: "chip-row chip-row-center", style: "flex-wrap: wrap;",
                 for l in Logo::ALL {
                     Chip {
-                        selected: draft() == l,
-                        onclick: move |_| draft.set(l),
+                        selected: *model.read().shown() == l,
+                        onclick: move |_| model.write().pick(l),
                         "{l.label()}"
                     }
                 }
@@ -485,10 +483,13 @@ fn MarkSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 DockAction {
                     label: "Save",
                     icon: icons::CHECK,
-                    disabled: draft() == saved,
+                    disabled: !model.read().can_save(),
                     onclick: move |()| {
-                        let picked = draft();
-                        prefs.with_mut(|q| q.logo = picked);
+                        let picked = model.peek().save();
+                        if let Some(picked) = picked {
+                            prefs.with_mut(|q| q.logo = picked);
+                            model.write().open(picked);
+                        }
                         open.set(false);
                     },
                 }
@@ -511,24 +512,21 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
     let mut prefs = use_prefs();
     let toast = use_toast();
     let host = use_context::<CelebrationHost>();
-    let saved = prefs().celebration;
-    let mut draft = use_signal(|| saved);
+    let mut model = use_signal(|| Draft::new(prefs.peek().celebration, ANIMATION_UNCHANGED));
 
     // Every open starts from what is actually set, including one that
     // follows a Back.
     use_effect(move || {
         if open() {
-            draft.set(prefs.peek().celebration);
+            model.write().open(prefs.peek().celebration);
         }
     });
 
     // Back and a tap outside are the same act, so they say the same thing.
     let discard = use_callback(move |()| {
-        if draft.peek().to_owned() != saved {
-            toast.info(
-                "Animation unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
+        let said = model.peek().back();
+        if let Some(said) = said {
+            ui::raise(toast, &said);
         }
         open.set(false);
     });
@@ -543,8 +541,8 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             div { class: "chip-row chip-row-center", style: "flex-wrap: wrap;",
                 for c in Celebration::ALL {
                     Chip {
-                        selected: draft() == c,
-                        onclick: move |_| draft.set(c),
+                        selected: *model.read().shown() == c,
+                        onclick: move |_| model.write().pick(c),
                         "{c.label()}"
                     }
                 }
@@ -557,9 +555,10 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 DockAction {
                     label: "Test",
                     icon: icons::PLAY,
-                    disabled: draft() == Celebration::Off,
+                    disabled: *model.read().shown() == Celebration::Off,
                     onclick: move |()| {
-                        if let Some(line) = celebration::celebrate(host, draft()) {
+                        let picked = *model.peek().shown();
+                        if let Some(line) = celebration::celebrate(host, picked) {
                             toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
                         }
                     },
@@ -568,10 +567,13 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 DockAction {
                     label: "Save",
                     icon: icons::CHECK,
-                    disabled: draft() == saved,
+                    disabled: !model.read().can_save(),
                     onclick: move |()| {
-                        let picked = draft();
-                        prefs.with_mut(|q| q.celebration = picked);
+                        let picked = model.peek().save();
+                        if let Some(picked) = picked {
+                            prefs.with_mut(|q| q.celebration = picked);
+                            model.write().open(picked);
+                        }
                         open.set(false);
                     },
                 }
@@ -805,24 +807,21 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
     ];
     let mut prefs = use_prefs();
     let toast = use_toast();
-    let saved = prefs().rest_days;
     // Held until Save, so toggling a day to see what it does costs nothing.
     // Rest days re-sort consistency and streaks across the whole history,
     // which is too much to happen under a finger that is still deciding.
-    let mut draft = use_signal(|| saved);
+    let mut model = use_signal(|| Draft::new(prefs.peek().rest_days, REST_DAYS_UNCHANGED));
 
     use_effect(move || {
         if open() {
-            draft.set(prefs.peek().rest_days);
+            model.write().open(prefs.peek().rest_days);
         }
     });
 
     let discard = use_callback(move |()| {
-        if draft.peek().to_owned() != saved {
-            toast.info(
-                "Rest days unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
+        let said = model.peek().back();
+        if let Some(said) = said {
+            ui::raise(toast, &said);
         }
         open.set(false);
     });
@@ -837,8 +836,11 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
             div { class: "chip-row chip-row-center", style: "flex-wrap: wrap;",
                 for (day, name) in DAYS {
                     Chip {
-                        selected: preferences::rest_mask_has(draft(), day),
-                        onclick: move |_| draft.with_mut(|d| *d = preferences::rest_mask_toggled(*d, day)),
+                        selected: preferences::rest_mask_has(*model.read().shown(), day),
+                        onclick: move |_| {
+                            let toggled = preferences::rest_mask_toggled(*model.peek().shown(), day);
+                            model.write().pick(toggled);
+                        },
                         "{name}"
                     }
                 }
@@ -848,10 +850,13 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 DockAction {
                     label: "Save",
                     icon: icons::CHECK,
-                    disabled: draft() == saved,
+                    disabled: !model.read().can_save(),
                     onclick: move |()| {
-                        let picked = draft();
-                        prefs.with_mut(|q| q.rest_days = picked);
+                        let picked = model.peek().save();
+                        if let Some(picked) = picked {
+                            prefs.with_mut(|q| q.rest_days = picked);
+                            model.write().open(picked);
+                        }
                         open.set(false);
                     },
                 }
