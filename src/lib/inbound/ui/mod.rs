@@ -11,6 +11,7 @@ use std::time::Duration;
 
 use chrono::{Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{ToastOptions, Toasts};
 use orangui::{
     APP_CSS, COMPONENTS_CSS, DialogHostView, THEMES_CSS, TOAST_CSS, ToastStack, use_dialog_host,
 };
@@ -19,6 +20,7 @@ use router::Route;
 use crate::domain::counter::{self, Counter, CounterId, DayCount, Goal, Store};
 use crate::domain::date_format::DateFormat;
 use crate::domain::preferences::{CounterOrder, Preferences};
+use crate::screens::toast::{Toast, ToastKind};
 
 /// The crate version, which is the release version on the stores.
 pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -137,6 +139,17 @@ impl std::fmt::Debug for StoreVersion {
 /// stack's timed fade reads each toast's life off its type on those two
 /// durations.
 pub use orangui::{TOAST_NORMAL, TOAST_QUICK};
+
+/// Shows a toast a screen model asked for, with its kind and duration.
+pub fn raise(toasts: Toasts, toast: &Toast) {
+    let options = ToastOptions::default().duration(toast.duration());
+    let text = toast.text().to_owned();
+    match toast.kind() {
+        ToastKind::Info => toasts.info(text, options),
+        ToastKind::Success => toasts.success(text, options),
+        ToastKind::Error => toasts.error(text, options),
+    }
+}
 
 /// Whether every counter that has a goal has met it for `day`.
 ///

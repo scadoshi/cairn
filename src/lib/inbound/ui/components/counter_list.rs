@@ -17,12 +17,12 @@ use orangui::icons::EditIcon;
 use orangui::{Button, ButtonVariant};
 
 use crate::domain::counter::{Counter, format, stats};
-use crate::domain::preferences;
 use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
-use crate::inbound::ui::components::celebration::{self, CelebrationHost, Saying};
+use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::reveal::Reveal;
 use crate::inbound::ui::components::tile::{self, Num, Tile, TileGrid};
-use crate::inbound::ui::{self, TOAST_NORMAL, TOAST_QUICK, use_prefs, use_store};
+use crate::inbound::ui::{self, use_prefs, use_store};
+use crate::screens::tap::{Plan, Tap};
 
 /// Every counter as a card, in the preferred order.
 #[component]
@@ -96,64 +96,34 @@ fn CounterCard(
         // The day and its count as the store has them at the tap, not as
         // the last render drew them: the day may have turned since.
         let day = ui::today(&prefs);
-        let before = match bump_store.entries(id) {
-            Ok(before) => before,
+        let stored = match bump_store.entries(id) {
+            Ok(stored) => stored,
             Err(e) => {
                 toast.error(e.to_string(), ToastOptions::default());
                 return;
             }
         };
-        let before = stats::summarize_with(&before, goal, day, &prefs);
-        let today_count = before.today;
-        let year_before = before.this_year.total;
-        let days = stats::days_in_year(day.year());
-        // Report what actually happened rather than what was asked for: a
-        // day cannot go below zero, so this makes an empty day read "-0"
-        // without needing a case of its own.
-        let applied = stats::applied_delta(today_count, delta);
-        if applied == 0 {
-            toast.info(
-                format!("{name} -0"),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-            return;
-        }
+        let tap = Tap {
+            name: &name,
+            entries: &stored,
+            goal,
+            own: card_celebration,
+            app: prefs.celebration,
+            day,
+        };
+        let applied = match tap.plan(delta) {
+            Plan::Nothing(said) => {
+                ui::raise(toast, &said);
+                return;
+            }
+            Plan::Apply(applied) => applied,
+        };
         match bump_store.adjust(id, ui::now(), day, applied) {
             Ok(_) => {
-                // What this tap crossed, if anything. All three are asked
-                // of the tap rather than of the screen, so nothing has to
-                // be stored to remember what was already said, and
-                // reopening the app on a finished day is silent.
-                let done = counter
-                    .goal
-                    .is_some_and(|g| stats::crosses_goal(g, today_count, applied, days));
-                let mark = counter
-                    .goal
-                    .and_then(|g| stats::goal_mark_crossed(g.yearly(days), year_before, applied));
-                // Only worth asking when this counter just finished: the
-                // day cannot have been completed by a tap that did not.
-                let all_done = done && ui::all_goals_met(&bump_store, day, &prefs);
-
-                // Rarest first. A fraction of the year comes round a few
-                // times a year, the whole day most days, one counter's day
-                // several times a day.
-                let saying = if let Some(pct) = mark {
-                    Some(Saying::Fixed(format!("{pct}% of the year")))
-                } else if all_done {
-                    Some(Saying::Rotating(preferences::all_done_line))
-                } else {
-                    None
-                };
-
-                if done || mark.is_some() {
-                    // The counter's own choice wins; None follows Config.
-                    let how = card_celebration.unwrap_or(prefs.celebration);
-                    if let Some(line) = celebration::celebrate_saying(host, how, saying) {
-                        toast.success(line, ToastOptions::default().duration(TOAST_NORMAL));
-                    }
+                let outcome = tap.outcome(applied, || ui::all_goals_met(&bump_store, day, &prefs));
+                if let Some(said) = celebration::play(host, outcome) {
+                    ui::raise(toast, &said);
                 }
-                // A plain tap says nothing: the count it moved is on the
-                // card.
                 on_bump.call(());
             }
             Err(e) => toast.error(e.to_string(), ToastOptions::default()),

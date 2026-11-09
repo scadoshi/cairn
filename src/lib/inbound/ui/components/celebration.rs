@@ -15,6 +15,9 @@ use std::time::Duration;
 use dioxus::prelude::*;
 
 use crate::domain::preferences::{self, Celebration};
+use crate::screens::saying::Saying;
+use crate::screens::tap::Outcome;
+use crate::screens::toast::Toast;
 
 /// How long the overlay stays mounted, per kind. The level up is one fast
 /// pass; the confetti has to wait for the last piece to land.
@@ -143,18 +146,6 @@ pub struct Playing {
     pub id: u64,
 }
 
-/// What a celebration says.
-///
-/// Two kinds, because the line sets rotate so the same words do not come up
-/// twice running, while a figure worked out at the tap is whatever it is.
-#[derive(Debug)]
-pub enum Saying {
-    /// This exact text, such as "40% of the year".
-    Fixed(String),
-    /// One of a set, picked by how many celebrations have fired.
-    Rotating(fn(u64) -> &'static str),
-}
-
 /// The most layers on screen at once. Spamming the Test button past this
 /// drops the oldest rather than piling up hundreds of pieces in the WebView.
 const MAX_LAYERS: usize = 8;
@@ -182,6 +173,17 @@ impl std::fmt::Debug for CelebrationHost {
 /// `Off` is checked here too, so the tap handlers stay about counting.
 pub fn celebrate(host: CelebrationHost, how: Celebration) -> Option<String> {
     celebrate_saying(host, how, None)
+}
+
+/// Plays what a tap's [`Outcome`] asks for.
+///
+/// Returns the success toast with the line the animation says, or `None`
+/// for a quiet tap.
+pub fn play(host: CelebrationHost, outcome: Outcome) -> Option<Toast> {
+    let Outcome::Celebrate { how, saying } = outcome else {
+        return None;
+    };
+    celebrate_saying(host, how, saying).map(Toast::success)
 }
 
 /// Fires a celebration that says something other than the usual line.
