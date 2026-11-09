@@ -87,6 +87,24 @@ pub struct FormErrors {
 }
 
 impl FormErrors {
+    /// The messages showing, checked again against `fields`: each one
+    /// stays while its field is still wrong, with the current message, and
+    /// goes once the field is right. A field with no message showing stays
+    /// quiet, so nothing shows before the first Save. A failed save's
+    /// message waits for the next Save.
+    #[must_use]
+    pub fn revalidated(self, fields: &Fields) -> Self {
+        let now = fields.validate().err().unwrap_or_default();
+        let showing = |was: Option<String>, now: Option<String>| was.and(now);
+        Self {
+            name: showing(self.name, now.name),
+            goal: showing(self.goal, now.goal),
+            step: showing(self.step, now.step),
+            big_step: showing(self.big_step, now.big_step),
+            form: self.form,
+        }
+    }
+
     /// A failed save's `message`, at the bottom under every field.
     pub fn failed(message: String) -> Self {
         Self {
@@ -371,6 +389,36 @@ mod tests {
         assert_eq!(
             Mode::Edit(CounterId(4)).write(v.clone()),
             Write::Update(CounterId(4), v)
+        );
+    }
+
+    #[test]
+    fn a_showing_message_follows_its_field_and_a_quiet_one_stays_quiet() {
+        let saved = fields("   ", "0", 10, 5).validate().unwrap_err();
+        assert!(saved.name.is_some() && saved.goal.is_some() && saved.big_step.is_some());
+
+        let still_wrong = saved.clone().revalidated(&fields("  ", "00", 10, 5));
+        assert_eq!(still_wrong, saved, "still wrong, still showing");
+
+        let name_fixed = saved.clone().revalidated(&fields("Pushups", "0", 10, 5));
+        assert_eq!(name_fixed.name, None);
+        assert_eq!(name_fixed.goal, saved.goal, "the goal waits");
+
+        let step_fixed = saved.revalidated(&fields("  ", "0", 1, 5));
+        assert_eq!(
+            step_fixed.big_step, None,
+            "a smaller step makes the big step right"
+        );
+
+        let quiet = FormErrors::default().revalidated(&fields("   ", "0", 10, 5));
+        assert_eq!(quiet, FormErrors::default(), "nothing shows before a Save");
+
+        let failed =
+            FormErrors::failed("disk full".to_owned()).revalidated(&fields("Pushups", "", 1, 0));
+        assert_eq!(
+            failed.form.as_deref(),
+            Some("disk full"),
+            "a failed save waits for the next"
         );
     }
 }
