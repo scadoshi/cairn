@@ -7,6 +7,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 ## Unreleased
 
 - Opening another counter from the menu shows its figures right away instead of the last counter's.
+- On a counter's screen the menu lights only that counter, not Home as well.
 
 ## 1.4.0, 2026-11-08
 

@@ -55,13 +55,22 @@ impl Section {
         }
     }
 
-    /// The section a route sits under, lit in the menu. A counter sits
-    /// under Home.
-    pub const fn of(route: &Route) -> Self {
+    /// The section a route is, lit in the menu. A counter's screen is none:
+    /// its own row in the list is what lights.
+    pub const fn of(route: &Route) -> Option<Self> {
         match route {
-            Route::Home {} | Route::CounterScreen { .. } => Self::Home,
-            Route::Config {} => Self::Config,
+            Route::Home {} => Some(Self::Home),
+            Route::Config {} => Some(Self::Config),
+            Route::CounterScreen { .. } => None,
         }
+    }
+}
+
+/// The counter whose row is lit: the one whose screen `route` is.
+pub const fn lit_counter(route: &Route) -> Option<CounterId> {
+    match route {
+        Route::CounterScreen { id } => Some(CounterId(*id)),
+        Route::Home {} | Route::Config {} => None,
     }
 }
 
@@ -88,10 +97,7 @@ pub fn MenuLinks(open: Signal<bool>, route: Route) -> Element {
             };
         }
     };
-    let open_id = match route {
-        Route::CounterScreen { id } => Some(CounterId(id)),
-        Route::Home {} | Route::Config {} => None,
-    };
+    let open_id = lit_counter(&route);
     rsx! {
         for counter in counters {
             li { key: "counter-{counter.id}",
@@ -127,12 +133,12 @@ fn CounterRow(id: CounterId, name: String, lit: bool, mut open: Signal<bool>) ->
 /// One section's footer icon, lit when it is `current`. A tap pushes the
 /// section's route; on the screen it opens, it closes the menu instead.
 #[component]
-fn SectionButton(section: Section, current: Section, mut open: Signal<bool>) -> Element {
+fn SectionButton(section: Section, current: Option<Section>, mut open: Signal<bool>) -> Element {
     let route: Route = use_route();
     let nav = use_navigator();
     rsx! {
         button {
-            class: if current == section { "btn-action nav-icon nav-link active" } else { "btn-action nav-icon nav-link" },
+            class: if current == Some(section) { "btn-action nav-icon nav-link active" } else { "btn-action nav-icon nav-link" },
             r#type: "button",
             aria_label: section.label(),
             onclick: move |_| {
@@ -196,7 +202,7 @@ mod tests {
     #[test]
     fn every_section_lights_up_on_its_own_screen() {
         for section in Section::ALL {
-            assert_eq!(Section::of(&section.route()), section, "{section:?}");
+            assert_eq!(Section::of(&section.route()), Some(section), "{section:?}");
         }
     }
 
@@ -209,7 +215,10 @@ mod tests {
     }
 
     #[test]
-    fn a_counter_sits_under_home() {
-        assert_eq!(Section::of(&Route::CounterScreen { id: 1 }), Section::Home);
+    fn a_counters_screen_lights_the_counter_and_not_home() {
+        let route = Route::CounterScreen { id: 1 };
+        assert_eq!(lit_counter(&route), Some(CounterId(1)));
+        assert_eq!(Section::of(&route), None, "Home is lit on Home only");
+        assert_eq!(lit_counter(&Route::Home {}), None);
     }
 }
