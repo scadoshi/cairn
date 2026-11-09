@@ -6,12 +6,14 @@
 //! what they ask; the shape follows zwipe's screen models
 //! (`context/plans/screen_models.md`).
 
+pub mod config;
 pub mod counter;
 pub mod counter_form;
 pub mod draft;
 pub mod home;
 pub mod saying;
 pub mod tap;
+pub mod text;
 pub mod toast;
 
 #[cfg(test)]

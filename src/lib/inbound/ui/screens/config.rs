@@ -1,13 +1,12 @@
 //! Config: everything the person can set, grouped, laid out like zwiper's
 //! profile screen with its preferences sheet.
 
-use std::fmt::Write as _;
+use std::collections::VecDeque;
 use std::path::PathBuf;
-use std::sync::Arc;
 
 use chrono::{Local, Weekday};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use orangui::icons::{self, DockIcon, EditIcon};
 use orangui::{
     ActionDock, AlertDialog, BottomSheet, Button, ButtonVariant, Chip, DarkModeButton,
@@ -15,17 +14,21 @@ use orangui::{
     InfoButton, ModeIcon, PaletteIcon, ThemeConfig, use_screen_hint,
 };
 
-use crate::domain::counter::backup::{self, Backup, OnConflict, Restored};
-use crate::domain::counter::{CounterName, CounterStore, csv};
+use crate::domain::counter::backup::{self, Backup, OnConflict};
+use crate::domain::counter::{CounterStore, csv};
 use crate::domain::preferences::{self, AppIcon, Celebration, Logo, Preferences};
 use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::icon_sheet::IconSheet;
 use crate::inbound::ui::components::theme_sheet::{self, AppThemeSheet};
 use crate::inbound::ui::{
-    self, TOAST_NORMAL, TOAST_QUICK, bump_store_version, sentence_case, use_date_format, use_prefs,
-    use_store,
+    self, SharedStore, TOAST_NORMAL, TOAST_QUICK, bump_store_version, sentence_case,
+    use_date_format, use_prefs, use_store,
 };
 use crate::outbound::{app_icon, paths};
+use crate::screens::config::{
+    Action, CONFLICT_BODY, Effect, PendingImport, State, Step, Topic, conflict_names,
+    conflict_title, rest_label, rollover_label,
+};
 use crate::screens::draft::{ANIMATION_UNCHANGED, Draft, MARK_UNCHANGED, REST_DAYS_UNCHANGED};
 
 /// The config screen.
@@ -33,16 +36,11 @@ use crate::screens::draft::{ANIMATION_UNCHANGED, Draft, MARK_UNCHANGED, REST_DAY
 pub fn Config() -> Element {
     let theme = use_context::<Signal<ThemeConfig>>();
     let store = use_store();
-    let backup_store = Arc::clone(&store);
-    let restore_store = Arc::clone(&store);
-    let import_store = Arc::clone(&store);
     let mut preferences_open = use_signal(|| false);
-    let mut notice = use_signal(|| None::<String>);
     let toast = use_toast();
     let mut date_format = use_date_format();
-    let mut prefs = use_prefs();
+    let prefs = use_prefs();
     let mut rest_open = use_signal(|| false);
-    let mut hint = use_signal(|| None::<ConfigHint>);
     let mut celebration_open = use_signal(|| false);
     let mut mark_open = use_signal(|| false);
     let mut icon_open = use_signal(|| false);
@@ -50,102 +48,25 @@ pub fn Config() -> Element {
     let mut hint_open = use_signal(|| false);
     let screen_hint_open = use_signal(|| false);
     use_screen_hint(screen_hint_open);
-    let rest_count = (0..7).filter(|i| prefs().rest_days & (1 << i) != 0).count();
-    let rest_label = if rest_count == 0 {
-        "None".to_string()
-    } else {
-        rest_count.to_string()
+    let conflict_open = use_signal(|| false);
+    let driver = Driver {
+        state: use_signal(State::default),
+        store: use_hook(|| CopyValue::new(store)),
+        toasts: toast,
+        prefs,
+        conflict_open,
     };
-
-    // One CSV per counter, day and count, into the export folder.
-    let export = move |_| {
-        let result = store
-            .list_counters()
-            .map_err(|e| e.to_string())
-            .and_then(|counters| {
-                let dir = paths::exports().map_err(|e| format!("export folder: {e}"))?;
-                let mut written = 0usize;
-                for c in counters {
-                    let entries = store.entries(c.id).map_err(|e| e.to_string())?;
-                    let path = dir.join(format!("count-{}.csv", c.name.slug()));
-                    std::fs::write(&path, csv::render(&entries))
-                        .map_err(|e| format!("{}: {e}", path.display()))?;
-                    written = written.saturating_add(1);
-                }
-                Ok((written, dir))
-            });
-        match result {
-            Ok((n, dir)) => {
-                toast.success(
-                    exported_line(n),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
-                notice.set(Some(format!("Written to {}", dir.display())));
-            }
-            Err(e) => {
-                toast.error("Export failed".to_string(), ToastOptions::default());
-                notice.set(Some(e));
-            }
-        }
-    };
-
-    // The full backup: every counter with its settings, days and taps, in
-    // one JSON file in the export folder.
-    let save_backup = move |_| match write_backup(&*backup_store) {
-        Ok(path) => {
-            toast.success(
-                "Backup saved".to_string(),
-                ToastOptions::default().duration(TOAST_NORMAL),
-            );
-            notice.set(Some(format!("Written to {}", path.display())));
-        }
-        Err(e) => {
-            toast.error("Backup failed".to_string(), ToastOptions::default());
-            notice.set(Some(e));
-        }
-    };
-
-    // A checked backup waiting on the Keep or Replace answer.
-    let mut pending = use_signal(|| None::<PendingImport>);
-    let mut conflict_open = use_signal(|| false);
-    let restore = use_callback(move |on_conflict: OnConflict| {
-        let Some(import) = pending.take() else {
-            return;
-        };
-        match restore_store.restore(&import.backup, on_conflict) {
-            Ok(done) => {
-                bump_store_version();
-                toast.success(
-                    restored_line(done),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
-                notice.set(Some(format!("Imported from {}", import.file.display())));
-            }
-            Err(e) => {
-                toast.error("Import failed".to_string(), ToastOptions::default());
-                notice.set(Some(format!(
-                    "{}. Nothing was changed",
-                    sentence_case(&e.to_string())
-                )));
-            }
-        }
-    });
-    // Reads and checks the newest backup before anything is written. With
-    // no name in common it imports at once; otherwise it asks.
-    let import = move |_| match read_backup(&*import_store) {
-        Ok(found) => {
-            let ask = !found.conflicts.is_empty();
-            pending.set(Some(found));
-            if ask {
-                conflict_open.set(true);
-            } else {
-                restore.call(OnConflict::Keep);
-            }
-        }
-        Err(e) => {
-            toast.error("Import failed".to_string(), ToastOptions::default());
-            notice.set(Some(e));
-        }
+    let step = move |which: Step| driver.dispatch(Action::Step(which, *prefs.peek()));
+    let (notice, topic, conflicts) = {
+        let model = driver.state.read();
+        (
+            model.notice().map(str::to_owned),
+            model.topic(),
+            model
+                .pending()
+                .map(|p| p.conflicts.clone())
+                .unwrap_or_default(),
+        )
     };
 
     // Dark mode flips live; the App-level effect persists it. A row whose
@@ -185,7 +106,7 @@ pub fn Config() -> Element {
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "Theme" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Theme)); hint_open.set(true); } }
+                        InfoButton { onclick: move |_| { driver.dispatch(Action::Topic(Topic::Theme)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
                         span { {orangui::display_theme_name(&theme.read().name)} }
@@ -193,7 +114,7 @@ pub fn Config() -> Element {
                         Button {
                             variant: ButtonVariant::Action,
                             onclick: move |_| {
-                                hint.set(Some(ConfigHint::Theme));
+                                driver.dispatch(Action::Topic(Topic::Theme));
                                 preferences_open.set(true);
                             },
                             PaletteIcon {}
@@ -204,7 +125,7 @@ pub fn Config() -> Element {
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "App icon" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::AppIcon)); hint_open.set(true); } }
+                        InfoButton { onclick: move |_| { driver.dispatch(Action::Topic(Topic::AppIcon)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
                         if prefs().app_icon == AppIcon::MatchesTheme {
@@ -216,7 +137,7 @@ pub fn Config() -> Element {
                         Button {
                             variant: ButtonVariant::Action,
                             onclick: move |_| {
-                                hint.set(Some(ConfigHint::AppIcon));
+                                driver.dispatch(Action::Topic(Topic::AppIcon));
                                 icon_open.set(true);
                             },
                             "Change"
@@ -226,14 +147,14 @@ pub fn Config() -> Element {
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "Mark" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Mark)); hint_open.set(true); } }
+                        InfoButton { onclick: move |_| { driver.dispatch(Action::Topic(Topic::Mark)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
                         span { {prefs().logo.label()} }
                         Button {
                             variant: ButtonVariant::Action,
                             onclick: move |_| {
-                                hint.set(Some(ConfigHint::Mark));
+                                driver.dispatch(Action::Topic(Topic::Mark));
                                 mark_open.set(true);
                             },
                             "Change"
@@ -243,7 +164,7 @@ pub fn Config() -> Element {
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "Dates" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Dates)); hint_open.set(true); } }
+                        InfoButton { onclick: move |_| { driver.dispatch(Action::Topic(Topic::Dates)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
                         Button {
@@ -264,21 +185,13 @@ pub fn Config() -> Element {
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "Day starts" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::DayStarts)); hint_open.set(true); } }
+                        InfoButton { onclick: move |_| { driver.dispatch(Action::Topic(Topic::DayStarts)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
                         Button {
                             variant: ButtonVariant::Action,
                             onclick: move |_| {
-                                let i = Preferences::ROLLOVER_HOURS
-                                    .iter()
-                                    .position(|h| *h == prefs.peek().rollover_hour)
-                                    .unwrap_or(0);
-                                let next = Preferences::ROLLOVER_HOURS
-                                    .get((i + 1) % Preferences::ROLLOVER_HOURS.len())
-                                    .copied()
-                                    .unwrap_or(0);
-                                prefs.with_mut(|q| q.rollover_hour = next);
+                                step(Step::DayStarts);
                             },
                             {rollover_label(prefs().rollover_hour)}
                         }
@@ -287,18 +200,13 @@ pub fn Config() -> Element {
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "Week starts" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::WeekStarts)); hint_open.set(true); } }
+                        InfoButton { onclick: move |_| { driver.dispatch(Action::Topic(Topic::WeekStarts)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
                         Button {
                             variant: ButtonVariant::Action,
                             onclick: move |_| {
-                                let next = if prefs.peek().week_start == Weekday::Mon {
-                                    Weekday::Sun
-                                } else {
-                                    Weekday::Mon
-                                };
-                                prefs.with_mut(|q| q.week_start = next);
+                                step(Step::WeekStarts);
                             },
                             if prefs().week_start == Weekday::Mon { "Monday" } else { "Sunday" }
                         }
@@ -307,14 +215,14 @@ pub fn Config() -> Element {
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "Rest days" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::RestDays)); hint_open.set(true); } }
+                        InfoButton { onclick: move |_| { driver.dispatch(Action::Topic(Topic::RestDays)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
-                        span { "{rest_label}" }
+                        span { {rest_label(prefs().rest_days)} }
                         Button {
                             variant: ButtonVariant::Action,
                             onclick: move |_| {
-                                hint.set(Some(ConfigHint::RestDays));
+                                driver.dispatch(Action::Topic(Topic::RestDays));
                                 rest_open.set(true);
                             },
                             "Change"
@@ -329,14 +237,13 @@ pub fn Config() -> Element {
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "Sort counters" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::SortCounters)); hint_open.set(true); } }
+                        InfoButton { onclick: move |_| { driver.dispatch(Action::Topic(Topic::SortCounters)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
                         Button {
                             variant: ButtonVariant::Action,
                             onclick: move |_| {
-                                let next = prefs.peek().counter_order.next();
-                                prefs.with_mut(|q| q.counter_order = next);
+                                step(Step::SortCounters);
                             },
                             "{prefs().counter_order.label()}"
                         }
@@ -345,14 +252,14 @@ pub fn Config() -> Element {
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "Goal animation" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Celebration)); hint_open.set(true); } }
+                        InfoButton { onclick: move |_| { driver.dispatch(Action::Topic(Topic::Celebration)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
                         span { {prefs().celebration.label()} }
                         Button {
                             variant: ButtonVariant::Action,
                             onclick: move |_| {
-                                hint.set(Some(ConfigHint::Celebration));
+                                driver.dispatch(Action::Topic(Topic::Celebration));
                                 celebration_open.set(true);
                             },
                             "Change"
@@ -362,14 +269,13 @@ pub fn Config() -> Element {
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "Confirm minus" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::ConfirmMinus)); hint_open.set(true); } }
+                        InfoButton { onclick: move |_| { driver.dispatch(Action::Topic(Topic::ConfirmMinus)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
                         Button {
                             variant: ButtonVariant::Action,
                             onclick: move |_| {
-                                let on = !prefs.peek().confirm_minus;
-                                prefs.with_mut(|q| q.confirm_minus = on);
+                                step(Step::ConfirmMinus);
                             },
                             if prefs().confirm_minus { "On" } else { "Off" }
                         }
@@ -383,23 +289,23 @@ pub fn Config() -> Element {
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "Backup" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Backup)); hint_open.set(true); } }
+                        InfoButton { onclick: move |_| { driver.dispatch(Action::Topic(Topic::Backup)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
-                        Button { variant: ButtonVariant::Action, onclick: save_backup, "Export" }
-                        Button { variant: ButtonVariant::Action, onclick: import, "Import" }
+                        Button { variant: ButtonVariant::Action, onclick: move |_| driver.dispatch(Action::SaveBackup), "Export" }
+                        Button { variant: ButtonVariant::Action, onclick: move |_| driver.dispatch(Action::Import), "Import" }
                     }
                 }
                 div { class: "settings-row",
                     span { class: "row-label-with-hint",
                         span { class: "settings-row-label", "Export" }
-                        InfoButton { onclick: move |_| { hint.set(Some(ConfigHint::Export)); hint_open.set(true); } }
+                        InfoButton { onclick: move |_| { driver.dispatch(Action::Topic(Topic::Export)); hint_open.set(true); } }
                     }
                     div { class: "settings-row-value",
-                        Button { variant: ButtonVariant::Action, onclick: export, "CSV" }
+                        Button { variant: ButtonVariant::Action, onclick: move |_| driver.dispatch(Action::ExportCsv), "CSV" }
                     }
                 }
-                if let Some(n) = notice() {
+                if let Some(n) = notice {
                     p { class: "pref-note export-note", "{n}" }
                 }
             }
@@ -414,31 +320,110 @@ pub fn Config() -> Element {
         CelebrationSheet { open: celebration_open, hint: hint_open }
         MarkSheet { open: mark_open, hint: hint_open }
         IconSheet { open: icon_open, icon, hint: hint_open }
-        ConfigHintDialog { open: hint_open, which: hint() }
+        ConfigHintDialog { open: hint_open, which: topic }
         AlertDialog {
             open: conflict_open,
-            title: conflict_title(pending.read().as_ref().map_or(0, |p| p.conflicts.len())),
+            title: conflict_title(conflicts.len()),
             actions: vec![
                 DialogAction::Dismiss("Cancel".into()),
                 DialogAction::Confirm {
                     label: "Keep mine".into(),
                     danger: false,
-                    on_confirm: Callback::new(move |()| restore.call(OnConflict::Keep)),
+                    on_confirm: Callback::new(move |()| driver.dispatch(Action::Restore(OnConflict::Keep))),
                 },
                 DialogAction::Confirm {
                     label: "Replace".into(),
                     danger: true,
-                    on_confirm: Callback::new(move |()| restore.call(OnConflict::Replace)),
+                    on_confirm: Callback::new(move |()| driver.dispatch(Action::Restore(OnConflict::Replace))),
                 },
             ],
-            p { {conflict_names(pending.read().as_ref().map(|p| p.conflicts.as_slice()).unwrap_or_default())} }
-            p { "Replace swaps yours, and their history, for the backup's. Keep mine leaves yours and imports the rest." }
+            p { {conflict_names(&conflicts)} }
+            p { {CONFLICT_BODY} }
         }
         HintDialog { open: screen_hint_open, title: "Settings",
             HintLine { "Settings only. Nothing here edits your counts" }
             HintLine { "Tap any row's " HintKey { color: "--palette-6", "?" } " to learn what it does" }
         }
     }
+}
+
+/// Performs what Settings' model asks: the preferences, the files, the
+/// store's restore, the conflict dialog and the toasts.
+#[derive(Clone, Copy)]
+struct Driver {
+    state: Signal<State>,
+    store: CopyValue<SharedStore>,
+    toasts: Toasts,
+    prefs: Signal<Preferences>,
+    conflict_open: Signal<bool>,
+}
+
+impl Driver {
+    /// Runs `action` and every action its effects answer with.
+    fn dispatch(self, action: Action) {
+        let mut state = self.state;
+        let mut queue = VecDeque::from([action]);
+        while let Some(action) = queue.pop_front() {
+            let effects = state.write().update(action);
+            for effect in effects {
+                if let Some(answer) = self.perform(effect) {
+                    queue.push_back(answer);
+                }
+            }
+        }
+    }
+
+    /// Performs one effect, returning the answer when it has one.
+    fn perform(self, effect: Effect) -> Option<Action> {
+        let Self {
+            mut prefs,
+            mut conflict_open,
+            ..
+        } = self;
+        let store = self.store.read();
+        match effect {
+            Effect::SetPrefs(next) => {
+                prefs.set(next);
+                None
+            }
+            Effect::ExportCsv => Some(Action::Exported(export_csv(&**store))),
+            Effect::SaveBackup => Some(Action::BackupSaved(write_backup(&**store))),
+            Effect::ReadBackup => Some(Action::BackupRead(read_backup(&**store))),
+            Effect::AskConflict => {
+                conflict_open.set(true);
+                None
+            }
+            Effect::Restore(backup, on_conflict) => Some(Action::Restored(
+                store
+                    .restore(&backup, on_conflict)
+                    .map_err(|e| e.to_string()),
+            )),
+            Effect::Toast(toast) => {
+                ui::raise(self.toasts, &toast);
+                None
+            }
+            Effect::StoreChanged => {
+                bump_store_version();
+                None
+            }
+        }
+    }
+}
+
+/// Writes one CSV per counter, day and count, into the export folder, and
+/// returns how many and the folder, or says what failed.
+fn export_csv(store: &(impl CounterStore + ?Sized)) -> Result<(usize, PathBuf), String> {
+    let counters = store.list_counters().map_err(|e| e.to_string())?;
+    let dir = paths::exports().map_err(|e| format!("export folder: {e}"))?;
+    let mut written = 0usize;
+    for c in counters {
+        let entries = store.entries(c.id).map_err(|e| e.to_string())?;
+        let path = dir.join(format!("count-{}.csv", c.name.slug()));
+        std::fs::write(&path, csv::render(&entries))
+            .map_err(|e| format!("{}: {e}", path.display()))?;
+        written = written.saturating_add(1);
+    }
+    Ok((written, dir))
 }
 
 /// The letters to pick a mark from, one selected, kept until Save.
@@ -582,57 +567,40 @@ fn CelebrationSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
     }
 }
 
-/// Which config row's hint is showing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ConfigHint {
-    Theme,
-    AppIcon,
-    Mark,
-    Celebration,
-    Dates,
-    DayStarts,
-    WeekStarts,
-    RestDays,
-    SortCounters,
-    ConfirmMinus,
-    Backup,
-    Export,
-}
-
 /// One dialog for the whole screen, its content picked by `which`.
 #[component]
-fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
+fn ConfigHintDialog(open: Signal<bool>, which: Option<Topic>) -> Element {
     let Some(which) = which else {
         return rsx! {};
     };
     match which {
-        ConfigHint::Theme => rsx! {
+        Topic::Theme => rsx! {
             HintDialog { open, title: "Theme",
                 HintLine { "The app's palette. It previews as you tap" }
                 HintLine { "The last four are color blind modes" }
                 HintLine { HintKey { ModeIcon { dark: false } " light" } " " HintKey { ModeIcon { dark: true } " dark" } " switches between the theme's two palettes" }
             }
         },
-        ConfigHint::AppIcon => rsx! {
+        Topic::AppIcon => rsx! {
             HintDialog { open, title: "App icon",
                 HintLine { "The icon on your home screen, in any theme's colors" }
                 HintLine { HintKey { "Match theme" } " keeps it in your theme as you change it" }
             }
         },
-        ConfigHint::Mark => rsx! {
+        Topic::Mark => rsx! {
             HintDialog { open, title: "Mark",
                 HintLine { "Which letter sits at the top of the home screen" }
                 HintLine { "It changes nothing but the drawing" }
             }
         },
-        ConfigHint::Celebration => rsx! {
+        Topic::Celebration => rsx! {
             HintDialog { open, title: "Goal animation",
                 HintLine { "What plays when a counter finishes its day, clears the whole day, or passes another tenth of its year" }
                 HintLine { "A counter can pick its own from its " HintKey { EditIcon {} } " sheet" }
                 HintLine { HintKey { DockIcon { path: icons::PLAY } } " plays the one picked before " HintKey { DockIcon { path: icons::CHECK } } " saves it" }
             }
         },
-        ConfigHint::Dates => rsx! {
+        Topic::Dates => rsx! {
             HintDialog { open, title: "Dates",
                 HintLine { "How every date is written" }
                 HintBullets {
@@ -641,13 +609,13 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
                 }
             }
         },
-        ConfigHint::DayStarts => rsx! {
+        Topic::DayStarts => rsx! {
             HintDialog { open, title: "Day starts",
                 HintLine { "When a new day begins. Taps after midnight but before this hour count for the day before" }
                 HintLine { "Changing it re-sorts past taps. Totals don't move" }
             }
         },
-        ConfigHint::WeekStarts => rsx! {
+        Topic::WeekStarts => rsx! {
             HintDialog { open, title: "Week starts",
                 HintLine { "Which day opens the week: this week's chart, weekly totals, and the week number" }
                 HintBullets {
@@ -656,13 +624,13 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
                 }
             }
         },
-        ConfigHint::RestDays => rsx! {
+        Topic::RestDays => rsx! {
             HintDialog { open, title: "Rest days",
                 HintLine { "Days you don't train. They don't count against consistency, and a streak steps over them" }
                 HintLine { "Logging on one still counts" }
             }
         },
-        ConfigHint::SortCounters => rsx! {
+        Topic::SortCounters => rsx! {
             HintDialog { open, title: "Sort counters",
                 HintBullets {
                     HintBullet { HintKey { "Created" } " oldest first" }
@@ -672,13 +640,13 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
                 }
             }
         },
-        ConfigHint::ConfirmMinus => rsx! {
+        Topic::ConfirmMinus => rsx! {
             HintDialog { open, title: "Confirm minus",
                 HintLine { "Every minus button asks first. Worth it when the step is big" }
                 HintLine { "Minus only touches today and never goes below zero" }
             }
         },
-        ConfigHint::Backup => rsx! {
+        Topic::Backup => rsx! {
             HintDialog { open, title: "Backup",
                 HintLine { HintKey { "Export" } " saves every counter, its settings and every tap in one file" }
                 HintLine { HintKey { "Import" } " reads the newest backup there. If a counter's name is already here, it asks to keep yours or replace it" }
@@ -689,7 +657,7 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
                 }
             }
         },
-        ConfigHint::Export => rsx! {
+        Topic::Export => rsx! {
             HintDialog { open, title: "Export",
                 HintLine { HintKey { "CSV" } " writes one file per counter: day and count" }
                 HintBullets {
@@ -700,15 +668,6 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<ConfigHint>) -> Element {
             }
         },
     }
-}
-
-/// A backup read from the export folder and checked, with the names it
-/// shares with the store.
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct PendingImport {
-    backup: Backup,
-    conflicts: Vec<CounterName>,
-    file: PathBuf,
 }
 
 /// Writes the full backup into the export folder and returns its path, or
@@ -740,57 +699,6 @@ fn read_backup(store: &(impl CounterStore + ?Sized)) -> Result<PendingImport, St
         conflicts,
         file,
     })
-}
-
-/// "Exported 1 file", "Exported 3 files".
-fn exported_line(n: usize) -> String {
-    if n == 1 {
-        "Exported 1 file".to_string()
-    } else {
-        format!("Exported {n} files")
-    }
-}
-
-/// "1 counter is already here", "3 counters are already here".
-fn conflict_title(n: usize) -> String {
-    if n == 1 {
-        "1 counter is already here".to_string()
-    } else {
-        format!("{n} counters are already here")
-    }
-}
-
-/// The shared names, comma separated.
-fn conflict_names(names: &[CounterName]) -> String {
-    names
-        .iter()
-        .map(CounterName::as_str)
-        .collect::<Vec<&str>>()
-        .join(", ")
-}
-
-/// What an import did, as its toast says it.
-fn restored_line(done: Restored) -> String {
-    let imported = done.added.saturating_add(done.replaced);
-    let mut line = match imported {
-        1 => "Imported 1 counter".to_string(),
-        n => format!("Imported {n} counters"),
-    };
-    if done.replaced > 0 {
-        let _ = write!(line, ", {} replaced", done.replaced);
-    }
-    if done.kept > 0 {
-        let _ = write!(line, ", kept {} of yours", done.kept);
-    }
-    line
-}
-
-/// "Midnight", "2am", "4am", "6am".
-fn rollover_label(hour: u32) -> String {
-    match hour {
-        0 => "Midnight".to_string(),
-        h => format!("{h}am"),
-    }
 }
 
 /// Pick the weekdays that don't count. Applies as you tap.
@@ -862,17 +770,5 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_export_toast_counts_files_in_the_right_number() {
-        assert_eq!(exported_line(0), "Exported 0 files");
-        assert_eq!(exported_line(1), "Exported 1 file");
-        assert_eq!(exported_line(3), "Exported 3 files");
     }
 }

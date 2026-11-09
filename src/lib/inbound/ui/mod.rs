@@ -111,15 +111,8 @@ pub fn now() -> NaiveDateTime {
     Local::now().naive_local()
 }
 
-/// `message` with its first letter uppercased, for a domain error line shown
-/// to the user. Domain messages are lowercase.
-pub fn sentence_case(message: &str) -> String {
-    let mut chars = message.chars();
-    match chars.next() {
-        Some(first) => first.to_uppercase().chain(chars).collect(),
-        None => String::new(),
-    }
-}
+/// Re-exported so call sites keep importing it from `inbound::ui`.
+pub use crate::screens::text::sentence_case;
 
 /// Bumped after any write so screens that read the store outside their own
 /// state (the shell's title, the home list) re-render. Provided by [`App`].
