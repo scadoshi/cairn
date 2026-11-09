@@ -4,7 +4,7 @@
 //! and the time come in as arguments, and anything that reads or writes the
 //! store is the caller's to perform. `inbound::ui` draws these and performs
 //! what they ask; the shape follows zwipe's screen models
-//! (`context/plans/screen_models.md`).
+//! (`context/plans/archive/screen_models.md`).
 
 pub mod config;
 pub mod counter;
