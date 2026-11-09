@@ -1,11 +1,12 @@
 //! One counter: the odometer, today's controls, stats, trends, years, then
 //! Delete in its Danger zone. Edit is the action dock's pencil.
 
-use std::sync::Arc;
+use std::collections::VecDeque;
 
 use chrono::{Datelike, Duration as ChronoDuration};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus::router::Navigator;
+use dioxus_primitives::toast::{Toasts, use_toast};
 use orangui::icons::EditIcon;
 use orangui::{
     ActionDock, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey,
@@ -15,7 +16,7 @@ use orangui::{
 use crate::domain::counter::series::HourlyBasis;
 use crate::domain::counter::stats::Summary;
 use crate::domain::counter::{
-    Counter, CounterId, DayCount, Event, Goal, Step, format, series, stats,
+    CounterId, DayCount, Event, Goal, Step, StoreError, format, series, stats,
 };
 use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
 use crate::inbound::ui::components::celebration::{self, CelebrationHost};
@@ -26,19 +27,9 @@ use crate::inbound::ui::components::line_chart::{LineChart, Point};
 use crate::inbound::ui::components::reveal::Reveal;
 use crate::inbound::ui::components::tile::{self, Num, Tile, TileGrid, WordTile};
 use crate::inbound::ui::router::Route;
-use crate::inbound::ui::{self, TOAST_NORMAL, use_date_format, use_prefs, use_store};
-use crate::screens::tap::{Plan, Tap};
-
-/// Which series the trends card draws.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Trend {
-    ThisWeek,
-    Daily,
-    Weekly,
-    Monthly,
-    Weekday,
-    Hourly,
-}
+use crate::inbound::ui::{self, SharedStore, use_date_format, use_prefs, use_store};
+use crate::screens::counter::{Action, Best, Effect, Loaded, State, Trend};
+use crate::screens::tap::Outcome;
 
 /// Which card's hint is showing, and whether a hint is open at all.
 ///
@@ -135,94 +126,128 @@ fn CounterHintDialog(open: Signal<bool>, which: Option<CounterHint>) -> Element 
     }
 }
 
+/// Performs what the counter screen's model asks: the store's reads and
+/// writes, the toasts and celebrations, and the way back to Home.
+#[derive(Clone, Copy)]
+struct Driver {
+    id: CounterId,
+    state: Signal<State>,
+    store: CopyValue<SharedStore>,
+    nav: Navigator,
+    toasts: Toasts,
+    host: CelebrationHost,
+}
+
+impl Driver {
+    /// Runs `action` and every action its effects answer with.
+    fn dispatch(self, action: Action) {
+        let mut state = self.state;
+        let mut queue = VecDeque::from([action]);
+        while let Some(action) = queue.pop_front() {
+            let effects = state.write().update(action);
+            for effect in effects {
+                if let Some(answer) = self.perform(effect) {
+                    queue.push_back(answer);
+                }
+            }
+        }
+    }
+
+    /// Performs one effect, returning the store's answer when it has one.
+    fn perform(self, effect: Effect) -> Option<Action> {
+        let store = self.store.read();
+        let text = |e: StoreError| e.to_string();
+        match effect {
+            Effect::LoadCounter => Some(Action::Loaded(Loaded {
+                counter: store.fetch_counter(self.id).map_err(text),
+                entries: store.entries(self.id).map_err(text),
+                events: store.events(self.id).map_err(text),
+            })),
+            Effect::Adjust { day, delta } => {
+                let written = store.adjust(self.id, ui::now(), day, delta);
+                Some(Action::Adjusted(written.map(|_| ()).map_err(text)))
+            }
+            Effect::AskAllMet { day, prefs } => {
+                Some(Action::AllMet(ui::all_goals_met(&store, day, &prefs)))
+            }
+            Effect::Toast(toast) => {
+                ui::raise(self.toasts, &toast);
+                None
+            }
+            Effect::Celebrate { how, saying } => {
+                if let Some(toast) =
+                    celebration::play(self.host, Outcome::Celebrate { how, saying })
+                {
+                    ui::raise(self.toasts, &toast);
+                }
+                None
+            }
+            Effect::DeleteCounter => {
+                Some(Action::Deleted(store.delete_counter(self.id).map_err(text)))
+            }
+            Effect::StoreChanged => {
+                ui::bump_store_version();
+                None
+            }
+            Effect::GoHome => {
+                self.nav.push(Route::Home {});
+                None
+            }
+        }
+    }
+}
+
 /// One counter's detail screen.
 #[component]
 pub fn CounterScreen(id: i64) -> Element {
     let store = use_store();
     let id = CounterId(id);
-    let nav = use_navigator();
-    let toast = use_toast();
-
-    let mut counter = use_signal(|| None::<Counter>);
-    let mut entries = use_signal(Vec::<DayCount>::new);
-    let mut events = use_signal(Vec::<Event>::new);
-    let mut notice = use_signal(|| None::<String>);
-    let trend = use_signal(|| Trend::ThisWeek);
-    let best = use_signal(|| Best::Day);
     let hints = use_context_provider(|| CardHints {
         which: Signal::new(None),
         open: Signal::new(false),
     });
     let date_format = use_date_format();
+    let driver = Driver {
+        id,
+        state: use_signal(State::default),
+        store: use_hook(|| CopyValue::new(store)),
+        nav: use_navigator(),
+        toasts: use_toast(),
+        host: use_context::<CelebrationHost>(),
+    };
 
-    let load_store = Arc::clone(&store);
-    let reload = use_callback(move |()| {
-        match load_store.fetch_counter(id) {
-            Ok(c) => counter.set(c),
-            Err(e) => notice.set(Some(e.to_string())),
-        }
-        match load_store.entries(id) {
-            Ok(list) => entries.set(list),
-            Err(e) => notice.set(Some(e.to_string())),
-        }
-        match load_store.events(id) {
-            Ok(list) => events.set(list),
-            Err(e) => notice.set(Some(e.to_string())),
-        }
-    });
-    use_effect(move || reload.call(()));
+    // Through a callback, which always holds the latest render's driver:
+    // the menu moves between counters by re-rendering this screen with a
+    // new `id`, not by mounting a new one.
+    let dispatch = use_callback(move |action: Action| driver.dispatch(action));
+    use_effect(move || dispatch.call(Action::Load));
     // Back from the background, the screen reads the store again.
-    orangui::use_on_resume(move || reload.call(()));
+    orangui::use_on_resume(move || dispatch.call(Action::Load));
 
-    let adjust_store = Arc::clone(&store);
-    let host = use_context::<CelebrationHost>();
-    let celebrate_pref = use_prefs();
+    let tap_prefs = use_prefs();
     let adjust = use_callback(move |delta: i64| {
-        // The day and its count as the store has them at the tap, not as
-        // the screen last loaded them: the day may have turned since.
-        let day = ui::today(&celebrate_pref.peek());
-        let stored = match adjust_store.entries(id) {
-            Ok(stored) => stored,
-            Err(e) => {
-                toast.error(e.to_string(), ToastOptions::default());
-                return;
-            }
-        };
-        let shown = counter();
-        let name = shown
-            .as_ref()
-            .map(|c| c.name.to_string())
-            .unwrap_or_default();
-        let tap = Tap {
-            name: &name,
-            entries: &stored,
-            goal: shown.as_ref().and_then(|c| c.goal),
-            own: shown.as_ref().and_then(|c| c.celebration),
-            app: celebrate_pref.peek().celebration,
-            day,
-        };
-        let applied = match tap.plan(delta) {
-            Plan::Nothing(said) => {
-                ui::raise(toast, &said);
-                return;
-            }
-            Plan::Apply(applied) => applied,
-        };
-        match adjust_store.adjust(id, ui::now(), day, applied) {
-            Ok(_) => {
-                let outcome = tap.outcome(applied, || {
-                    ui::all_goals_met(&adjust_store, day, &celebrate_pref.peek())
-                });
-                if let Some(said) = celebration::play(host, outcome) {
-                    ui::raise(toast, &said);
-                }
-                reload.call(());
-            }
-            Err(e) => toast.error(e.to_string(), ToastOptions::default()),
-        }
+        let prefs = *tap_prefs.peek();
+        dispatch.call(Action::Tap {
+            delta,
+            day: ui::today(&prefs),
+            prefs,
+        });
     });
 
-    let Some(c) = counter() else {
+    // Read once, the guard dropped before drawing.
+    let (counter, entries, events, notice, trend, best) = {
+        let model = driver.state.read();
+        (
+            model.counter().cloned(),
+            model.entries().to_vec(),
+            model.events().to_vec(),
+            model.notice().map(str::to_owned),
+            model.trend(),
+            model.best(),
+        )
+    };
+
+    let Some(c) = counter else {
         return rsx! {
             div { class: "screen-content",
                 div { class: "settings-sections",
@@ -235,13 +260,13 @@ pub fn CounterScreen(id: i64) -> Element {
     let big = c.big_step.map(|b| i64::from(b.get()));
     let now = ui::shown_day();
     let prefs = use_prefs()();
-    let summary = stats::summarize_with(&entries(), c.goal, now, &prefs);
-    let week_total: u32 = series::this_week(&entries(), now, &prefs)
+    let summary = stats::summarize_with(&entries, c.goal, now, &prefs);
+    let week_total: u32 = series::this_week(&entries, now, &prefs)
         .iter()
         .flatten()
         .sum();
     let last_week_total = series::window_total(
-        &entries(),
+        &entries,
         {
             let start = series::week_start(now, &prefs);
             start.pred_opt().unwrap_or(start)
@@ -266,24 +291,11 @@ pub fn CounterScreen(id: i64) -> Element {
     let mut rename_open = use_signal(|| false);
     let hint_open = use_signal(|| false);
     use_screen_hint(hint_open);
-    let delete_name = c.name.to_string();
-    let delete_store = Arc::clone(&store);
-    let delete = move |()| match delete_store.delete_counter(id) {
-        Ok(()) => {
-            toast.success(
-                format!("Deleted {delete_name}"),
-                ToastOptions::default().duration(TOAST_NORMAL),
-            );
-            ui::bump_store_version();
-            nav.push(Route::Home {});
-        }
-        Err(e) => toast.error(e.to_string(), ToastOptions::default()),
-    };
 
     rsx! {
         div { class: "screen-content",
             div { class: "settings-sections content-enter",
-                if let Some(n) = notice() {
+                if let Some(n) = notice {
                     p { class: "pref-note", "{n}" }
                 }
                 Reveal { class: "settings-list",
@@ -335,14 +347,24 @@ pub fn CounterScreen(id: i64) -> Element {
                             CardHint { which: CounterHint::Days }
                         }
                     }
-                    Heatmap { entries: entries() }
+                    Heatmap { entries: entries.clone() }
                 }
                 YearCard { summary: summary.clone() }
                 if let Some(g) = c.goal {
                     GoalCard { summary: summary.clone(), goal: g }
                 }
-                TrendsCard { entries: entries(), events: events(), trend }
-                BestsCard { entries: entries(), summary: summary.clone(), best }
+                TrendsCard {
+                    entries: entries.clone(),
+                    events,
+                    trend,
+                    on_pick: move |t: Trend| dispatch.call(Action::PickTrend(t)),
+                }
+                BestsCard {
+                    entries: entries.clone(),
+                    summary: summary.clone(),
+                    best,
+                    on_pick: move |b: Best| dispatch.call(Action::PickBest(b)),
+                }
                 HabitCard { summary: summary.clone() }
                 Reveal { class: "settings-list",
                     div { class: "settings-list-header",
@@ -400,7 +422,7 @@ pub fn CounterScreen(id: i64) -> Element {
             current_step: c.step.get(),
             current_big_step: c.big_step.map(Step::get),
             current_celebration: c.celebration,
-            on_saved: move |()| reload.call(()),
+            on_saved: move |()| dispatch.call(Action::Load),
         }
         if let Some(big) = big {
             ConfirmDialog {
@@ -423,18 +445,22 @@ pub fn CounterScreen(id: i64) -> Element {
             title: format!("Delete {}?", c.name),
             body: format!(
                 "This removes the counter and all {} of its logged days. There is no undo.",
-                entries().len()
+                entries.len()
             ),
             confirm_label: "Delete",
-            on_confirm: delete,
+            on_confirm: move |()| dispatch.call(Action::Delete),
         }
     }
 }
 
 /// The trend chart with chips to pick the series.
 #[component]
-fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) -> Element {
-    let mut trend = trend;
+fn TrendsCard(
+    entries: Vec<DayCount>,
+    events: Vec<Event>,
+    trend: Trend,
+    on_pick: EventHandler<Trend>,
+) -> Element {
     let now = ui::shown_day();
     let year = now.year();
     let df = use_date_format()();
@@ -452,7 +478,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
         &str,
         bool,
         usize,
-    ) = match trend() {
+    ) = match trend {
         Trend::ThisWeek => {
             let week = series::this_week(&entries, now, &p);
             let points = week
@@ -631,16 +657,16 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                     CardHint { which: CounterHint::Trends }
                 }
                 div { class: "chip-row chip-row-tight",
-                    Chip { selected: trend() == Trend::ThisWeek, onclick: move |_| trend.set(Trend::ThisWeek), "This week" }
-                    Chip { selected: trend() == Trend::Daily, onclick: move |_| trend.set(Trend::Daily), "60 days" }
-                    Chip { selected: trend() == Trend::Weekly, onclick: move |_| trend.set(Trend::Weekly), "Weeks" }
-                    Chip { selected: trend() == Trend::Monthly, onclick: move |_| trend.set(Trend::Monthly), "Months" }
-                    Chip { selected: trend() == Trend::Weekday, onclick: move |_| trend.set(Trend::Weekday), "Weekday" }
-                    Chip { selected: trend() == Trend::Hourly, onclick: move |_| trend.set(Trend::Hourly), "Hour" }
+                    Chip { selected: trend == Trend::ThisWeek, onclick: move |_| on_pick.call(Trend::ThisWeek), "This week" }
+                    Chip { selected: trend == Trend::Daily, onclick: move |_| on_pick.call(Trend::Daily), "60 days" }
+                    Chip { selected: trend == Trend::Weekly, onclick: move |_| on_pick.call(Trend::Weekly), "Weeks" }
+                    Chip { selected: trend == Trend::Monthly, onclick: move |_| on_pick.call(Trend::Monthly), "Months" }
+                    Chip { selected: trend == Trend::Weekday, onclick: move |_| on_pick.call(Trend::Weekday), "Weekday" }
+                    Chip { selected: trend == Trend::Hourly, onclick: move |_| on_pick.call(Trend::Hourly), "Hour" }
                 }
             }
             div { class: "chart-body",
-                if trend() == Trend::Hourly {
+                if trend == Trend::Hourly {
                     div { class: "chip-row chip-row-tight chip-row-basis",
                         Chip { selected: !p.hourly_all_days, onclick: move |_| prefs.with_mut(|q| q.hourly_all_days = false), "Active days" }
                         Chip { selected: p.hourly_all_days, onclick: move |_| prefs.with_mut(|q| q.hourly_all_days = true), "All days" }
@@ -649,7 +675,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 // Weeks and Months are the two that hold a period's worth
                 // of days, so they are the two where the total and the
                 // average say different things.
-                if matches!(trend(), Trend::Weekly | Trend::Monthly) {
+                if matches!(trend, Trend::Weekly | Trend::Monthly) {
                     div { class: "chip-row chip-row-tight chip-row-basis",
                         Chip { selected: !p.trend_per_day, onclick: move |_| prefs.with_mut(|q| q.trend_per_day = false), "Total" }
                         Chip { selected: p.trend_per_day, onclick: move |_| prefs.with_mut(|q| q.trend_per_day = true), "Per day" }
@@ -658,7 +684,7 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
                 p { class: "chart-note", "{note}" }
                 LineChart { points, overlay, unit, shape, trend: over_time, label_every }
                 div { class: "chart-tags",
-                    if trend() == Trend::Daily {
+                    if trend == Trend::Daily {
                         span { class: "stat-chip stat-chip-key",
                             span { class: "chart-key" }
                             "each day"
@@ -686,14 +712,6 @@ fn TrendsCard(entries: Vec<DayCount>, events: Vec<Event>, trend: Signal<Trend>) 
             }
         }
     }
-}
-
-/// Which best the bests card shows.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Best {
-    Day,
-    Week,
-    Month,
 }
 
 /// This year: total, per day, and where that lands by December.
@@ -766,8 +784,12 @@ fn GoalCard(summary: Summary, goal: Goal) -> Element {
 
 /// The best day, week, or month, picked by chips: how much, the rate, when.
 #[component]
-fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> Element {
-    let mut best = best;
+fn BestsCard(
+    entries: Vec<DayCount>,
+    summary: Summary,
+    best: Best,
+    on_pick: EventHandler<Best>,
+) -> Element {
     let now = ui::shown_day();
     let df = use_date_format()();
     // Read before the match: a hook inside one arm runs only for that chip,
@@ -787,7 +809,7 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
         "November",
         "December",
     ];
-    let tiles = match best() {
+    let tiles = match best {
         Best::Day => summary
             .best_day
             .map(|b| (format::thousands(b.count), None, df.date(b.day))),
@@ -822,9 +844,9 @@ fn BestsCard(entries: Vec<DayCount>, summary: Summary, best: Signal<Best>) -> El
                     CardHint { which: CounterHint::Bests }
                 }
                 div { class: "chip-row chip-row-tight",
-                    Chip { selected: best() == Best::Day, onclick: move |_| best.set(Best::Day), "Day" }
-                    Chip { selected: best() == Best::Week, onclick: move |_| best.set(Best::Week), "Week" }
-                    Chip { selected: best() == Best::Month, onclick: move |_| best.set(Best::Month), "Month" }
+                    Chip { selected: best == Best::Day, onclick: move |_| on_pick.call(Best::Day), "Day" }
+                    Chip { selected: best == Best::Week, onclick: move |_| on_pick.call(Best::Week), "Week" }
+                    Chip { selected: best == Best::Month, onclick: move |_| on_pick.call(Best::Month), "Month" }
                 }
             }
             if let Some((total, per_day, when)) = tiles {

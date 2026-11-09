@@ -56,6 +56,14 @@ pub enum Outcome {
     },
 }
 
+/// What a tap crossed: its counter's day, a year mark, or both.
+#[derive(Debug, Clone, Copy)]
+struct Crossing {
+    done: bool,
+    mark: Option<u32>,
+    how: Celebration,
+}
+
 impl Tap<'_> {
     /// The day's count before the tap.
     pub fn today(&self) -> u32 {
@@ -95,30 +103,46 @@ impl Tap<'_> {
     /// remember what was already said, and reopening the app on a finished
     /// day is silent.
     pub fn outcome(&self, applied: i64, all_met: impl FnOnce() -> bool) -> Outcome {
-        let Some(goal) = self.goal else {
+        let Some(crossing) = self.crossing(applied) else {
             return Outcome::Quiet;
         };
-        let days = stats::days_in_year(self.day.year());
-        let done = stats::crosses_goal(goal, self.today(), applied, days);
-        let mark = stats::goal_mark_crossed(goal.yearly(days), self.year_before(), applied);
-        if !done && mark.is_none() {
-            return Outcome::Quiet;
-        }
-        let how = self.own.unwrap_or(self.app);
-        if how == Celebration::Off {
-            return Outcome::Quiet;
-        }
         // Rarest first. A fraction of the year comes round a few times a
         // year, the whole day most days, one counter's day several times a
         // day.
-        let saying = if let Some(pct) = mark {
+        let saying = if let Some(pct) = crossing.mark {
             Some(Saying::Fixed(format!("{pct}% of the year")))
-        } else if done && all_met() {
+        } else if crossing.done && all_met() {
             Some(Saying::Rotating(preferences::all_done_line))
         } else {
             None
         };
-        Outcome::Celebrate { how, saying }
+        Outcome::Celebrate {
+            how: crossing.how,
+            saying,
+        }
+    }
+
+    /// Whether [`Tap::outcome`] asks `all_met` for this tap: it finished
+    /// the counter's day, crossed no year mark, and celebrates. A client
+    /// whose store answers `all_met` reads it only then.
+    pub fn needs_all_met(&self, applied: i64) -> bool {
+        self.crossing(applied)
+            .is_some_and(|c| c.done && c.mark.is_none())
+    }
+
+    /// What an applied tap crossed, when it crossed something worth a
+    /// celebration that is not Off.
+    fn crossing(&self, applied: i64) -> Option<Crossing> {
+        let goal = self.goal?;
+        let days = stats::days_in_year(self.day.year());
+        let done = stats::crosses_goal(goal, self.today(), applied, days);
+        let mark = stats::goal_mark_crossed(goal.yearly(days), self.year_before(), applied);
+        let how = self.own.unwrap_or(self.app);
+        ((done || mark.is_some()) && how != Celebration::Off).then_some(Crossing {
+            done,
+            mark,
+            how,
+        })
     }
 }
 
@@ -294,5 +318,38 @@ mod tests {
         let entries = [entry(11, 8, 10)];
         let out = tap(&entries, Some(Goal::PerDay(10))).outcome(-1, never);
         assert!(matches!(out, Outcome::Quiet));
+    }
+    /// The entries, goal, applied delta and own celebration of one tap.
+    type Case<'a> = (&'a [DayCount], Option<Goal>, i64, Option<Celebration>);
+
+    #[test]
+    fn needs_all_met_is_exactly_when_outcome_asks() {
+        let cases: [Case<'_>; 6] = [
+            (&[entry(11, 8, 9)], Some(Goal::PerDay(10)), 1, None),
+            (&[entry(11, 8, 3)], Some(Goal::PerDay(10)), 1, None),
+            (&[entry(11, 1, 99)], Some(Goal::PerYear(1000)), 1, None),
+            (
+                &[entry(11, 8, 9)],
+                Some(Goal::PerDay(10)),
+                1,
+                Some(Celebration::Off),
+            ),
+            (&[entry(11, 8, 9)], None, 1, None),
+            (&[entry(11, 8, 10)], Some(Goal::PerDay(10)), -1, None),
+        ];
+        for (entries, goal, applied, own) in cases {
+            let mut t = tap(entries, goal);
+            t.own = own;
+            let mut asked = false;
+            t.outcome(applied, || {
+                asked = true;
+                true
+            });
+            assert_eq!(
+                t.needs_all_met(applied),
+                asked,
+                "{entries:?} {goal:?} {applied} {own:?}"
+            );
+        }
     }
 }
