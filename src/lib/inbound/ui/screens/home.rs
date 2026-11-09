@@ -14,7 +14,7 @@ use std::time::Duration;
 use chrono::Datelike;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
+use dioxus_primitives::toast::{Toasts, use_toast};
 use orangui::icons::{self, DockIcon, EditIcon};
 use orangui::{
     ActionDock, BottomSheet, Decode, DockAction, DockPlace, HintBullet, HintBullets, HintChip,
@@ -24,13 +24,16 @@ use orangui::{
 use crate::domain::counter::{Counter, CounterId, format};
 use crate::domain::preferences::Logo;
 use crate::inbound::ui::components::celebration::{self, CelebrationHost};
-use crate::inbound::ui::components::counter_form::{CounterForm, CounterFormState, EditSheet};
+use crate::inbound::ui::components::counter_form::{
+    CounterForm, CounterFormState, EditSheet, save_form,
+};
 use crate::inbound::ui::components::counter_list::CounterList;
 use crate::inbound::ui::components::quote_card::QuoteCard;
 use crate::inbound::ui::components::reveal::Reveal;
 use crate::inbound::ui::components::tile::{Num, Tile};
 use crate::inbound::ui::router::Route;
-use crate::inbound::ui::{self, SharedStore, TOAST_NORMAL, use_date_format, use_prefs, use_store};
+use crate::inbound::ui::{self, SharedStore, use_date_format, use_prefs, use_store};
+use crate::screens::counter_form::Mode;
 use crate::screens::home::{Action, Effect, Row, State};
 use crate::screens::tap::Outcome;
 
@@ -302,32 +305,15 @@ fn CreateSheet(open: Signal<bool>, on_created: EventHandler<()>) -> Element {
     // Every open starts blank.
     use_effect(move || {
         if open() {
-            form.load("", None, 1, None, None);
+            form.clear();
         }
     });
 
     let save = move |()| {
-        let Some(v) = form.validate() else {
-            return;
-        };
-        match store.create_counter(
-            &v.name,
-            v.goal,
-            v.step,
-            v.big_step,
-            v.celebration,
-            ui::today(&prefs.peek()),
-        ) {
-            Ok(c) => {
-                toast.success(
-                    format!("Saved {}", c.name),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
-                ui::bump_store_version();
-                on_created.call(());
-                open.set(false);
-            }
-            Err(e) => form.fail(e.to_string()),
+        let today = ui::today(&prefs.peek());
+        if save_form(&mut form, Mode::Create, &store, toast, today) {
+            on_created.call(());
+            open.set(false);
         }
     };
 

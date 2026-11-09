@@ -3,85 +3,21 @@
 //! button on each card, and the counter screen, so the three never drift.
 //! The host owns the signals and does the saving.
 
-use chrono::Datelike;
+use chrono::{Datelike, NaiveDate};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::{Toasts, use_toast};
 use orangui::{
     ActionDock, BottomSheet, Chip, DockAction, DockPlace, FieldLabel, HintDialog, HintKey,
     HintLine, TextInput, icons,
 };
 
-use crate::domain::counter::{self, CounterId, CounterName, Goal, Step, ValidationError, stats};
+use crate::domain::counter::{CounterId, CounterName, Goal, Step, stats};
 use crate::domain::preferences::Celebration;
-use crate::inbound::ui::{self, TOAST_NORMAL, use_store};
-
-/// Which period a typed goal amount is for.
-#[expect(missing_docs, reason = "Day, Week and Year say what they are")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GoalUnit {
-    Day,
-    Week,
-    Year,
-}
-
-impl GoalUnit {
-    /// The goal for `n` in this unit.
-    ///
-    /// # Errors
-    ///
-    /// [`ValidationError::ZeroGoal`] when `n` is zero.
-    pub fn goal(self, n: u32) -> Result<Goal, ValidationError> {
-        match self {
-            Self::Day => Goal::per_day(n),
-            Self::Week => Goal::per_week(n),
-            Self::Year => Goal::per_year(n),
-        }
-    }
-
-    /// The unit a stored goal was entered in.
-    pub fn of(goal: Goal) -> Self {
-        match goal {
-            Goal::PerDay(_) => Self::Day,
-            Goal::PerWeek(_) => Self::Week,
-            Goal::PerYear(_) => Self::Year,
-        }
-    }
-}
-
-/// What a filled-in form becomes once every field checks out.
-#[derive(Debug)]
-pub struct ValidCounter {
-    /// Display name.
-    pub name: CounterName,
-    /// Optional target.
-    pub goal: Option<Goal>,
-    /// How much one tap adds.
-    pub step: Step,
-    /// The optional second, larger step.
-    pub big_step: Option<Step>,
-    /// This counter's celebration, or `None` to follow Config.
-    pub celebration: Option<Celebration>,
-}
-
-/// What is wrong with the form, by field.
-///
-/// Each field's message sits under that field; `form` holds anything that
-/// belongs to no single field, such as a failed save, and sits at the
-/// bottom. Messages are the domain's lowercase lines; the form sentence-cases
-/// them where they show.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct FormErrors {
-    /// Under the name field.
-    pub name: Option<String>,
-    /// Under the goal field.
-    pub goal: Option<String>,
-    /// Under the step chips.
-    pub step: Option<String>,
-    /// Under the big step chips.
-    pub big_step: Option<String>,
-    /// At the bottom of the form.
-    pub form: Option<String>,
-}
+use crate::inbound::ui::{self, SharedStore, use_prefs, use_store};
+use crate::screens::counter_form::{
+    Fields, FormErrors, GoalUnit, Mode, ValidCounter, Write, saved,
+};
+use crate::screens::toast::Toast;
 
 /// The form's state, owned by the host sheet.
 #[derive(Clone, Copy, PartialEq)]
@@ -134,79 +70,87 @@ impl CounterFormState {
         big_step: Option<u32>,
         celebration: Option<Celebration>,
     ) {
-        self.name.set(name.to_string());
-        match goal {
-            Some(g @ (Goal::PerDay(n) | Goal::PerWeek(n) | Goal::PerYear(n))) => {
-                self.amount.set(n.to_string());
-                self.unit.set(GoalUnit::of(g));
-            }
-            None => self.amount.set(String::new()),
+        self.set(&Fields::of(name, goal, step, big_step, celebration));
+    }
+
+    /// Clears the form for a new counter.
+    pub fn clear(&mut self) {
+        self.set(&Fields::blank());
+    }
+
+    fn set(&mut self, fields: &Fields) {
+        self.name.set(fields.name.clone());
+        self.amount.set(fields.amount.clone());
+        // A counter without a goal leaves the unit as it was.
+        if !fields.amount.is_empty() {
+            self.unit.set(fields.unit);
         }
-        self.step.set(step);
-        self.big_step.set(big_step.unwrap_or(0));
-        self.celebration.set(celebration);
+        self.step.set(fields.step);
+        self.big_step.set(fields.big_step);
+        self.celebration.set(fields.celebration);
         self.errors.set(FormErrors::default());
+    }
+
+    /// What the form holds now.
+    pub fn fields(&self) -> Fields {
+        Fields {
+            name: (self.name)(),
+            amount: (self.amount)(),
+            unit: (self.unit)(),
+            step: (self.step)(),
+            big_step: (self.big_step)(),
+            celebration: (self.celebration)(),
+        }
     }
 
     /// Records `message` at the bottom of the form, under every field.
     pub fn fail(&mut self, message: String) {
-        self.errors.set(FormErrors {
-            form: Some(message),
-            ..FormErrors::default()
-        });
+        self.errors.set(FormErrors::failed(message));
     }
 
-    /// Validates the fields into domain values, or marks every field that
-    /// is wrong.
+    /// Checks the fields into domain values, or marks every field that is
+    /// wrong.
     pub fn validate(&mut self) -> Option<ValidCounter> {
-        let mut errors = FormErrors::default();
-        let name = CounterName::new(&(self.name)())
-            .map_err(|e| errors.name = Some(e.to_string()))
-            .ok();
-        let raw = (self.amount)();
-        let goal = if raw.trim().is_empty() {
-            Some(None)
-        } else {
-            let parsed = raw
-                .trim()
-                .parse::<u32>()
-                .ok()
-                .map(|n| (self.unit)().goal(n));
-            if let Some(Ok(g)) = parsed {
-                Some(Some(g))
-            } else {
-                errors.goal = Some("goal must be a whole number of at least 1".to_string());
-                None
-            }
-        };
-        let step = Step::new((self.step)())
-            .map_err(|e| errors.step = Some(e.to_string()))
-            .ok();
-        // Zero is the form's way of saying "none"; the domain decides
-        // whether what is left is a sensible pair.
-        let raw_big = (self.big_step)();
-        let big = if raw_big == 0 {
-            Some(None)
-        } else {
-            Step::new(raw_big)
-                .map(Some)
-                .map_err(|e| errors.big_step = Some(e.to_string()))
-                .ok()
-        };
-        let big_step = match (step, big) {
-            (Some(step), Some(big)) => counter::check_big_step(step, big)
-                .map_err(|e| errors.big_step = Some(e.to_string()))
-                .ok(),
-            _ => None,
-        };
+        let checked = self.fields().validate();
+        let errors = checked.as_ref().err().cloned().unwrap_or_default();
         self.errors.set(errors);
-        Some(ValidCounter {
-            name: name?,
-            goal: goal?,
-            step: step?,
-            big_step: big_step?,
-            celebration: (self.celebration)(),
-        })
+        checked.ok()
+    }
+}
+
+/// Saves the form in `mode`: checks it and writes it, and on success
+/// toasts "Saved {name}" and tells the app the store changed. Returns
+/// whether it saved; a failed write leaves its message at the bottom of the
+/// form. A new counter starts on `today`.
+pub fn save_form(
+    form: &mut CounterFormState,
+    mode: Mode,
+    store: &SharedStore,
+    toasts: Toasts,
+    today: NaiveDate,
+) -> bool {
+    let Some(valid) = form.validate() else {
+        return false;
+    };
+    let name = valid.name.clone();
+    let written = match mode.write(valid) {
+        Write::Create(v) => store
+            .create_counter(&v.name, v.goal, v.step, v.big_step, v.celebration, today)
+            .map(|_| ()),
+        Write::Update(id, v) => {
+            store.update_counter(id, &v.name, v.goal, v.step, v.big_step, v.celebration)
+        }
+    };
+    match written {
+        Ok(()) => {
+            ui::raise(toasts, &Toast::success(saved(&name)));
+            ui::bump_store_version();
+            true
+        }
+        Err(e) => {
+            form.fail(e.to_string());
+            false
+        }
     }
 }
 
@@ -225,13 +169,16 @@ pub fn CounterForm(state: CounterFormState) -> Element {
     let mut hint = use_signal(|| None::<FormHint>);
     let mut hint_open = use_signal(|| false);
     let days = stats::days_in_year(ui::shown_day().year());
-    let preview = amount()
-        .trim()
-        .parse::<u32>()
-        .ok()
-        .filter(|n| *n > 0)
-        .and_then(|n| unit().goal(n).ok())
-        .map(|g| g.breakdown(days));
+    // Only what the preview and the big step chips need, so typing the
+    // name does not re-render the form.
+    let shown = Fields {
+        amount: amount(),
+        unit: unit(),
+        step: step(),
+        ..Fields::blank()
+    };
+    let preview = shown.preview(days);
+    let big_steps = shown.big_steps();
     let errors = errors();
     let field_error = |message: &Option<String>| message.as_deref().map(ui::sentence_case);
 
@@ -299,7 +246,7 @@ pub fn CounterForm(state: CounterFormState) -> Element {
                     onclick: move |_| big_step.set(0),
                     "None"
                 }
-                for n in Step::ALLOWED.into_iter().filter(|n| *n > step()) {
+                for n in big_steps {
                     Chip { selected: big_step() == n, onclick: move |_| big_step.set(n), "{n}" }
                 }
             }
@@ -418,21 +365,12 @@ pub fn EditSheet(
         }
     });
 
+    let prefs = use_prefs();
     let save = move |()| {
-        let Some(v) = form.validate() else {
-            return;
-        };
-        match store.update_counter(id, &v.name, v.goal, v.step, v.big_step, v.celebration) {
-            Ok(()) => {
-                toast.success(
-                    format!("Saved {}", v.name),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
-                ui::bump_store_version();
-                on_saved.call(());
-                open.set(false);
-            }
-            Err(e) => form.fail(e.to_string()),
+        let today = ui::today(&prefs.peek());
+        if save_form(&mut form, Mode::Edit(id), &store, toast, today) {
+            on_saved.call(());
+            open.set(false);
         }
     };
 
