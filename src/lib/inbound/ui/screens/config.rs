@@ -56,7 +56,7 @@ pub fn Config() -> Element {
         prefs,
         conflict_open,
     };
-    let step = move |which: Step| driver.dispatch(Action::Step(which, *prefs.peek()));
+    let step = move |which: Step| step_pref(driver, which);
     let (notice, topic, conflicts) = {
         let model = driver.state.read();
         (
@@ -380,21 +380,21 @@ impl Driver {
             mut conflict_open,
             ..
         } = self;
-        let store = self.store.read();
         match effect {
             Effect::SetPrefs(next) => {
                 prefs.set(next);
                 None
             }
-            Effect::ExportCsv => Some(Action::Exported(export_csv(&**store))),
-            Effect::SaveBackup => Some(Action::BackupSaved(write_backup(&**store))),
-            Effect::ReadBackup => Some(Action::BackupRead(read_backup(&**store))),
+            Effect::ExportCsv => Some(Action::Exported(export_csv(&**self.store.read()))),
+            Effect::SaveBackup => Some(Action::BackupSaved(write_backup(&**self.store.read()))),
+            Effect::ReadBackup => Some(Action::BackupRead(read_backup(&**self.store.read()))),
             Effect::AskConflict => {
                 conflict_open.set(true);
                 None
             }
             Effect::Restore(backup, on_conflict) => Some(Action::Restored(
-                store
+                self.store
+                    .read()
                     .restore(&backup, on_conflict)
                     .map_err(|e| e.to_string()),
             )),
@@ -408,6 +408,16 @@ impl Driver {
             }
         }
     }
+}
+
+/// A preference button: `which` steps to its next value.
+///
+/// The prefs are copied out in a statement of their own: a `peek()` inside
+/// the dispatch call keeps its read guard alive to the end of that call,
+/// across the driver's write to the same signal.
+fn step_pref(driver: Driver, which: Step) {
+    let current = *driver.prefs.peek();
+    driver.dispatch(Action::Step(which, current));
 }
 
 /// Writes one CSV per counter, day and count, into the export folder, and
@@ -770,5 +780,60 @@ fn RestDaysSheet(mut open: Signal<bool>, hint: Signal<bool>) -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+    use std::sync::Arc;
+
+    use orangui::ToastStack;
+
+    use super::*;
+    use crate::outbound::sqlite::SqliteStore;
+
+    thread_local! {
+        /// The driver the probe built, for the test to press its buttons.
+        static DRIVER: Cell<Option<Driver>> = const { Cell::new(None) };
+    }
+
+    /// A Settings driver over an in-memory store, inside the toast stack its
+    /// toasts need.
+    #[component]
+    fn Probe() -> Element {
+        let store: SharedStore = Arc::new(SqliteStore::in_memory().unwrap());
+        let driver = Driver {
+            state: use_signal(State::default),
+            store: use_hook(|| CopyValue::new(store)),
+            toasts: use_toast(),
+            prefs: use_signal(Preferences::default),
+            conflict_open: use_signal(|| false),
+        };
+        DRIVER.with(|d| d.set(Some(driver)));
+        rsx! {}
+    }
+
+    #[test]
+    fn every_preference_button_steps_without_a_borrow_panic() {
+        let mut dom = VirtualDom::new(|| rsx! { ToastStack { Probe {} } });
+        dom.rebuild_in_place();
+        let driver = DRIVER.with(Cell::get).unwrap();
+        dom.in_scope(ScopeId::APP, || {
+            let before = *driver.prefs.peek();
+            for which in [
+                Step::DayStarts,
+                Step::WeekStarts,
+                Step::SortCounters,
+                Step::ConfirmMinus,
+            ] {
+                step_pref(driver, which);
+            }
+            let after = *driver.prefs.peek();
+            assert_ne!(after.rollover_hour, before.rollover_hour);
+            assert_ne!(after.week_start, before.week_start);
+            assert_ne!(after.counter_order, before.counter_order);
+            assert_ne!(after.confirm_minus, before.confirm_minus);
+        });
     }
 }
