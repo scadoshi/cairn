@@ -6,6 +6,7 @@
 //! what they ask; the shape follows zwipe's screen models
 //! (`context/plans/screen_models.md`).
 
+pub mod home;
 pub mod saying;
 pub mod tap;
 pub mod toast;

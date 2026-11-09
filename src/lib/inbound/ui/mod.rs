@@ -20,6 +20,7 @@ use router::Route;
 use crate::domain::counter::{self, Counter, CounterId, DayCount, Goal, Store};
 use crate::domain::date_format::DateFormat;
 use crate::domain::preferences::{CounterOrder, Preferences};
+use crate::screens::home;
 use crate::screens::toast::{Toast, ToastKind};
 
 /// The crate version, which is the release version on the stores.
@@ -192,18 +193,10 @@ pub fn ordered(
         CounterOrder::Created => {}
         CounterOrder::Name => list.sort_by_key(|c| c.name.as_str().to_lowercase()),
         CounterOrder::MostActive | CounterOrder::Lifetime => {
-            let key = |c: &Counter| {
+            list.sort_by_key(|c| {
                 let entries = store.entries(c.id).unwrap_or_default();
-                // Preferences only reach streaks and consistency, and
-                // neither is a sort key, so the default is the whole truth.
-                let s = counter::stats::summarize(&entries, c.goal, day);
-                if order == CounterOrder::Lifetime {
-                    s.lifetime
-                } else {
-                    s.this_year.total
-                }
-            };
-            list.sort_by_key(|c| std::cmp::Reverse(key(c)));
+                std::cmp::Reverse(home::activity(order, c, &entries, day))
+            });
         }
     }
     list
