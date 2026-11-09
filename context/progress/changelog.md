@@ -6,6 +6,8 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
+- Opening another counter from the menu shows its figures right away instead of the last counter's.
+
 ## 1.4.0, 2026-11-08
 
 - Home and a counter's screen move to the new day at the rollover hour, and pick up today's figures when you come back to the app, without a relaunch.
