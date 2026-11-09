@@ -155,21 +155,22 @@ impl Driver {
 
     /// Performs one effect, returning the store's answer when it has one.
     fn perform(self, effect: Effect) -> Option<Action> {
-        let store = self.store.read();
         let text = |e: StoreError| e.to_string();
         match effect {
             Effect::LoadCounter => Some(Action::Loaded(Loaded {
-                counter: store.fetch_counter(self.id).map_err(text),
-                entries: store.entries(self.id).map_err(text),
-                events: store.events(self.id).map_err(text),
+                counter: self.store.read().fetch_counter(self.id).map_err(text),
+                entries: self.store.read().entries(self.id).map_err(text),
+                events: self.store.read().events(self.id).map_err(text),
             })),
             Effect::Adjust { day, delta } => {
-                let written = store.adjust(self.id, ui::now(), day, delta);
+                let written = self.store.read().adjust(self.id, ui::now(), day, delta);
                 Some(Action::Adjusted(written.map(|_| ()).map_err(text)))
             }
-            Effect::AskAllMet { day, prefs } => {
-                Some(Action::AllMet(ui::all_goals_met(&store, day, &prefs)))
-            }
+            Effect::AskAllMet { day, prefs } => Some(Action::AllMet(ui::all_goals_met(
+                &self.store.read(),
+                day,
+                &prefs,
+            ))),
             Effect::Toast(toast) => {
                 ui::raise(self.toasts, &toast);
                 None
@@ -182,9 +183,9 @@ impl Driver {
                 }
                 None
             }
-            Effect::DeleteCounter => {
-                Some(Action::Deleted(store.delete_counter(self.id).map_err(text)))
-            }
+            Effect::DeleteCounter => Some(Action::Deleted(
+                self.store.read().delete_counter(self.id).map_err(text),
+            )),
             Effect::StoreChanged => {
                 ui::bump_store_version();
                 None
