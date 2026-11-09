@@ -8,27 +8,31 @@
 //! Both sheets hang off the screen rather than off a card, because a fixed
 //! overlay inside a card is clipped by the card's rounded corners.
 
-use std::sync::Arc;
+use std::collections::VecDeque;
 use std::time::Duration;
 
 use chrono::Datelike;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus::router::Navigator;
+use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use orangui::icons::{self, DockIcon, EditIcon};
 use orangui::{
     ActionDock, BottomSheet, Decode, DockAction, DockPlace, HintBullet, HintBullets, HintChip,
     HintDialog, HintKey, HintLine, use_on_resume, use_screen_hint,
 };
 
-use crate::domain::counter::{Counter, DayCount, Goal, format, stats};
+use crate::domain::counter::{Counter, CounterId, format};
 use crate::domain::preferences::Logo;
+use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::counter_form::{CounterForm, CounterFormState, EditSheet};
 use crate::inbound::ui::components::counter_list::CounterList;
 use crate::inbound::ui::components::quote_card::QuoteCard;
 use crate::inbound::ui::components::reveal::Reveal;
 use crate::inbound::ui::components::tile::{Num, Tile};
 use crate::inbound::ui::router::Route;
-use crate::inbound::ui::{self, TOAST_NORMAL, use_date_format, use_prefs, use_store};
+use crate::inbound::ui::{self, SharedStore, TOAST_NORMAL, use_date_format, use_prefs, use_store};
+use crate::screens::home::{Action, Effect, Row, State};
+use crate::screens::tap::Outcome;
 
 /// The C, the app's own mark.
 pub(crate) const LOGO_CAIRN: &str = include_str!("../../../../../assets/c.txt");
@@ -36,19 +40,123 @@ pub(crate) const LOGO_CAIRN: &str = include_str!("../../../../../assets/c.txt");
 /// wordmark is his name, so it stays available behind a setting.
 const LOGO_SCADOSHI: &str = include_str!("../../../../../assets/s.txt");
 
+/// Performs what Home's model asks: the store's reads and writes, the
+/// toasts and celebrations, the navigation and the sheets.
+#[derive(Clone, Copy)]
+struct Driver {
+    state: Signal<State>,
+    store: CopyValue<SharedStore>,
+    nav: Navigator,
+    toasts: Toasts,
+    host: CelebrationHost,
+    create_open: Signal<bool>,
+    edit_open: Signal<bool>,
+    editing: Signal<Option<Counter>>,
+}
+
+impl Driver {
+    /// Runs `action` and every action its effects answer with.
+    fn dispatch(self, action: Action) {
+        let mut state = self.state;
+        let mut queue = VecDeque::from([action]);
+        while let Some(action) = queue.pop_front() {
+            let effects = state.write().update(action);
+            for effect in effects {
+                if let Some(answer) = self.perform(effect) {
+                    queue.push_back(answer);
+                }
+            }
+        }
+    }
+
+    /// Performs one effect, returning the store's answer when it has one.
+    fn perform(self, effect: Effect) -> Option<Action> {
+        let Self {
+            mut create_open,
+            mut edit_open,
+            mut editing,
+            ..
+        } = self;
+        match effect {
+            Effect::LoadCounters => Some(Action::Loaded(load(&self.store.read()))),
+            Effect::Adjust { id, day, delta } => {
+                let written = self.store.read().adjust(id, ui::now(), day, delta);
+                Some(Action::Adjusted(
+                    written.map(|_| ()).map_err(|e| e.to_string()),
+                ))
+            }
+            Effect::Toast(toast) => {
+                ui::raise(self.toasts, &toast);
+                None
+            }
+            Effect::Celebrate { how, saying } => {
+                if let Some(toast) =
+                    celebration::play(self.host, Outcome::Celebrate { how, saying })
+                {
+                    ui::raise(self.toasts, &toast);
+                }
+                None
+            }
+            Effect::Open(id) => {
+                self.nav.push(Route::CounterScreen { id: id.0 });
+                None
+            }
+            Effect::Edit(counter) => {
+                // Mount the sheet closed, then open it a beat later. One
+                // that mounts already open has no off-screen state to slide
+                // up from, so it appears in place instead of rising. The
+                // wait has to outlast BottomSheet's own premount guard,
+                // which drops `transition: none` after WebKit's first
+                // post-insert paint.
+                editing.set(Some(counter));
+                spawn(async move {
+                    tokio::time::sleep(Duration::from_millis(70)).await;
+                    edit_open.set(true);
+                });
+                None
+            }
+            Effect::Create => {
+                create_open.set(true);
+                None
+            }
+        }
+    }
+}
+
+/// Every counter with its entries, or why the list could not be read. A
+/// counter whose entries fail to read shows as empty.
+fn load(store: &SharedStore) -> Result<Vec<Row>, String> {
+    let counters = store.list_counters().map_err(|e| e.to_string())?;
+    Ok(counters
+        .into_iter()
+        .map(|c| {
+            let entries = store.entries(c.id).unwrap_or_default();
+            Row::new(c, entries)
+        })
+        .collect())
+}
+
 /// The landing screen, which is also the counter list.
 #[component]
 pub fn Home() -> Element {
     let store = use_store();
-    let nav = use_navigator();
-    let mut counters = use_signal(Vec::<Counter>::new);
-    let mut error = use_signal(|| None::<String>);
-    let mut create_open = use_signal(|| false);
-    let mut edit_open = use_signal(|| false);
-    let mut editing = use_signal(|| None::<Counter>);
+    let create_open = use_signal(|| false);
+    let edit_open = use_signal(|| false);
+    let editing = use_signal(|| None::<Counter>);
     let hint_open = use_signal(|| false);
     let mut logo_taps = use_signal(|| 0_u32);
     use_screen_hint(hint_open);
+
+    let driver = Driver {
+        state: use_signal(State::default),
+        store: use_hook(|| CopyValue::new(store)),
+        nav: use_navigator(),
+        toasts: use_toast(),
+        host: use_context::<CelebrationHost>(),
+        create_open,
+        edit_open,
+        editing,
+    };
 
     // Hooks, read once. `use_prefs` and friends are context hooks, so calling
     // them inside the loop below would run a different number of hooks on the
@@ -57,15 +165,11 @@ pub fn Home() -> Element {
     let prefs = use_prefs();
     let date_format = use_date_format();
 
-    let load_store = Arc::clone(&store);
-    let reload = use_callback(move |()| match load_store.list_counters() {
-        Ok(list) => counters.set(list),
-        Err(e) => error.set(Some(e.to_string())),
-    });
-    use_effect(move || reload.call(()));
+    use_effect(move || driver.dispatch(Action::Load));
     // Back from the background, the list reads the store again: another
     // day's figures, or a change made while away.
-    use_on_resume(move || reload.call(()));
+    use_on_resume(move || driver.dispatch(Action::Load));
+    let reload = move |()| driver.dispatch(Action::Load);
 
     let (logo, logo_label) = match prefs().logo {
         Logo::Cairn => (LOGO_CAIRN, "Cairn"),
@@ -74,24 +178,21 @@ pub fn Home() -> Element {
 
     let now = ui::shown_day();
 
-    // Reading is this screen's job; the arithmetic is the domain's, where it
-    // can be tested. See stats::across_counters.
-    let list = counters();
-    let loaded: Vec<(Option<Goal>, Vec<DayCount>)> = list
-        .iter()
-        .map(|c| (c.goal, store.entries(c.id).unwrap_or_default()))
-        .collect();
-    let across = stats::across_counters(
-        &loaded
-            .iter()
-            .map(|(goal, entries)| stats::CounterDays {
-                goal: *goal,
-                entries,
-            })
-            .collect::<Vec<_>>(),
-        now,
-        &prefs(),
-    );
+    // Read once, the guard dropped before drawing.
+    let (across, empty, error, rows) = {
+        let model = driver.state.read();
+        let rows: Vec<Row> = model
+            .rows(prefs().counter_order, now)
+            .into_iter()
+            .cloned()
+            .collect();
+        (
+            model.across(now, &prefs()),
+            model.is_empty(),
+            model.error().map(str::to_owned),
+            rows,
+        )
+    };
 
     let date = format!("{} {}", now.format("%a"), date_format().date(now));
     let day = now.ordinal();
@@ -122,7 +223,7 @@ pub fn Home() -> Element {
                             }
                         }
                     }
-                    if counters().is_empty() {
+                    if empty {
                         p { class: "pref-note", style: "padding: 1rem;",
                             "Create a counter with "
                             HintKey { DockIcon { path: icons::PLUS } }
@@ -141,34 +242,23 @@ pub fn Home() -> Element {
                     }
                 }
                 QuoteCard {}
-                if let Some(e) = error() {
+                if let Some(e) = error {
                     p { class: "form-error", "{e}" }
                 }
                 CounterList {
-                    counters: counters(),
-                    on_bump: move |()| reload.call(()),
-                    on_open: move |id: i64| {
-                        nav.push(Route::CounterScreen { id });
+                    rows,
+                    on_tap: move |(id, delta): (CounterId, i64)| {
+                        let prefs = *prefs.peek();
+                        driver.dispatch(Action::Tap { id, delta, day: ui::today(&prefs), prefs });
                     },
-                    on_edit: move |c: Counter| {
-                        // Mount the sheet closed, then open it a beat later.
-                        // One that mounts already open has no off-screen state
-                        // to slide up from, so it appears in place instead of
-                        // rising. The wait has to outlast BottomSheet's own
-                        // premount guard, which drops `transition: none` after
-                        // WebKit's first post-insert paint.
-                        editing.set(Some(c));
-                        spawn(async move {
-                            tokio::time::sleep(Duration::from_millis(70)).await;
-                            edit_open.set(true);
-                        });
-                    },
+                    on_open: move |id: i64| driver.dispatch(Action::Open(CounterId(id))),
+                    on_edit: move |id: CounterId| driver.dispatch(Action::Edit(id)),
                 }
             }
         }
         // Create as the action dock's plus, pinned bottom right.
         ActionDock {
-            DockAction { label: "Create", icon: icons::PLUS, onclick: move |()| create_open.set(true) }
+            DockAction { label: "Create", icon: icons::PLUS, onclick: move |()| driver.dispatch(Action::Create) }
         }
         HintDialog { open: hint_open, title: "Counters",
             HintLine { "Tap a counter's name or numbers to open it" }
@@ -183,7 +273,7 @@ pub fn Home() -> Element {
                 HintBullet { HintKey { DockIcon { path: icons::PLUS } } " at the bottom right starts a counter" }
             }
         }
-        CreateSheet { open: create_open, on_created: move |()| reload.call(()) }
+        CreateSheet { open: create_open, on_created: reload }
         if let Some(c) = editing() {
             EditSheet {
                 key: "{c.id.0}",
@@ -194,7 +284,7 @@ pub fn Home() -> Element {
                 current_step: c.step.get(),
                 current_big_step: c.big_step.map(crate::domain::counter::Step::get),
                 current_celebration: c.celebration,
-                on_saved: move |()| reload.call(()),
+                on_saved: reload,
             }
         }
     }

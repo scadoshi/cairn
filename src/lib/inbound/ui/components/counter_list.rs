@@ -7,42 +7,44 @@
 //! The cards live here but the sheets do not: a fixed overlay inside a card
 //! is clipped by the card's own rounded corners, so the screen owns those
 //! and a card only says which counter it wants opened.
-
-use std::sync::Arc;
+//!
+//! A card draws the row it is handed and reads nothing from the store; its
+//! taps go to Home's model (`screens::home`), which decides what they do.
 
 use chrono::Datelike;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use orangui::icons::EditIcon;
 use orangui::{Button, ButtonVariant};
 
-use crate::domain::counter::{Counter, format, stats};
+use crate::domain::counter::{CounterId, format, stats};
 use crate::inbound::ui::components::alert_dialog::ConfirmDialog;
-use crate::inbound::ui::components::celebration::{self, CelebrationHost};
 use crate::inbound::ui::components::reveal::Reveal;
 use crate::inbound::ui::components::tile::{self, Num, Tile, TileGrid};
-use crate::inbound::ui::{self, use_prefs, use_store};
-use crate::screens::tap::{Plan, Tap};
+use crate::inbound::ui::{self, use_prefs};
+use crate::screens::home::Row;
 
-/// Every counter as a card, in the preferred order.
+/// Every row as a card, in the order given.
 #[component]
 pub fn CounterList(
-    counters: Vec<Counter>,
-    on_bump: EventHandler<()>,
+    rows: Vec<Row>,
+    on_tap: EventHandler<(CounterId, i64)>,
     on_open: EventHandler<i64>,
-    on_edit: EventHandler<Counter>,
+    on_edit: EventHandler<CounterId>,
 ) -> Element {
-    let store = use_store();
-    let prefs = use_prefs();
-
     rsx! {
-        for c in ui::ordered(&counters, &store, prefs().counter_order, ui::shown_day()) {
+        for row in rows {
             CounterCard {
-                key: "{c.id.0}",
-                counter: c.clone(),
-                on_bump: move |()| on_bump.call(()),
+                key: "{row.counter().id.0}",
+                on_tap: {
+                    let id = row.counter().id;
+                    move |delta: i64| on_tap.call((id, delta))
+                },
                 on_open: move |id: i64| on_open.call(id),
-                on_edit: move |()| on_edit.call(c.clone()),
+                on_edit: {
+                    let id = row.counter().id;
+                    move |()| on_edit.call(id)
+                },
+                row,
             }
         }
     }
@@ -53,19 +55,16 @@ pub fn CounterList(
 /// numbers opens it.
 #[component]
 fn CounterCard(
-    counter: Counter,
-    on_bump: EventHandler<()>,
+    row: Row,
+    on_tap: EventHandler<i64>,
     on_open: EventHandler<i64>,
     on_edit: EventHandler<()>,
 ) -> Element {
-    let store = use_store();
-    let entries = store.entries(counter.id).unwrap_or_default();
+    let counter = row.counter().clone();
     let prefs = use_prefs()();
     let shown = ui::shown_day();
-    let summary = stats::summarize_with(&entries, counter.goal, shown, &prefs);
+    let summary = stats::summarize_with(row.entries(), counter.goal, shown, &prefs);
     let id = counter.id;
-    let bump_store = Arc::clone(&store);
-    let toast = use_toast();
     let step = i64::from(counter.step.get());
     let confirm_minus = prefs.confirm_minus;
     let days = stats::days_in_year(shown.year());
@@ -87,48 +86,7 @@ fn CounterCard(
     let big = counter.big_step.map(|b| i64::from(b.get()));
     let mut confirm_open = use_signal(|| false);
     let mut confirm_big = use_signal(|| false);
-    // Owned, because the callback outlives this render.
-    let name = counter.name.to_string();
-    let host = use_context::<CelebrationHost>();
-    let card_celebration = counter.celebration;
-    let goal = counter.goal;
-    let bump = use_callback(move |delta: i64| {
-        // The day and its count as the store has them at the tap, not as
-        // the last render drew them: the day may have turned since.
-        let day = ui::today(&prefs);
-        let stored = match bump_store.entries(id) {
-            Ok(stored) => stored,
-            Err(e) => {
-                toast.error(e.to_string(), ToastOptions::default());
-                return;
-            }
-        };
-        let tap = Tap {
-            name: &name,
-            entries: &stored,
-            goal,
-            own: card_celebration,
-            app: prefs.celebration,
-            day,
-        };
-        let applied = match tap.plan(delta) {
-            Plan::Nothing(said) => {
-                ui::raise(toast, &said);
-                return;
-            }
-            Plan::Apply(applied) => applied,
-        };
-        match bump_store.adjust(id, ui::now(), day, applied) {
-            Ok(_) => {
-                let outcome = tap.outcome(applied, || ui::all_goals_met(&bump_store, day, &prefs));
-                if let Some(said) = celebration::play(host, outcome) {
-                    ui::raise(toast, &said);
-                }
-                on_bump.call(());
-            }
-            Err(e) => toast.error(e.to_string(), ToastOptions::default()),
-        }
-    });
+    let bump = on_tap;
 
     rsx! {
         Reveal { class: "settings-list",
