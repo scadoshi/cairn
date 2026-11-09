@@ -154,6 +154,20 @@ pub fn save_form(
     }
 }
 
+/// Checks the messages showing again on every edit, so a field's message
+/// goes the moment the field is right; see [`FormErrors::revalidated`].
+fn use_revalidate_on_edit(state: CounterFormState) {
+    let mut errors = state.errors;
+    use_effect(move || {
+        // Reading the fields here is what reruns this on every edit.
+        let fields = state.fields();
+        let next = errors.peek().clone().revalidated(&fields);
+        if *errors.peek() != next {
+            errors.set(next);
+        }
+    });
+}
+
 /// The form body, the deck form's shape: labels over inputs, chips centered.
 #[component]
 pub fn CounterForm(state: CounterFormState) -> Element {
@@ -166,6 +180,7 @@ pub fn CounterForm(state: CounterFormState) -> Element {
         mut celebration,
         errors,
     } = state;
+    use_revalidate_on_edit(state);
     let mut hint = use_signal(|| None::<FormHint>);
     let mut hint_open = use_signal(|| false);
     let days = stats::days_in_year(ui::shown_day().year());
@@ -407,6 +422,61 @@ mod tests {
             assert!(errors.big_step.is_some(), "{errors:?}");
             assert!(errors.goal.is_none(), "{errors:?}");
             assert!(errors.step.is_none(), "{errors:?}");
+        });
+    }
+
+    thread_local! {
+        static FORM: std::cell::Cell<Option<CounterFormState>> = const { std::cell::Cell::new(None) };
+    }
+
+    #[component]
+    fn Probe() -> Element {
+        let state = use_hook(CounterFormState::default);
+        use_revalidate_on_edit(state);
+        FORM.with(|f| f.set(Some(state)));
+        rsx! {}
+    }
+
+    #[test]
+    fn a_message_follows_its_field_as_it_is_typed() {
+        let mut dom = VirtualDom::new(Probe);
+        dom.rebuild_in_place();
+        let settle = |dom: &mut VirtualDom| dom.render_immediate(&mut dioxus::core::NoOpMutations);
+        settle(&mut dom);
+        let mut state = FORM.with(std::cell::Cell::get).unwrap();
+        dom.in_scope(ScopeId::APP, || {
+            state.name.set("   ".to_string());
+            state.amount.set("0".to_string());
+        });
+        settle(&mut dom);
+        dom.in_scope(ScopeId::APP, || {
+            assert_eq!(
+                (state.errors)(),
+                FormErrors::default(),
+                "nothing shows before a Save"
+            );
+            assert!(state.validate().is_none());
+        });
+        settle(&mut dom);
+        dom.in_scope(ScopeId::APP, || state.name.set("  x".to_string()));
+        settle(&mut dom);
+        dom.in_scope(ScopeId::APP, || {
+            let errors = (state.errors)();
+            assert_eq!(errors.name, None, "the name is right now");
+            assert!(errors.goal.is_some(), "the goal is still wrong: {errors:?}");
+            state.amount.set("00".to_string());
+        });
+        settle(&mut dom);
+        dom.in_scope(ScopeId::APP, || {
+            assert!(
+                (state.errors)().goal.is_some(),
+                "still wrong, still showing"
+            );
+            state.amount.set("10".to_string());
+        });
+        settle(&mut dom);
+        dom.in_scope(ScopeId::APP, || {
+            assert_eq!((state.errors)(), FormErrors::default());
         });
     }
 }
