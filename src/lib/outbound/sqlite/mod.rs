@@ -14,14 +14,14 @@ use rusqlite::{Connection, OptionalExtension, params};
 use crate::domain::counter::backup::{AT_FORMAT, Backup, DAY_FORMAT, OnConflict, Restored};
 use crate::domain::counter::{
     Counter, CounterId, CounterName, CounterStore, DayCount, Event, Goal, SettingsStore, Step,
-    StoreError,
+    StoreError, names,
 };
 use crate::domain::date_format::DateFormat;
 use crate::domain::preferences::{Celebration, Preferences};
 
 /// Schema version written to SQLite's `user_version` pragma. Bump it and add
 /// a step in `migrate` for each schema change.
-const SCHEMA_VERSION: i64 = 7;
+const SCHEMA_VERSION: i64 = 8;
 
 const SCHEMA_V1: &str = "
 CREATE TABLE IF NOT EXISTS counters (
@@ -151,10 +151,54 @@ fn migrate(conn: &Connection) -> Result<(), StoreError> {
     if version < 7 {
         conn.execute_batch(SCHEMA_V7)?;
     }
+    if version < 8 {
+        rename_repeats(conn)?;
+    }
     if version < SCHEMA_VERSION {
         conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     }
     Ok(())
+}
+
+/// v8: names are unique, compared without case. Of each set of counters
+/// sharing a name, the oldest keeps it and the later ones, in creation
+/// order, take the next free " (n)".
+fn rename_repeats(conn: &Connection) -> Result<(), StoreError> {
+    let rows: Vec<(i64, String)> = {
+        let mut stmt = conn.prepare("SELECT id, name FROM counters ORDER BY created_on, id")?;
+        let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        rows.collect::<Result<_, _>>()?
+    };
+    let counters: Vec<(CounterId, CounterName)> = rows
+        .into_iter()
+        .filter_map(|(id, name)| CounterName::new(&name).ok().map(|n| (CounterId(id), n)))
+        .collect();
+    for (id, name) in names::dedupe(&counters) {
+        conn.execute(
+            "UPDATE counters SET name = ?1 WHERE id = ?2",
+            params![name.as_str(), id.0],
+        )?;
+    }
+    Ok(())
+}
+
+/// Whether a counter other than `except` already has `name`, compared the
+/// way [`names::key`] compares.
+fn name_in_use(
+    conn: &Connection,
+    name: &CounterName,
+    except: Option<CounterId>,
+) -> Result<bool, StoreError> {
+    let wanted = names::key(name);
+    let mut stmt = conn.prepare("SELECT id, name FROM counters")?;
+    let rows = stmt.query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?)))?;
+    for row in rows {
+        let (id, other) = row?;
+        if Some(CounterId(id)) != except && other.trim().to_lowercase() == wanted {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 fn parse_day(text: &str) -> Result<NaiveDate, StoreError> {
@@ -238,6 +282,9 @@ impl CounterStore for SqliteStore {
         today: NaiveDate,
     ) -> Result<Counter, StoreError> {
         let conn = self.conn()?;
+        if name_in_use(&conn, name, None)? {
+            return Err(StoreError(names::name_taken(name)));
+        }
         let (per_year, per_day, per_week) = goal_columns(goal);
         conn.execute(
             "INSERT INTO counters (name, goal_per_year, goal_per_day, goal_per_week, created_on, step, big_step, celebration)
@@ -273,8 +320,22 @@ impl CounterStore for SqliteStore {
         big_step: Option<Step>,
         celebration: Option<Celebration>,
     ) -> Result<(), StoreError> {
+        let conn = self.conn()?;
+        // Only a change of name is checked, so a counter keeps its own
+        // name in any case.
+        let current: Option<String> = conn
+            .query_row(
+                "SELECT name FROM counters WHERE id = ?1",
+                params![id.0],
+                |r| r.get(0),
+            )
+            .optional()?;
+        let renamed = current.is_none_or(|c| c.trim().to_lowercase() != names::key(name));
+        if renamed && name_in_use(&conn, name, Some(id))? {
+            return Err(StoreError(names::name_taken(name)));
+        }
         let (per_year, per_day, per_week) = goal_columns(goal);
-        self.conn()?.execute(
+        conn.execute(
             "UPDATE counters
              SET name = ?1, goal_per_year = ?2, goal_per_day = ?3, goal_per_week = ?4, step = ?5,
                  big_step = ?6, celebration = ?7
@@ -326,24 +387,34 @@ impl CounterStore for SqliteStore {
     fn restore(&self, backup: &Backup, on_conflict: OnConflict) -> Result<Restored, StoreError> {
         let mut conn = self.conn()?;
         let tx = conn.transaction()?;
-        // Names the store had before the import, so a backup that holds two
-        // counters of one name adds both rather than the second replacing
-        // the first.
-        let had: BTreeSet<String> = {
-            let mut stmt = tx.prepare("SELECT name FROM counters")?;
-            let names = stmt.query_map([], |r| r.get::<_, String>(0))?;
-            names.collect::<Result<_, _>>()?
+        // The store's counters before the import, by id and compared name.
+        // A backup's own names are already unique (`backup::parse`).
+        let before: Vec<(i64, String)> = {
+            let mut stmt = tx.prepare("SELECT id, name FROM counters")?;
+            let rows = stmt.query_map([], |r| {
+                Ok((
+                    r.get::<_, i64>(0)?,
+                    r.get::<_, String>(1)?.trim().to_lowercase(),
+                ))
+            })?;
+            rows.collect::<Result<_, _>>()?
         };
+        let had: BTreeSet<&str> = before.iter().map(|(_, key)| key.as_str()).collect();
+        let incoming: BTreeSet<String> = backup
+            .counters
+            .iter()
+            .map(|c| names::key(&c.name))
+            .collect();
         let mut restored = Restored::default();
         if on_conflict == OnConflict::Replace {
-            for name in &had {
-                if backup.counters.iter().any(|c| c.name.as_str() == name) {
-                    tx.execute("DELETE FROM counters WHERE name = ?1", params![name])?;
+            for (id, key) in &before {
+                if incoming.contains(key) {
+                    tx.execute("DELETE FROM counters WHERE id = ?1", params![id])?;
                 }
             }
         }
         for c in &backup.counters {
-            let clash = had.contains(c.name.as_str());
+            let clash = had.contains(names::key(&c.name).as_str());
             match (clash, on_conflict) {
                 (true, OnConflict::Keep) => {
                     restored.kept = restored.kept.saturating_add(1);
@@ -1015,5 +1086,119 @@ mod tests {
             "the store is as it was"
         );
         assert_eq!(s.fetch_counter(mine.id).unwrap(), Some(mine));
+    }
+
+    fn make(s: &SqliteStore, name: &str) -> Result<Counter, StoreError> {
+        let name = CounterName::new(name).unwrap();
+        s.create_counter(&name, None, Step::default(), None, None, d(2026, 5, 5))
+    }
+
+    #[test]
+    fn a_store_with_repeated_names_renames_the_later_ones_once() {
+        let conn = Connection::open_in_memory().unwrap();
+        migrate(&conn).unwrap();
+        for (name, day) in [
+            ("Pull-ups", "2026-01-01"),
+            ("pull-ups", "2026-02-01"),
+            ("Squats", "2026-01-05"),
+            ("Pull-ups (1)", "2026-03-01"),
+            ("PULL-UPS", "2026-03-02"),
+        ] {
+            conn.execute(
+                "INSERT INTO counters (name, created_on) VALUES (?1, ?2)",
+                params![name, day],
+            )
+            .unwrap();
+        }
+        conn.pragma_update(None, "user_version", 7).unwrap();
+        migrate(&conn).unwrap();
+        let mut stmt = conn
+            .prepare("SELECT name FROM counters ORDER BY id")
+            .unwrap();
+        let names: Vec<String> = stmt
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(
+            names,
+            [
+                "Pull-ups",
+                "pull-ups (2)",
+                "Squats",
+                "Pull-ups (1)",
+                "PULL-UPS (3)"
+            ],
+            "the oldest keeps its name and the later ones take the next free suffix"
+        );
+        let v: i64 = conn
+            .query_row("PRAGMA user_version", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(v, SCHEMA_VERSION);
+    }
+
+    #[test]
+    fn a_name_already_taken_is_refused_on_create() {
+        let s = store();
+        make(&s, "Pull-ups").unwrap();
+        let err = make(&s, " pull-UPS ").unwrap_err();
+        assert_eq!(err.to_string(), "a counter named pull-UPS already exists");
+        assert_eq!(names(&s), ["Pull-ups"]);
+    }
+
+    #[test]
+    fn a_rename_to_a_taken_name_is_refused_but_a_case_change_is_not() {
+        let s = store();
+        let pull = make(&s, "Pull-ups").unwrap();
+        let squats = make(&s, "Squats").unwrap();
+        let rename = |id, name: &str| {
+            s.update_counter(
+                id,
+                &CounterName::new(name).unwrap(),
+                None,
+                Step::default(),
+                None,
+                None,
+            )
+        };
+        assert!(
+            rename(squats.id, "PULL-UPS").is_err(),
+            "taken by another counter"
+        );
+        assert!(
+            rename(pull.id, "pull-ups").is_ok(),
+            "its own name in another case"
+        );
+        assert!(rename(pull.id, "Chin-ups").is_ok());
+        assert_eq!(names(&s), ["Chin-ups", "Squats"]);
+    }
+
+    #[test]
+    fn an_import_matches_names_without_case_and_counts_what_it_kept() {
+        let s = store();
+        make(&s, "push-ups").unwrap();
+        let backup = Backup::from_store(&filled()).unwrap();
+        let shared = backup.conflicts(&s.list_counters().unwrap());
+        assert_eq!(shared.len(), 1, "Push-ups and push-ups are one name");
+        let restored = s.restore(&backup, OnConflict::Keep).unwrap();
+        assert_eq!(
+            restored.kept,
+            shared.len(),
+            "the dialog and the toast agree"
+        );
+        assert_eq!(
+            names(&s),
+            ["push-ups", "Pages"],
+            "mine stays, the rest is added"
+        );
+        let replaced = store();
+        make(&replaced, "PAGES").unwrap();
+        let done = replaced.restore(&backup, OnConflict::Replace).unwrap();
+        assert_eq!((done.added, done.replaced), (1, 1));
+        assert_eq!(
+            names(&replaced),
+            ["Push-ups", "Pages"],
+            "the backup's, in its order"
+        );
     }
 }

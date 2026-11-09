@@ -8,7 +8,7 @@ someday.
 Cairn is installed on a real iPhone and in daily use, signed with a
 development profile good until September 2027. It also runs on desktop and in
 the simulator. There is no App Store listing yet. The database schema is at
-v7, holding nine months of imported history: 225 days, 10,200 taps, 98,400
+v8, holding nine months of imported history: 225 days, 10,200 taps, 98,400
 reps across push-ups, pull-ups and squats.
 
 7,200 lines of Rust, 87 tests, 2,800 lines of pure domain.

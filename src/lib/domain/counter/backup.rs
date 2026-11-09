@@ -17,7 +17,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use super::{
-    Counter, CounterName, CounterStore, DayCount, Event, Goal, Step, StoreError, check_big_step,
+    Counter, CounterId, CounterName, CounterStore, DayCount, Event, Goal, Step, StoreError,
+    check_big_step, names,
 };
 use crate::domain::preferences::Celebration;
 
@@ -126,11 +127,14 @@ impl Backup {
     /// each once, in the backup's order. Empty means an import adds without
     /// touching anything.
     pub fn conflicts(&self, existing: &[Counter]) -> Vec<CounterName> {
-        let have: BTreeSet<&str> = existing.iter().map(|c| c.name.as_str()).collect();
+        let have: BTreeSet<String> = existing.iter().map(|c| names::key(&c.name)).collect();
         let mut seen = BTreeSet::new();
         self.counters
             .iter()
-            .filter(|c| have.contains(c.name.as_str()) && seen.insert(c.name.as_str()))
+            .filter(|c| {
+                let key = names::key(&c.name);
+                have.contains(&key) && seen.insert(key)
+            })
             .map(|c| c.name.clone())
             .collect()
     }
@@ -204,7 +208,25 @@ pub fn parse(text: &str) -> Result<Backup, BackupError> {
             })
         })
         .collect::<Result<Vec<CounterBackup>, BackupError>>()?;
-    Ok(Backup { counters })
+    Ok(Backup {
+        counters: with_unique_names(counters),
+    })
+}
+
+/// `counters` with each later repeat of a name renamed, as a store renames
+/// its own (`names::dedupe`), so an import never adds two of one name.
+fn with_unique_names(mut counters: Vec<CounterBackup>) -> Vec<CounterBackup> {
+    let listed: Vec<(CounterId, CounterName)> = counters
+        .iter()
+        .zip(0_i64..)
+        .map(|(c, i)| (CounterId(i), c.name.clone()))
+        .collect();
+    for (CounterId(i), name) in names::dedupe(&listed) {
+        if let Some(c) = usize::try_from(i).ok().and_then(|i| counters.get_mut(i)) {
+            c.name = name;
+        }
+    }
+    counters
 }
 
 /// The two fields read first, whatever else the file holds.
@@ -516,5 +538,18 @@ mod tests {
             vec![CounterName::new("Push-ups").unwrap()]
         );
         assert_eq!(backup.conflicts(&[]), Vec::<CounterName>::new());
+    }
+
+    #[test]
+    fn a_backup_with_a_repeated_name_reads_with_the_later_one_renamed() {
+        let text = with(|v| {
+            let first = v["counters"][0].clone();
+            let mut second = first.clone();
+            second["name"] = "push-ups".into();
+            v["counters"] = serde_json::Value::Array(vec![first, second]);
+        });
+        let read = parse(&text).unwrap();
+        let names: Vec<&str> = read.counters.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(names, ["Push-ups", "push-ups (1)"]);
     }
 }
