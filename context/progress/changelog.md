@@ -10,6 +10,9 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - On a counter's screen the menu lights only that counter, not Home as well.
 - Past a counter's goal, its Goal card counts how far past (+494 past goal) and needed per day reads goal met, instead of negative figures.
 - After Save marks a field in the counter form, its message goes as soon as the field is right, instead of waiting for the next Save.
+- Two counters can no longer share a name, whatever the case: Create and Edit say the name is taken.
+- Counters that already share a name are renamed once on update: the oldest keeps it and the later ones take (1), (2) and so on.
+- Import renames a backup's repeated names the same way, matches names whatever the case, and its count of counters already here matches what it keeps.
 
 ## 1.4.0, 2026-11-08
 
