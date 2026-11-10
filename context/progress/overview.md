@@ -35,7 +35,7 @@ reps across push-ups, pull-ups and squats.
 - Counter screen: odometer, today, this week, this month, trends (six views),
   goal pace, bests, habit figures, by-year table. Delete behind a dialog.
 - Goals per day, week or year, all reducing to what today has to clear.
-- A quote that turns over on the clock hour, 72 of them, each traced to a
+- A quote that turns over on the clock hour, 75 of them, each traced to a
   book, newsletter or interview.
 - Config: theme, mark (the C or the owner's S), goal animation, dark mode,
   date format, when a day and week start, rest days, counter order,

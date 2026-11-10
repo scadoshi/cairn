@@ -36,6 +36,23 @@ pub fn for_time<Tz: TimeZone>(at: &DateTime<Tz>) -> Option<&'static Quote> {
     at_hour(at.timestamp().div_euclid(3600))
 }
 
+/// The fewest extra ticks a day that make a day's advance, 24 plus them,
+/// share no factor with `len`: 1 for most lengths (a day of 25 ticks), more
+/// when `len` shares a factor with 25, as 75 does.
+fn day_extra(len: usize) -> usize {
+    (1..=len)
+        .find(|extra| gcd(24_usize.saturating_add(*extra), len) == 1)
+        .unwrap_or(1)
+}
+
+/// The greatest common divisor of `a` and `b`.
+fn gcd(mut a: usize, mut b: usize) -> usize {
+    while let Some(rest) = a.checked_rem(b) {
+        (a, b) = (b, rest);
+    }
+    a
+}
+
 /// The quote for a given count of whole hours since the epoch.
 ///
 /// Split out from [`for_time`] so the rotation can be tested without
@@ -48,13 +65,15 @@ pub fn at_hour(hours: i64) -> Option<&'static Quote> {
     if len == 0 {
         return None;
     }
-    // One extra tick per day, so the list does not advance in step with the
+    // Extra ticks each day, so the list does not advance in step with the
     // clock. Walking it an hour at a time means a fixed hour of the day only
     // ever reaches the slots `24 apart`, and at 72 quotes that is three of
     // them, forever: someone who only ever logs at 8am would have seen the
-    // whole pool by Wednesday and never another. Adding the day count makes
-    // the step 25 an hour, which shares nothing with 24.
-    let ticks = hours.saturating_add(hours.div_euclid(24));
+    // whole pool by Wednesday and never another. A day then advances the list
+    // by 24 plus the extra, which `day_extra` picks to share no factor with
+    // the length, so that hour reaches every slot.
+    let extra = i64::try_from(day_extra(len)).ok()?;
+    let ticks = hours.saturating_add(hours.div_euclid(24).saturating_mul(extra));
     let slot = usize::try_from(ticks.rem_euclid(i64::try_from(len).ok()?)).ok()?;
     QUOTES.get(slot.wrapping_mul(STEP).checked_rem(len)?)
 }
@@ -258,6 +277,11 @@ pub const QUOTES: &[Quote] = &[
         text: "Do not act as if thou wert going to live ten thousand years. While thou livest, while it is in thy power, be good.",
         author: "Marcus Aurelius",
         source: "Meditations 4.17",
+    },
+    Quote {
+        text: "It is not the future or the past that weighs heavy upon you, but always the present.",
+        author: "Marcus Aurelius",
+        source: "Meditations 8.36, Farquharson translation",
     },
     Quote {
         text: "You do not rise to the level of your goals. You fall to the level of your systems.",
@@ -549,6 +573,13 @@ mod tests {
             assert!(!q.author.is_empty(), "a quote with no author");
             assert!(!q.source.is_empty(), "{} has no source", q.author);
         }
+    }
+
+    #[test]
+    fn a_day_advances_by_a_step_that_shares_nothing_with_the_length() {
+        assert_eq!(day_extra(72), 1, "a day of 25");
+        assert_eq!(day_extra(74), 1);
+        assert_eq!(day_extra(75), 2, "25 shares 25 with 75, so a day of 26");
     }
 
     #[test]

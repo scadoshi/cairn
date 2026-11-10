@@ -6,6 +6,8 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased
 
+- A new quote: Marcus Aurelius on the present weighing heavier than the future or the past (Meditations 8.36, Farquharson translation).
+
 ## 1.4.1, 2026-11-08
 
 - Opening another counter from the menu shows its figures right away instead of the last counter's.
