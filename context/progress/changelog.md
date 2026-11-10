@@ -4,7 +4,7 @@ Unreleased entries collect at the top. At cut time they move under a version hea
 
 Every entry added here also goes into portfolio's `src/changelog.rs` in the same sitting, in `UPCOMING` under the next version, reworded to zwipe's rules (one phrase, no period). At cut time the version moves there from `UPCOMING` to the top of `RELEASES`, with the date of its heading here written as `Some(Date::new(year, month, day))`. That file is what scottyfermo.com/projects/cairn/changelog shows, and the app has no other public changelog.
 
-## Unreleased
+## Unreleased, 1.4.2
 
 - A new quote: Marcus Aurelius on the present weighing heavier than the future or the past (Meditations 8.36, Farquharson translation).
 
