@@ -21,6 +21,7 @@ open -a Transporter ~/Developer/cairn/Cairn.ipa
 4. Export compliance: **No**
 5. Paste the version's "What's New" from [`../../../store-submissions/<version>/whats_new.md`](../../../store-submissions/README.md)
 6. **Submit for Review**
+7. The same day, the submitted version is the latest mobile release, whether or not review has cleared. Its changelog heading in `context/progress/changelog.md` and its entry in the portfolio's `src/changelog.rs` (moved from `UPCOMING` to the top of `RELEASES`, where scottyfermo.com shows it as Latest) carry the submission day. Don't wait for Apple to release it.
 
 ## 3. Afterwards
 
