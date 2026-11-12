@@ -182,11 +182,7 @@ impl State {
             Action::Delete if self.counter.is_some() => vec![Effect::DeleteCounter],
             Action::Delete => Vec::new(),
             Action::Deleted(Ok(())) => {
-                let name = self
-                    .counter
-                    .as_ref()
-                    .map(|c| c.name.as_str())
-                    .unwrap_or_default();
+                let name = self.counter.as_ref().map_or_default(|c| c.name.as_str());
                 vec![
                     Effect::Toast(Toast::success(deleted(name))),
                     Effect::StoreChanged,

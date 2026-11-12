@@ -62,10 +62,7 @@ pub fn Config() -> Element {
         (
             model.notice().map(str::to_owned),
             model.topic(),
-            model
-                .pending()
-                .map(|p| p.conflicts.clone())
-                .unwrap_or_default(),
+            model.pending().map_or_default(|p| p.conflicts.clone()),
         )
     };
 
