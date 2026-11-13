@@ -10,6 +10,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - Every sheet shows a handle where to drag it, with a grab cursor on a computer.
 - In Themes, the arrow keys and h, j, k and l move through the themes, gg and Shift+G go to the first or last, and Enter picks one.
 - Tab stays inside an open dialog instead of leaving for the page behind it.
+- An open sheet takes focus as it opens, keeps Tab inside, closes on Esc and gives focus back to what opened it.
 
 ## 1.4.1, 2026-11-08
 
