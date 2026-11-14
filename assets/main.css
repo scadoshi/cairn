@@ -249,10 +249,14 @@ input {
     border-top: none;
 }
 
-/* The menu's footer is the kit's .nav-trailing-row: the ! at the left end
-   with the Home, Settings and About icons, the Theme palette and the mode's
-   sun or moon beside it. The ! is a text button at the icons' height and
-   fade. */
+/* The menu's footer is the kit's .nav-trailing-row: the ! with the Home,
+   Settings and About icons, the Theme palette and the mode's sun or moon,
+   centered under the counters. The ! is a text button at the icons' height
+   and fade. */
+.app-nav .nav-trailing-row {
+    justify-content: center;
+}
+
 .app-nav-support {
     display: inline-flex;
     align-items: center;
