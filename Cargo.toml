@@ -30,7 +30,7 @@ serde_json = "1"
 thiserror = "2"
 # Local store. `bundled` compiles SQLite in so the desktop, iOS, and (later)
 # watch builds carry the same engine and need nothing from the OS.
-rusqlite = { version = "0.37", features = ["bundled", "chrono"] }
+rusqlite = { version = "0.41", features = ["bundled", "chrono"] }
 # Per-platform data and download directories for the database and CSV exports.
 dirs = "6"
 # `use_toast`, the same pinned build zwiper and orangui's ToastStack use.
