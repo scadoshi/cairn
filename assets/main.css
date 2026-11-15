@@ -1262,25 +1262,52 @@ input {
  ==================== */
 
 /* Wider than a phone, so it scrolls sideways (the shared .chart-scroll) and
-   opens on the newest weeks. */
+   opens on the newest weeks. The weekday strip stays opaque at the left;
+   weeks fade in beside it and fade out under the right gutter. `--axis-end`
+   is the strip's right edge: the left gutter plus the strip's share
+   (`--axis-share`, set inline) of the row, which is never narrower than
+   38rem. */
 .heat-scroll {
+    --axis-end: calc(1rem + max(100% - 2rem, 38rem) * var(--axis-share));
     scrollbar-width: none;
     padding: 0.25rem 1rem 0.5rem;
-    /* Weeks fade out under the side gutters as they scroll past. The fade is
-       the gutter's width, so the first and last weeks rest clear of it. */
-    -webkit-mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
-    mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
+    -webkit-mask-image: linear-gradient(to right, #000 var(--axis-end), transparent var(--axis-end), #000 calc(var(--axis-end) + 1rem), #000 calc(100% - 1rem), transparent);
+    mask-image: linear-gradient(to right, #000 var(--axis-end), transparent var(--axis-end), #000 calc(var(--axis-end) + 1rem), #000 calc(100% - 1rem), transparent);
 }
 
 .heat-scroll::-webkit-scrollbar {
     display: none;
 }
 
+/* The weekday strip and the plot side by side. The strip is `--axis-share`
+   of the row and the plot the rest, so both draw at one scale and each name
+   lines up with its row. */
+.heat-row {
+    display: flex;
+    min-width: 38rem;
+}
+
+/* The weekdays stay at the left while the weeks scroll under them, on the
+   card's color, which also covers the scroller's left gutter. */
+.heat-axis {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    flex: none;
+    display: block;
+    width: calc(100% * var(--axis-share));
+    height: auto;
+    background-color: var(--bg-primary);
+    box-shadow: -1rem 0 0 var(--bg-primary);
+    font-family: inherit;
+}
+
 /* Holds the grid and its chip, and nothing else, so the chip's percentages
    measure the grid. */
 .heat-plot {
     position: relative;
-    min-width: 38rem;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .heat-backdrop {

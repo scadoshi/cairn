@@ -8,7 +8,6 @@ use std::rc::Rc;
 use dioxus::prelude::*;
 use orangui::{
     ChartTip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatReadout, use_heat_pick,
-    use_scroll_to_end,
 };
 
 use crate::domain::counter::{DayCount, format, heat};
@@ -23,6 +22,35 @@ const WEEKS: usize = 52;
 /// most this many of them, the biggest.
 const PEAK_RATIO: u32 = 4;
 const MAX_PEAKS: usize = 12;
+
+/// Opens the heatmap on its newest weeks when it is wider than its box. A month name the pinned
+/// weekdays cut through moves on under them, with that much room added at the far end, so the
+/// newest week stays in view and no name shows by half at the edge.
+const SCROLL_TO_LATEST_JS: &str = r"
+setTimeout(() => {
+    for (const box of document.querySelectorAll('.heat-scroll')) {
+        const row = box.querySelector('.heat-row');
+        const axis = box.querySelector('.heat-axis');
+        if (!row || !axis) continue;
+        row.style.paddingRight = '';
+        box.scrollLeft = box.scrollWidth;
+        if (box.scrollWidth <= box.clientWidth) continue;
+        const edge = axis.getBoundingClientRect().right;
+        const cut = Array.from(box.querySelectorAll('.heat-month'))
+            .map((label) => label.getBoundingClientRect())
+            .find((r) => r.left < edge && r.right > edge);
+        if (!cut) continue;
+        row.style.paddingRight = Math.ceil(cut.right - edge) + 2 + 'px';
+        box.scrollLeft = box.scrollWidth;
+    }
+}, 60);
+";
+
+/// The tap chip's left edge for a cell at `x` in a grid `width` wide, as a percentage of the
+/// plot, which starts where the weekday strip ends.
+fn chip_left(x: f64, width: f64) -> f64 {
+    (x + HEAT_CELL / 2.0 - LEFT) / (width - LEFT) * 100.0
+}
 
 /// What the tapped cell says and where the chip sits, as percentages of the
 /// grid so it follows the grid at any width.
@@ -92,22 +120,42 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
         .collect();
 
     // Opens on the newest weeks: the grid is wider than a phone, and the
-    // interesting end is the right one.
-    use_scroll_to_end();
+    // interesting end is the right one. A beat after mount, once the box is laid out.
+    use_effect(|| {
+        document::eval(SCROLL_TO_LATEST_JS);
+    });
 
     rsx! {
-        div { class: "chart-scroll scroll-end heat-scroll",
+        // The weekdays sit in their own strip, pinned at the left while the
+        // weeks scroll under it. The strip is the grid's left margin, so the
+        // two share one scale and each name lines up with its row.
+        div {
+            class: "chart-scroll heat-scroll",
+            style: "--axis-share: {LEFT / width}",
+            div { class: "heat-row",
+            svg {
+                class: "heat-axis",
+                view_box: "0 0 {LEFT} {height}",
+                "aria-hidden": "true",
+                for (row, label) in labels.iter().enumerate() {
+                    if row % 2 == 1 {
+                        text { class: "heat-label", x: "{LEFT - 4.0}", y: "{TOP + orangui::heat_span(row) + HEAT_CELL - 2.0}", text_anchor: "end", "{label}" }
+                    }
+                }
+            }
+            // The chip is placed by percentages of the plot, so it lives in a
+            // wrapper that holds only the plot.
             div { class: "heat-plot",
                 svg {
                     class: "heat-grid",
-                    view_box: "0 0 {width} {height}",
+                    view_box: "{LEFT} 0 {width - LEFT} {height}",
                     role: "img",
                     // Clears the chip when the tap lands on nothing.
                     rect {
                         class: "heat-backdrop",
-                        x: "0",
+                        x: "{LEFT}",
                         y: "0",
-                        width: "{width}",
+                        width: "{width - LEFT}",
                         height: "{height}",
                         onclick: move |_| {
                             tip.set(None);
@@ -115,12 +163,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                         },
                     }
                     for m in grid.months.iter() {
-                        text { class: "heat-label", x: "{LEFT + orangui::heat_span(m.column)}", y: "{TOP - 4.0}", "{m.name}" }
-                    }
-                    for (row, label) in labels.iter().enumerate() {
-                        if row % 2 == 1 {
-                            text { class: "heat-label", x: "{LEFT - 4.0}", y: "{TOP + orangui::heat_span(row) + HEAT_CELL - 2.0}", text_anchor: "end", "{label}" }
-                        }
+                        text { class: "heat-label heat-month", x: "{LEFT + orangui::heat_span(m.column)}", y: "{TOP - 4.0}", "{m.name}" }
                     }
                     HeatGrid {
                         cells,
@@ -128,7 +171,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                         top: TOP,
                         on_tap: move |hit: HeatHit| {
                             if let Some(text) = texts.get(hit.index) {
-                                let left = (hit.x + HEAT_CELL / 2.0) / width * 100.0;
+                                let left = chip_left(hit.x, width);
                                 let top = hit.y / height * 100.0;
                                 tip.set(Some(Tip { text: text.clone(), left, top }));
                             }
@@ -147,6 +190,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                     }
                 }
             }
+            }
         }
         HeatReadout { rest, pick }
     }
@@ -160,6 +204,31 @@ mod tests {
 
     fn d(s: &str) -> NaiveDate {
         NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap()
+    }
+
+    #[test]
+    fn the_chip_is_placed_over_the_plot_beside_the_weekdays() {
+        let width = LEFT + orangui::heat_span(WEEKS);
+        let first = chip_left(LEFT, width);
+        let last = chip_left(LEFT + orangui::heat_span(WEEKS - 1), width);
+        assert!(
+            first < 1.0,
+            "the first week's chip is at the plot's left: {first}"
+        );
+        assert!(
+            last > 98.0,
+            "the last week's chip is at the plot's right: {last}"
+        );
+    }
+
+    #[test]
+    fn it_opens_on_the_newest_weeks_with_no_month_cut_by_the_weekdays() {
+        assert!(SCROLL_TO_LATEST_JS.contains("box.scrollLeft = box.scrollWidth;"));
+        assert!(SCROLL_TO_LATEST_JS.contains("querySelectorAll('.heat-month')"));
+        assert!(
+            SCROLL_TO_LATEST_JS.contains("row.style.paddingRight"),
+            "a month the strip cuts moves on under it: {SCROLL_TO_LATEST_JS}"
+        );
     }
 
     #[test]
