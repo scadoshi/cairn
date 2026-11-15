@@ -1262,52 +1262,45 @@ input {
  ==================== */
 
 /* Wider than a phone, so it scrolls sideways (the shared .chart-scroll) and
-   opens on the newest weeks. The weekday strip stays opaque at the left;
-   weeks fade in beside it and fade out under the right gutter. `--axis-end`
-   is the strip's right edge: the left gutter plus the strip's share
-   (`--axis-share`, set inline) of the row, which is never narrower than
-   38rem. */
+   opens on the newest weeks. The weekdays stay pinned at its left, on the
+   card's color, while the weeks scroll under them: the mask is opaque to the
+   gutter, the left padding plus the 24px strip, then the weeks fade in past
+   it by the kit's --fade-left and out at the right edge by --fade-right. */
 .heat-scroll {
-    --axis-end: calc(1rem + max(100% - 2rem, 38rem) * var(--axis-share));
+    --heat-gutter: calc(0.75rem + 24px);
     scrollbar-width: none;
-    padding: 0.25rem 1rem 0.5rem;
-    -webkit-mask-image: linear-gradient(to right, #000 var(--axis-end), transparent var(--axis-end), #000 calc(var(--axis-end) + 1rem), #000 calc(100% - 1rem), transparent);
-    mask-image: linear-gradient(to right, #000 var(--axis-end), transparent var(--axis-end), #000 calc(var(--axis-end) + 1rem), #000 calc(100% - 1rem), transparent);
+    padding: 0.25rem 0.75rem 0;
+    -webkit-mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
+    mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
 }
 
 .heat-scroll::-webkit-scrollbar {
     display: none;
 }
 
-/* The weekday strip and the plot side by side. The strip is `--axis-share`
-   of the row and the plot the rest, so both draw at one scale and each name
-   lines up with its row. */
-.heat-row {
-    display: flex;
-    min-width: 38rem;
-}
-
-/* The weekdays stay at the left while the weeks scroll under them, on the
-   card's color, which also covers the scroller's left gutter. */
 .heat-axis {
     position: sticky;
     left: 0;
     z-index: 1;
-    flex: none;
-    display: block;
-    width: calc(100% * var(--axis-share));
-    height: auto;
     background-color: var(--bg-primary);
-    box-shadow: -1rem 0 0 var(--bg-primary);
+    /* The scroller's left padding, in the card's color too. */
+    box-shadow: -0.75rem 0 0 var(--bg-primary);
+}
+
+.heat-axis > svg {
+    display: block;
     font-family: inherit;
 }
 
-/* Holds the grid and its chip, and nothing else, so the chip's percentages
-   measure the grid. */
+/* The grid at its own size, so a cell keeps its pitch on any phone, and the
+   box the tap chip is placed in. */
 .heat-plot {
     position: relative;
-    flex: 1 1 auto;
-    min-width: 0;
+}
+
+.heat-plot .heat-grid {
+    height: auto;
+    max-width: none;
 }
 
 .heat-backdrop {

@@ -23,11 +23,38 @@ fn the_weekdays_stay_at_the_left_on_the_card_color() {
 }
 
 #[test]
+fn the_weeks_fade_at_both_edges_with_the_kit_scroll_fade() {
+    let scroll = rule(".heat-scroll");
+    assert!(scroll.contains("var(--fade-left, 0px)"), "{scroll:?}");
+    assert!(scroll.contains("var(--fade-right, 0px)"), "{scroll:?}");
+}
+
+#[test]
+fn the_strip_is_a_box_around_its_svg() {
+    let svg = rule(".heat-axis > svg");
+    assert!(svg.contains("display: block;"), "{svg:?}");
+}
+
+#[test]
 fn the_left_fade_starts_past_the_weekdays() {
     let scroll = rule(".heat-scroll");
-    assert!(scroll.contains("--axis-end:"), "{scroll:?}");
     assert!(
-        scroll.contains("#000 var(--axis-end), transparent var(--axis-end)"),
+        scroll.contains("--heat-gutter: calc(0.75rem + 24px);"),
+        "{scroll:?}"
+    );
+    assert!(
+        scroll.contains("#000 var(--heat-gutter), transparent var(--heat-gutter)"),
         "the strip stays opaque and the weeks fade in beside it: {scroll:?}"
+    );
+}
+
+#[test]
+fn the_strip_covers_the_scroller_s_left_padding() {
+    let scroll = rule(".heat-scroll");
+    let axis = rule(".heat-axis");
+    assert!(scroll.contains("padding: 0.25rem 0.75rem 0;"), "{scroll:?}");
+    assert!(
+        axis.contains("box-shadow: -0.75rem 0 0 var(--bg-primary);"),
+        "{axis:?}"
     );
 }

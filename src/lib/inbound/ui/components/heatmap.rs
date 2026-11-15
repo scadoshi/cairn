@@ -14,7 +14,7 @@ use crate::domain::counter::{DayCount, format, heat};
 use crate::inbound::ui::{self, use_date_format, use_prefs};
 
 /// Room on the left for the weekday labels and on top for the months.
-const LEFT: f64 = 26.0;
+const LEFT: f64 = 24.0;
 const TOP: f64 = 14.0;
 /// How many weeks the grid shows.
 const WEEKS: usize = 52;
@@ -29,7 +29,7 @@ const MAX_PEAKS: usize = 12;
 const SCROLL_TO_LATEST_JS: &str = r"
 setTimeout(() => {
     for (const box of document.querySelectorAll('.heat-scroll')) {
-        const row = box.querySelector('.heat-row');
+        const row = box.querySelector('.heat-plot');
         const axis = box.querySelector('.heat-axis');
         if (!row || !axis) continue;
         row.style.paddingRight = '';
@@ -47,9 +47,9 @@ setTimeout(() => {
 ";
 
 /// The tap chip's left edge for a cell at `x` in a grid `width` wide, as a percentage of the
-/// plot, which starts where the weekday strip ends.
+/// plot, which holds the whole grid, the weekday strip's margin included.
 fn chip_left(x: f64, width: f64) -> f64 {
-    (x + HEAT_CELL / 2.0 - LEFT) / (width - LEFT) * 100.0
+    (x + HEAT_CELL / 2.0) / width * 100.0
 }
 
 /// What the tapped cell says and where the chip sits, as percentages of the
@@ -126,29 +126,32 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
     });
 
     rsx! {
-        // The weekdays sit in their own strip, pinned at the left while the
-        // weeks scroll under it. The strip is the grid's left margin, so the
-        // two share one scale and each name lines up with its row.
-        div {
-            class: "chart-scroll heat-scroll",
-            style: "--axis-share: {LEFT / width}",
-            div { class: "heat-row",
-            svg {
-                class: "heat-axis",
-                view_box: "0 0 {LEFT} {height}",
-                "aria-hidden": "true",
-                for (row, label) in labels.iter().enumerate() {
-                    if row % 2 == 1 {
-                        text { class: "heat-label", x: "{LEFT - 4.0}", y: "{TOP + orangui::heat_span(row) + HEAT_CELL - 2.0}", text_anchor: "end", "{label}" }
+        // The grid at its own size, scrolling sideways under the weekday
+        // names, which a sticky strip draws again over the grid's own so
+        // they stay in view.
+        div { class: "chart-scroll scroll-fade-x heat-scroll",
+            // Holds the grid and its chip, so the chip's percentages measure
+            // the grid.
+            div { class: "heat-plot", style: "width:{width}px;",
+                div {
+                    class: "heat-axis",
+                    style: "width:{LEFT}px;height:{height}px;margin-bottom:-{height}px;",
+                    "aria-hidden": "true",
+                    svg {
+                        width: "{LEFT}",
+                        height: "{height}",
+                        view_box: "0 0 {LEFT} {height}",
+                        for (row, label) in labels.iter().enumerate() {
+                            if row % 2 == 1 {
+                                text { class: "heat-label", x: "0", y: "{TOP + orangui::heat_span(row) + HEAT_CELL - 2.0}", "{label}" }
+                            }
+                        }
                     }
                 }
-            }
-            // The chip is placed by percentages of the plot, so it lives in a
-            // wrapper that holds only the plot.
-            div { class: "heat-plot",
                 svg {
                     class: "heat-grid",
-                    view_box: "{LEFT} 0 {width - LEFT} {height}",
+                    style: "width:{width}px;",
+                    view_box: "0 0 {width} {height}",
                     role: "img",
                     // Clears the chip when the tap lands on nothing.
                     rect {
@@ -164,6 +167,11 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                     }
                     for m in grid.months.iter() {
                         text { class: "heat-label heat-month", x: "{LEFT + orangui::heat_span(m.column)}", y: "{TOP - 4.0}", "{m.name}" }
+                    }
+                    for (row, label) in labels.iter().enumerate() {
+                        if row % 2 == 1 {
+                            text { class: "heat-label", x: "0", y: "{TOP + orangui::heat_span(row) + HEAT_CELL - 2.0}", "{label}" }
+                        }
                     }
                     HeatGrid {
                         cells,
@@ -190,7 +198,6 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                     }
                 }
             }
-            }
         }
         HeatReadout { rest, pick }
     }
@@ -207,18 +214,17 @@ mod tests {
     }
 
     #[test]
-    fn the_chip_is_placed_over_the_plot_beside_the_weekdays() {
+    fn the_chip_is_centered_over_its_cell_in_the_plot() {
         let width = LEFT + orangui::heat_span(WEEKS);
-        let first = chip_left(LEFT, width);
-        let last = chip_left(LEFT + orangui::heat_span(WEEKS - 1), width);
-        assert!(
-            first < 1.0,
-            "the first week's chip is at the plot's left: {first}"
-        );
-        assert!(
-            last > 98.0,
-            "the last week's chip is at the plot's right: {last}"
-        );
+        for week in [0, WEEKS - 1] {
+            let x = LEFT + orangui::heat_span(week);
+            let at = chip_left(x, width) / 100.0 * width;
+            assert!(
+                (at - (x + HEAT_CELL / 2.0)).abs() < 1e-9,
+                "week {week}'s chip sits at {at}, its cell's middle is {}",
+                x + HEAT_CELL / 2.0
+            );
+        }
     }
 
     #[test]

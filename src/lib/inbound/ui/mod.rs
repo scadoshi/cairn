@@ -308,6 +308,9 @@ pub fn App() -> Element {
         document::Script { {HEADER_HIDE_JS} }
         // Lifts the action docks over the keyboard.
         document::Script { {orangui::KEYBOARD_INSET_JS} }
+        // Drives the edge fades on sideways scrollers where CSS scroll
+        // timelines are missing (the WKWebView), as the kit animates them elsewhere.
+        document::Script { {orangui::SCROLL_FADE_JS} }
         // Last of the head elements: shows #main, which the launch config
         // hides, once every stylesheet above is in.
         orangui::BootReveal {}
