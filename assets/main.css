@@ -333,7 +333,7 @@ input {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: var(--card-radius);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-sm);
 }
 
 /* The mark and the date share a row: the S on the left, today's line and its
