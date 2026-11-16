@@ -4,7 +4,7 @@ Unreleased entries collect at the top. At cut time they move under a version hea
 
 Every entry added here also goes into portfolio's `src/changelog.rs` in the same sitting, in `UPCOMING` under the next version, reworded to zwipe's rules (one phrase, no period). At cut time the version moves there from `UPCOMING` to the top of `RELEASES`, with the date of its heading here written as `Some(Date::new(year, month, day))`. That file is what scottyfermo.com/projects/cairn/changelog shows, and the app has no other public changelog.
 
-## Unreleased, 1.4.3
+## 1.4.3, 2026-11-15
 
 - In the menu, the row of icons under the counters is centered.
 - In a counter's Every day grid, the weekday names stay at the left while the weeks scroll under them, and it opens on the newest weeks with no month name cut in half at the edge.
