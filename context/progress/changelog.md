@@ -10,6 +10,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - In a counter's Every day grid, the weekday names stay at the left while the weeks scroll under them, and it opens on the newest weeks with no month name cut in half at the edge.
 - On a touch screen, a tapped button no longer stays highlighted.
 - A counter's stat tiles and lifetime box have corners that follow their card's, so the gap around them stays even.
+- The last row of a sheet always scrolls clear of the save button.
 
 ## 1.4.2, 2026-11-13
 
