@@ -12,6 +12,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - A counter's stat tiles and lifetime box have corners that follow their card's, so the gap around them stays even.
 - The last row of a sheet always scrolls clear of the save button.
 - In Settings, each Change button is a pencil and the light and dark toggle is a sun or moon, so a long theme name no longer gets cut off.
+- In Settings, a value that fits beside its row's name shows in full, such as Level up beside Goal animation, instead of ending in an ellipsis.
 
 ## 1.4.2, 2026-11-13
 
