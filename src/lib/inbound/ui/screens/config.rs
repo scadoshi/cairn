@@ -11,7 +11,7 @@ use orangui::icons::{self, DockIcon, EditIcon};
 use orangui::{
     ActionDock, AlertDialog, BottomSheet, Button, ButtonVariant, Chip, DarkModeButton,
     DialogAction, DockAction, DockPlace, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    InfoButton, ModeIcon, PaletteIcon, ThemeConfig, use_screen_hint,
+    IconButton, InfoButton, ModeIcon, ThemeConfig, use_screen_hint,
 };
 
 use crate::domain::counter::backup::{self, Backup, OnConflict};
@@ -108,14 +108,13 @@ pub fn Config() -> Element {
                     div { class: "settings-row-value",
                         span { {orangui::display_theme_name(&theme.read().name)} }
                         DarkModeButton { is_dark: theme.read().is_dark, onclick: toggle_dark }
-                        Button {
-                            variant: ButtonVariant::Action,
+                        IconButton {
+                            label: "Change theme",
+                            path: icons::PENCIL,
                             onclick: move |_| {
                                 driver.dispatch(Action::Topic(Topic::Theme));
                                 preferences_open.set(true);
                             },
-                            PaletteIcon {}
-                            " Change"
                         }
                     }
                 }
@@ -131,13 +130,13 @@ pub fn Config() -> Element {
                             span { {orangui::display_theme_name(&icon().name)} }
                             DarkModeButton { is_dark: icon().is_dark, onclick: toggle_icon_dark }
                         }
-                        Button {
-                            variant: ButtonVariant::Action,
+                        IconButton {
+                            label: "Change app icon",
+                            path: icons::PENCIL,
                             onclick: move |_| {
                                 driver.dispatch(Action::Topic(Topic::AppIcon));
                                 icon_open.set(true);
                             },
-                            "Change"
                         }
                     }
                 }
@@ -148,13 +147,13 @@ pub fn Config() -> Element {
                     }
                     div { class: "settings-row-value",
                         span { {prefs().logo.label()} }
-                        Button {
-                            variant: ButtonVariant::Action,
+                        IconButton {
+                            label: "Change mark",
+                            path: icons::PENCIL,
                             onclick: move |_| {
                                 driver.dispatch(Action::Topic(Topic::Mark));
                                 mark_open.set(true);
                             },
-                            "Change"
                         }
                     }
                 }
@@ -216,13 +215,13 @@ pub fn Config() -> Element {
                     }
                     div { class: "settings-row-value",
                         span { {rest_label(prefs().rest_days)} }
-                        Button {
-                            variant: ButtonVariant::Action,
+                        IconButton {
+                            label: "Change rest days",
+                            path: icons::PENCIL,
                             onclick: move |_| {
                                 driver.dispatch(Action::Topic(Topic::RestDays));
                                 rest_open.set(true);
                             },
-                            "Change"
                         }
                     }
                 }
@@ -253,13 +252,13 @@ pub fn Config() -> Element {
                     }
                     div { class: "settings-row-value",
                         span { {prefs().celebration.label()} }
-                        Button {
-                            variant: ButtonVariant::Action,
+                        IconButton {
+                            label: "Change goal animation",
+                            path: icons::PENCIL,
                             onclick: move |_| {
                                 driver.dispatch(Action::Topic(Topic::Celebration));
                                 celebration_open.set(true);
                             },
-                            "Change"
                         }
                     }
                 }
@@ -585,7 +584,7 @@ fn ConfigHintDialog(open: Signal<bool>, which: Option<Topic>) -> Element {
             HintDialog { open, title: "Theme",
                 HintLine { "The app's palette. It previews as you tap" }
                 HintLine { "The last four are color blind modes" }
-                HintLine { HintKey { ModeIcon { dark: false } " light" } " " HintKey { ModeIcon { dark: true } " dark" } " switches between the theme's two palettes" }
+                HintLine { HintKey { ModeIcon { dark: false } } " " HintKey { ModeIcon { dark: true } } " switches between the theme's two palettes" }
             }
         },
         Topic::AppIcon => rsx! {
