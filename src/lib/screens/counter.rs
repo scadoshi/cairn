@@ -445,7 +445,7 @@ mod tests {
         );
         let effects = state.update(Action::Adjusted(Ok(())));
         assert!(
-            matches!(&effects[..], [Effect::Tally(t), Effect::LoadCounter] if t.text() == "Pushups -3 (now 0)"),
+            matches!(&effects[..], [Effect::Tally(t), Effect::LoadCounter] if t.text() == "Pushups -3"),
             "{effects:?}"
         );
     }

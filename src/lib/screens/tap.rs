@@ -66,11 +66,10 @@ struct Crossing {
 }
 
 impl Tap<'_> {
-    /// The note an `applied` tap leaves: the counter, the change and the
-    /// day's count after it. `None` when it changed nothing.
+    /// The note an `applied` tap leaves: the counter and the change. `None`
+    /// when it changed nothing.
     pub fn tally(&self, applied: i64) -> Option<Tally> {
-        let now = i64::from(self.today()).saturating_add(applied);
-        Tally::new(self.name, applied, now)
+        Tally::new(self.name, applied)
     }
 
     /// The day's count before the tap.

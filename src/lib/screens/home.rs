@@ -495,7 +495,7 @@ mod tests {
         tap(&mut state, 1, 1);
         let effects = state.update(Action::Adjusted(Ok(())));
         assert!(
-            matches!(&effects[..], [Effect::Tally(t), Effect::LoadCounters] if t.text() == "Pushups +1 (now 4)"),
+            matches!(&effects[..], [Effect::Tally(t), Effect::LoadCounters] if t.text() == "Pushups +1"),
             "{effects:?}"
         );
     }
