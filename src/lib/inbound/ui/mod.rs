@@ -21,6 +21,7 @@ use crate::domain::counter::{self, Counter, CounterId, DayCount, Goal, Store};
 use crate::domain::date_format::DateFormat;
 use crate::domain::preferences::{CounterOrder, Preferences};
 use crate::screens::home;
+use crate::screens::tally::Tally;
 use crate::screens::toast::{Toast, ToastKind};
 
 /// The crate version, which is the release version on the stores.
@@ -145,6 +146,70 @@ pub fn raise(toasts: Toasts, toast: &Toast) {
     }
 }
 
+/// The run of plain taps waiting to be raised as one note. Provided by
+/// [`App`].
+#[derive(Clone, Copy)]
+pub struct TallyRun(Signal<Run>);
+
+impl std::fmt::Debug for TallyRun {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("TallyRun").finish_non_exhaustive()
+    }
+}
+
+/// The note being gathered and how many taps have touched it, so a settle
+/// timer knows whether a later tap has taken over.
+#[derive(Debug, Default)]
+struct Run {
+    tally: Option<Tally>,
+    taps: u64,
+}
+
+/// How long a run of taps on one counter waits after its last tap before
+/// its note goes up.
+const TALLY_SETTLE: Duration = Duration::from_millis(600);
+
+/// Notes a plain tap. Taps on one counter that come within 600ms
+/// of each other raise one toast with their whole change;
+/// a tap on another counter raises the waiting note at once and starts its
+/// own.
+pub fn note(toasts: Toasts, tally: Tally) {
+    let Some(TallyRun(mut run)) = try_consume_context::<TallyRun>() else {
+        raise(toasts, &tally.toast());
+        return;
+    };
+    let (finished, taps) = {
+        let mut state = run.write();
+        let (finished, next) = match state.tally.take() {
+            Some(mut current) => match current.absorb(tally) {
+                Ok(()) => (None, current),
+                Err(other) => (Some(current), other),
+            },
+            None => (None, tally),
+        };
+        state.tally = Some(next);
+        state.taps = state.taps.wrapping_add(1);
+        (finished, state.taps)
+    };
+    if let Some(finished) = finished {
+        raise(toasts, &finished.toast());
+    }
+    dioxus::core::spawn_forever(async move {
+        tokio::time::sleep(TALLY_SETTLE).await;
+        let settled = {
+            let mut state = run.write();
+            if state.taps == taps {
+                state.tally.take()
+            } else {
+                None
+            }
+        };
+        if let Some(settled) = settled {
+            raise(toasts, &settled.toast());
+        }
+    });
+}
+
 /// Whether every counter that has a goal has met it for `day`.
 ///
 /// Read back from the store rather than from what is on screen, because it
@@ -224,6 +289,9 @@ pub fn App() -> Element {
     // screens.
     use_context_provider(|| components::navigation::menu::MenuOpen(Signal::new(false)));
     use_context_provider(|| StoreVersion(Signal::new(0)));
+    // Above the router, so a run of taps still raises its note after the
+    // screen it came from has gone.
+    use_context_provider(|| TallyRun(Signal::new(Run::default())));
     // Made once, above the router, so the menu and Settings share it.
     let theme_sheet_open = components::theme_sheet::use_theme_sheet_open();
     let saved_prefs = store.preferences().unwrap_or_default();

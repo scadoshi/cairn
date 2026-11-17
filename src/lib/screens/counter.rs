@@ -10,6 +10,7 @@ use chrono::NaiveDate;
 use crate::domain::counter::models::{Counter, DayCount, Event};
 use crate::domain::preferences::{Celebration, Preferences};
 use crate::screens::saying::Saying;
+use crate::screens::tally::Tally;
 use crate::screens::tap::{Outcome, Plan, Tap};
 use crate::screens::toast::Toast;
 
@@ -137,6 +138,9 @@ pub enum Effect {
     },
     /// Raise a toast.
     Toast(Toast),
+    /// Note a plain tap, folding a run of taps on one counter into one
+    /// toast.
+    Tally(Tally),
     /// Play a celebration and toast its line.
     Celebrate {
         /// The animation.
@@ -264,12 +268,19 @@ impl State {
 
     /// The applied tap's celebration, if any, then the reload.
     fn celebrate(&self, pending: Pending, all_met: bool) -> Vec<Effect> {
-        let outcome = self
-            .tap_on(pending.day, &pending.prefs)
-            .map(|tap| tap.outcome(pending.applied, || all_met));
+        let said = self.tap_on(pending.day, &pending.prefs).map(|tap| {
+            (
+                tap.outcome(pending.applied, || all_met),
+                tap.tally(pending.applied),
+            )
+        });
         let mut effects = Vec::new();
-        if let Some(Outcome::Celebrate { how, saying }) = outcome {
-            effects.push(Effect::Celebrate { how, saying });
+        match said {
+            Some((Outcome::Celebrate { how, saying }, _)) => {
+                effects.push(Effect::Celebrate { how, saying });
+            }
+            Some((Outcome::Quiet, Some(tally))) => effects.push(Effect::Tally(tally)),
+            Some((Outcome::Quiet, None)) | None => {}
         }
         effects.push(Effect::LoadCounter);
         effects
@@ -425,7 +436,7 @@ mod tests {
     }
 
     #[test]
-    fn a_plain_tap_writes_and_reloads_quietly() {
+    fn a_plain_tap_writes_notes_the_change_and_reloads() {
         let mut state = loaded(Some(Goal::PerDay(10)), &[(11, 8, 3)]);
         let effects = tap(&mut state, -5);
         assert!(
@@ -433,7 +444,10 @@ mod tests {
             "{effects:?}"
         );
         let effects = state.update(Action::Adjusted(Ok(())));
-        assert!(matches!(&effects[..], [Effect::LoadCounter]), "{effects:?}");
+        assert!(
+            matches!(&effects[..], [Effect::Tally(t), Effect::LoadCounter] if t.text() == "Pushups -3 (now 0)"),
+            "{effects:?}"
+        );
     }
 
     #[test]

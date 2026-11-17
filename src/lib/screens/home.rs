@@ -13,6 +13,7 @@ use crate::domain::counter::models::{Counter, CounterId, DayCount};
 use crate::domain::counter::stats::{self, Across, CounterDays};
 use crate::domain::preferences::{Celebration, CounterOrder, Preferences};
 use crate::screens::saying::Saying;
+use crate::screens::tally::Tally;
 use crate::screens::tap::{Outcome, Plan, Tap};
 use crate::screens::toast::Toast;
 
@@ -124,6 +125,9 @@ pub enum Effect {
     },
     /// Raise a toast.
     Toast(Toast),
+    /// Note a plain tap, folding a run of taps on one counter into one
+    /// toast.
+    Tally(Tally),
     /// Play a celebration and toast its line.
     Celebrate {
         /// The animation.
@@ -214,22 +218,27 @@ impl State {
         };
         // The tap is asked of the row as it was before the write, and
         // every goal of the rows as they are after it.
-        let outcome = self.rows.get(index).map(|before| {
+        let said = self.rows.get(index).map(|before| {
             let tap = tap_of(before, pending.day, &pending.prefs);
             let mut after = self.rows.clone();
             if let Some(row) = after.get_mut(index) {
                 row.add(pending.day, pending.applied);
             }
-            tap.outcome(pending.applied, || {
+            let outcome = tap.outcome(pending.applied, || {
                 all_met(&after, pending.day, &pending.prefs)
-            })
+            });
+            (outcome, tap.tally(pending.applied))
         });
         if let Some(row) = self.rows.get_mut(index) {
             row.add(pending.day, pending.applied);
         }
         let mut effects = Vec::new();
-        if let Some(Outcome::Celebrate { how, saying }) = outcome {
-            effects.push(Effect::Celebrate { how, saying });
+        match said {
+            Some((Outcome::Celebrate { how, saying }, _)) => {
+                effects.push(Effect::Celebrate { how, saying });
+            }
+            Some((Outcome::Quiet, Some(tally))) => effects.push(Effect::Tally(tally)),
+            Some((Outcome::Quiet, None)) | None => {}
         }
         effects.push(Effect::LoadCounters);
         effects
@@ -476,7 +485,7 @@ mod tests {
     }
 
     #[test]
-    fn a_plain_tap_reloads_and_says_nothing() {
+    fn a_plain_tap_notes_the_change_and_reloads() {
         let mut state = loaded(vec![row(
             1,
             "Pushups",
@@ -486,7 +495,7 @@ mod tests {
         tap(&mut state, 1, 1);
         let effects = state.update(Action::Adjusted(Ok(())));
         assert!(
-            matches!(&effects[..], [Effect::LoadCounters]),
+            matches!(&effects[..], [Effect::Tally(t), Effect::LoadCounters] if t.text() == "Pushups +1 (now 4)"),
             "{effects:?}"
         );
     }

@@ -175,6 +175,10 @@ impl Driver {
                 ui::raise(self.toasts, &toast);
                 None
             }
+            Effect::Tally(tally) => {
+                ui::note(self.toasts, tally);
+                None
+            }
             Effect::Celebrate { how, saying } => {
                 if let Some(toast) =
                     celebration::play(self.host, Outcome::Celebrate { how, saying })

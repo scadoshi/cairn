@@ -12,6 +12,7 @@ pub mod counter_form;
 pub mod draft;
 pub mod home;
 pub mod saying;
+pub mod tally;
 pub mod tap;
 pub mod text;
 pub mod toast;

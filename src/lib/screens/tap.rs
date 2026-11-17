@@ -12,12 +12,13 @@ use crate::domain::counter::models::{DayCount, Goal};
 use crate::domain::counter::stats;
 use crate::domain::preferences::{self, Celebration};
 use crate::screens::saying::Saying;
+use crate::screens::tally::Tally;
 use crate::screens::toast::Toast;
 
 /// A tap on one counter, with the counter as the store has it at the tap.
 #[derive(Debug, Clone, Copy)]
 pub struct Tap<'entries> {
-    /// The counter's name, for the "-0" toast.
+    /// The counter's name, for the tap's note and the "-0" toast.
     pub name: &'entries str,
     /// Every day the counter has logged, read from the store at the tap
     /// rather than from the last render: the day may have turned since.
@@ -45,7 +46,7 @@ pub enum Plan {
 /// What a tap the store applied shows.
 #[derive(Debug, Clone)]
 pub enum Outcome {
-    /// Nothing: the count it moved is on the screen.
+    /// No celebration: the tap leaves only its note (see [`Tap::tally`]).
     Quiet,
     /// A celebration, which the client plays and toasts the line of.
     Celebrate {
@@ -65,6 +66,13 @@ struct Crossing {
 }
 
 impl Tap<'_> {
+    /// The note an `applied` tap leaves: the counter, the change and the
+    /// day's count after it. `None` when it changed nothing.
+    pub fn tally(&self, applied: i64) -> Option<Tally> {
+        let now = i64::from(self.today()).saturating_add(applied);
+        Tally::new(self.name, applied, now)
+    }
+
     /// The day's count before the tap.
     pub fn today(&self) -> u32 {
         self.entries
