@@ -1525,15 +1525,5 @@ a.nav-dropdown-item:visited,
  ==================== */
 
 /* The kit puts the stack in the window's bottom-left corner, as far from
-   the left edge as from the bottom, the newest at the bottom; nothing here
-   moves it, over the dock or anywhere else. */
-
-@media (prefers-reduced-motion: reduce) {
-    body .toast-container [role="alertdialog"] {
-        animation: none;
-    }
-
-    body .toast-container.animating li {
-        transition: none;
-    }
-}
+   the left edge as from the bottom, the newest at the bottom, and gives it
+   all its motion, reduced motion included; nothing here moves it. */
