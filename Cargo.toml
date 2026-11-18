@@ -51,6 +51,10 @@ objc2 = "0.6"
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString"] }
 block2 = "0.6"
 
+[dev-dependencies]
+# Renders components to HTML in tests.
+dioxus-ssr = "0.7"
+
 [features]
 default = ["desktop"]
 desktop = ["dioxus/desktop"]

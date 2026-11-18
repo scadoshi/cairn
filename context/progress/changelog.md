@@ -8,6 +8,8 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 - A tap on a counter's step buttons shows a toast with the counter's name and the change, and a quick run of taps on one counter shows one toast with the whole change.
 - Toasts sit in the bottom-left corner the same distance from the left and bottom edges, over the dock when there is one.
+- Themes has a search by name or color, and on a keyboard t opens it ready to type.
+- On a keyboard, g g and Shift+G go to the top and bottom of a screen.
 
 ## 1.4.3, 2026-11-15
 

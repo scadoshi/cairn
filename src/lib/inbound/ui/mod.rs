@@ -294,6 +294,18 @@ pub fn App() -> Element {
     use_context_provider(|| TallyRun(Signal::new(Run::default())));
     // Made once, above the router, so the menu and Settings share it.
     let theme_sheet_open = components::theme_sheet::use_theme_sheet_open();
+    // The kit's page keys on a keyboard: `t` opens the theme sheet on its search field, `g` `g`
+    // and Shift+G go to the top and bottom of the screen.
+    let no_steps = use_signal(|| false);
+    orangui::use_page_keys(
+        orangui::PageKeys {
+            themes: true,
+            shortcuts: None,
+            blocked_by: &[],
+            scroller: Some(".screen-content"),
+        },
+        no_steps.into(),
+    );
     let saved_prefs = store.preferences().unwrap_or_default();
     let prefs = use_signal(move || saved_prefs);
     use_context_provider(|| prefs);

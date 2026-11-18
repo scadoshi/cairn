@@ -161,9 +161,7 @@ fn SectionButton(section: Section, current: Option<Section>, mut open: Signal<bo
 pub fn MenuFooter(open: Signal<bool>, route: Route) -> Element {
     let current = Section::of(&route);
     let theme = use_context::<Signal<ThemeConfig>>();
-    let mut sheet_open = use_context::<ThemeSheetOpen>().0;
     let toggle_dark = theme_sheet::use_toggle_dark(None);
-    let mut open = open;
     let is_dark = theme.read().is_dark;
     rsx! {
         div { class: "nav-trailing-row",
@@ -173,16 +171,7 @@ pub fn MenuFooter(open: Signal<bool>, route: Route) -> Element {
                     SectionButton { key: "{section.label()}", section, current, open }
                 }
                 VersionButton {}
-                button {
-                    class: "btn-action nav-icon",
-                    r#type: "button",
-                    aria_label: "Theme",
-                    onclick: move |_| {
-                        open.set(false);
-                        sheet_open.set(true);
-                    },
-                    PaletteIcon {}
-                }
+                ThemeButton { open }
                 button {
                     class: "btn-action nav-icon",
                     r#type: "button",
@@ -195,9 +184,43 @@ pub fn MenuFooter(open: Signal<bool>, route: Route) -> Element {
     }
 }
 
+/// The footer's palette: folds the menu and raises the theme sheet. `t` presses it, opening the
+/// sheet on its search field.
+#[component]
+fn ThemeButton(open: Signal<bool>) -> Element {
+    let mut sheet_open = use_context::<ThemeSheetOpen>().0;
+    let mut open = open;
+    rsx! {
+        button {
+            class: "btn-action nav-icon",
+            r#type: "button",
+            aria_label: "Theme",
+            "data-action": orangui::THEMES_ACTION,
+            onclick: move |_| {
+                open.set(false);
+                sheet_open.set(true);
+            },
+            PaletteIcon {}
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t_finds_the_palette() {
+        fn app() -> Element {
+            use_context_provider(|| ThemeSheetOpen(Signal::new(false)));
+            let open = use_signal(|| false);
+            rsx! { ThemeButton { open } }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(html.contains(r#"data-action="themes""#), "{html}");
+    }
 
     #[test]
     fn every_section_lights_up_on_its_own_screen() {
