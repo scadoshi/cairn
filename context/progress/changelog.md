@@ -6,6 +6,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased, 1.5.0
 
+- Stat tiles and the lifetime box sit closer to their card's edge, with rounder corners, bigger numbers and labels that wrap less.
 - A tap on a counter's step buttons shows its name and change in one toast that counts up as you keep tapping.
 - Toasts sit in the bottom-left corner the same distance from the left and bottom edges, over the dock when there is one.
 - Toasts rise from the bottom edge and drift up as they fade out.

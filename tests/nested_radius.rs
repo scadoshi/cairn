@@ -16,7 +16,7 @@ fn rule(selector: &str) -> &'static str {
 fn the_nested_radius_is_the_card_radius_less_the_inset() {
     let root = rule(":root");
     assert!(root.contains("--card-radius: 1rem;"), "{root:?}");
-    assert!(root.contains("--card-inset: 0.75rem;"), "{root:?}");
+    assert!(root.contains("--card-inset: 0.5rem;"), "{root:?}");
     assert!(
         root.contains("calc(var(--card-radius) - 1px - var(--card-inset))"),
         "inner = outer less the card's border and the inset: {root:?}"
@@ -36,6 +36,13 @@ fn tiles_and_the_odometer_take_the_nested_radius() {
 
 #[test]
 fn the_insets_are_the_ones_the_radius_is_made_from() {
-    assert!(rule(".tile-grid").contains("padding: var(--card-inset) 1rem;"));
-    assert!(rule(".odometer").contains("margin: var(--card-inset) 1rem 0;"));
+    // The same inset on every side, so the gap the radius is made from is the gap there is.
+    assert!(rule(".tile-grid").contains("padding: var(--card-inset);"));
+    assert!(rule(".odometer").contains("margin: var(--card-inset) var(--card-inset) 0;"));
+}
+
+#[test]
+fn a_tile_s_figure_takes_the_room_the_smaller_inset_gives() {
+    assert!(rule(".tile-value").contains("font-size: 1.6rem;"));
+    assert!(rule(".tile-value-word").contains("font-size: min(1.6rem, 17cqi);"));
 }

@@ -14,7 +14,7 @@
    keeps it from going square. */
 :root {
     --card-radius: 1rem;
-    --card-inset: 0.75rem;
+    --card-inset: 0.5rem;
     --nested-radius: max(0.15rem, calc(var(--card-radius) - 1px - var(--card-inset)));
 }
 
@@ -623,7 +623,7 @@ input {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
-    padding: var(--card-inset) 1rem;
+    padding: var(--card-inset);
 }
 
 .tile-grid-2 {
@@ -640,7 +640,7 @@ input {
     align-items: center;
     text-align: center;
     min-width: 0;
-    padding: 0.7rem 0.35rem 0.6rem;
+    padding: 0.7rem 0.3rem 0.6rem;
     border: 1px solid var(--border-secondary);
     border-radius: var(--nested-radius);
     background-color: var(--bg-sink);
@@ -648,7 +648,7 @@ input {
 }
 
 .tile-value {
-    font-size: 1.3rem;
+    font-size: 1.6rem;
     font-weight: 700;
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
@@ -665,7 +665,7 @@ input {
 .tile-value-word {
     white-space: nowrap;
     overflow-wrap: normal;
-    font-size: min(1.3rem, 17cqi);
+    font-size: min(1.6rem, 17cqi);
 }
 
 .tile-label {
@@ -688,7 +688,7 @@ input {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: var(--card-inset) 1rem 0;
+    margin: var(--card-inset) var(--card-inset) 0;
     padding: 1.25rem 1rem 1rem;
     border: 1px solid var(--border-secondary);
     border-radius: var(--nested-radius);
