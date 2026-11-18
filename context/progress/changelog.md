@@ -6,10 +6,11 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 
 ## Unreleased, 1.5.0
 
-- A tap on a counter's step buttons shows a toast with the counter's name and the change, and a quick run of taps on one counter shows one toast with the whole change.
+- A tap on a counter's step buttons shows its name and change in one toast that counts up as you keep tapping.
 - Toasts sit in the bottom-left corner the same distance from the left and bottom edges, over the dock when there is one.
 - Toasts rise from the bottom edge and drift up as they fade out.
 - Stacked toasts line up behind the newest.
+- Toasts stamp as they land.
 - Theme search, which finds a theme by name or color.
 - On a keyboard, t opens Themes ready to search.
 - Jump keys, g g for the top of a screen or Shift+G for the bottom.

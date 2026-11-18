@@ -6,14 +6,16 @@ pub mod rebuild;
 pub mod router;
 pub mod screens;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
 use chrono::{Local, NaiveDate, NaiveDateTime};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, Toasts};
+use dioxus_primitives::toast::{ToastOptions, ToastType, Toasts};
 use orangui::{
-    APP_CSS, COMPONENTS_CSS, DialogHostView, THEMES_CSS, TOAST_CSS, ToastStack, use_dialog_host,
+    APP_CSS, COMPONENTS_CSS, DialogHostView, LiveToasts, THEMES_CSS, TOAST_CSS, ToastStack,
+    use_dialog_host,
 };
 use router::Route;
 
@@ -146,10 +148,10 @@ pub fn raise(toasts: Toasts, toast: &Toast) {
     }
 }
 
-/// The run of plain taps waiting to be raised as one note. Provided by
+/// Each counter's running change while its live toast is up, by toast key. Provided by
 /// [`App`].
 #[derive(Clone, Copy)]
-pub struct TallyRun(Signal<Run>);
+pub struct TallyRun(Signal<HashMap<String, Tally>>);
 
 impl std::fmt::Debug for TallyRun {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -157,57 +159,36 @@ impl std::fmt::Debug for TallyRun {
     }
 }
 
-/// The note being gathered and how many taps have touched it, so a settle
-/// timer knows whether a later tap has taken over.
-#[derive(Debug, Default)]
-struct Run {
-    tally: Option<Tally>,
-    taps: u64,
-}
-
-/// How long a run of taps on one counter waits after its last tap before
-/// its note goes up.
-const TALLY_SETTLE: Duration = Duration::from_millis(600);
-
-/// Notes a plain tap. Taps on one counter that come within 600ms
-/// of each other raise one toast with their whole change;
-/// a tap on another counter raises the waiting note at once and starts its
-/// own.
+/// Notes a plain tap at once, in its counter's live toast: a tap while that toast is up adds to
+/// the change it shows, its number crossfading, and keeps it up for another full stay.
 pub fn note(toasts: Toasts, tally: Tally) {
-    let Some(TallyRun(mut run)) = try_consume_context::<TallyRun>() else {
+    let (Some(TallyRun(mut run)), Some(live)) = (
+        try_consume_context::<TallyRun>(),
+        try_consume_context::<LiveToasts>(),
+    ) else {
         raise(toasts, &tally.toast());
         return;
     };
-    let (finished, taps) = {
-        let mut state = run.write();
-        let (finished, next) = match state.tally.take() {
-            Some(mut current) => match current.absorb(tally) {
-                Ok(()) => (None, current),
-                Err(other) => (Some(current), other),
-            },
-            None => (None, tally),
-        };
-        state.tally = Some(next);
-        state.taps = state.taps.wrapping_add(1);
-        (finished, state.taps)
+    let key = tally.key();
+    let shown = {
+        let mut runs = run.write();
+        let shown = Tally::after(runs.remove(&key), live.is_showing(&key), tally);
+        runs.insert(key.clone(), shown.clone());
+        shown
     };
-    if let Some(finished) = finished {
-        raise(toasts, &finished.toast());
-    }
-    dioxus::core::spawn_forever(async move {
-        tokio::time::sleep(TALLY_SETTLE).await;
-        let settled = {
-            let mut state = run.write();
-            if state.taps == taps {
-                state.tally.take()
-            } else {
-                None
-            }
-        };
-        if let Some(settled) = settled {
-            raise(toasts, &settled.toast());
-        }
-    });
+    let toast = shown.toast();
+    let toast_type = match toast.kind() {
+        ToastKind::Info => ToastType::Info,
+        ToastKind::Success => ToastType::Success,
+        ToastKind::Error => ToastType::Error,
+    };
+    live.show(
+        toasts,
+        &key,
+        toast.text().to_owned(),
+        toast_type,
+        ToastOptions::default().duration(toast.duration()),
+    );
 }
 
 /// Whether every counter that has a goal has met it for `day`.
@@ -291,7 +272,7 @@ pub fn App() -> Element {
     use_context_provider(|| StoreVersion(Signal::new(0)));
     // Above the router, so a run of taps still raises its note after the
     // screen it came from has gone.
-    use_context_provider(|| TallyRun(Signal::new(Run::default())));
+    use_context_provider(|| TallyRun(Signal::new(HashMap::new())));
     // Made once, above the router, so the menu and Settings share it.
     let theme_sheet_open = components::theme_sheet::use_theme_sheet_open();
     // The kit's page keys on a keyboard: `t` opens the theme sheet on its search field, `g` `g`
