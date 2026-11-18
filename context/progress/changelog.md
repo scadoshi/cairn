@@ -10,8 +10,9 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - Toasts sit in the bottom-left corner the same distance from the left and bottom edges, over the dock when there is one.
 - Toasts rise from the bottom edge and drop back down.
 - Stacked toasts line up behind the newest.
-- Themes has a search by name or color, and on a keyboard t opens it ready to type.
-- On a keyboard, g g and Shift+G go to the top and bottom of a screen.
+- Theme search, which finds a theme by name or color.
+- On a keyboard, t opens Themes ready to search.
+- Jump keys, g g for the top of a screen or Shift+G for the bottom.
 
 ## 1.4.3, 2026-11-15
 
