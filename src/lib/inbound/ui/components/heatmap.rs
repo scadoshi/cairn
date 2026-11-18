@@ -7,7 +7,8 @@ use std::rc::Rc;
 
 use dioxus::prelude::*;
 use orangui::{
-    ChartTip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatReadout, use_heat_pick,
+    ChartTip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatReadout, HeatScrollParts,
+    HeatWeekdays, use_heat_pick, use_open_on_newest,
 };
 
 use crate::domain::counter::{DayCount, format, heat};
@@ -23,28 +24,15 @@ const WEEKS: usize = 52;
 const PEAK_RATIO: u32 = 4;
 const MAX_PEAKS: usize = 12;
 
-/// Opens the heatmap on its newest weeks when it is wider than its box. A month name the pinned
-/// weekdays cut through moves on under them, with that much room added at the far end, so the
-/// newest week stays in view and no name shows by half at the edge.
-const SCROLL_TO_LATEST_JS: &str = r"
-setTimeout(() => {
-    for (const box of document.querySelectorAll('.heat-scroll')) {
-        const row = box.querySelector('.heat-plot');
-        const axis = box.querySelector('.heat-axis');
-        if (!row || !axis) continue;
-        row.style.paddingRight = '';
-        box.scrollLeft = box.scrollWidth;
-        if (box.scrollWidth <= box.clientWidth) continue;
-        const edge = axis.getBoundingClientRect().right;
-        const cut = Array.from(box.querySelectorAll('.heat-month'))
-            .map((label) => label.getBoundingClientRect())
-            .find((r) => r.left < edge && r.right > edge);
-        if (!cut) continue;
-        row.style.paddingRight = Math.ceil(cut.right - edge) + 2 + 'px';
-        box.scrollLeft = box.scrollWidth;
-    }
-}, 60);
-";
+/// The heatmap's parts the open-on-newest script reads: it opens the heatmap on its newest
+/// weeks when it is wider than its box, with a month name the pinned weekdays cut moved on
+/// under them.
+const SCROLL_PARTS: HeatScrollParts = HeatScrollParts {
+    scroll: ".heat-scroll",
+    row: ".heat-plot",
+    axis: ".heat-axis",
+    month: ".heat-month",
+};
 
 /// The tap chip's left edge for a cell at `x` in a grid `width` wide, as a percentage of the
 /// plot, which holds the whole grid, the weekday strip's margin included.
@@ -82,7 +70,14 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
     let mut tip: Signal<Option<Tip>> = use_signal(|| None);
     let pick = use_heat_pick();
     let grid = heat::heat_grid(&entries, ui::shown_day(), prefs.week_start, WEEKS);
-    let labels = prefs.weekday_labels();
+    // The odd rows' names: every other weekday, starting from the second.
+    let weekdays: Vec<(usize, String)> = prefs
+        .weekday_labels()
+        .iter()
+        .enumerate()
+        .filter(|(row, _)| row % 2 == 1)
+        .map(|(row, label)| (row, (*label).to_owned()))
+        .collect();
     let width = LEFT + orangui::heat_span(grid.columns);
     let height = TOP + orangui::heat_span(HEAT_ROWS);
     let days = grid.cells.len();
@@ -121,9 +116,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
 
     // Opens on the newest weeks: the grid is wider than a phone, and the
     // interesting end is the right one. A beat after mount, once the box is laid out.
-    use_effect(|| {
-        document::eval(SCROLL_TO_LATEST_JS);
-    });
+    use_open_on_newest(SCROLL_PARTS);
 
     rsx! {
         // The grid at its own size, scrolling sideways under the weekday
@@ -141,11 +134,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                         width: "{LEFT}",
                         height: "{height}",
                         view_box: "0 0 {LEFT} {height}",
-                        for (row, label) in labels.iter().enumerate() {
-                            if row % 2 == 1 {
-                                text { class: "heat-label", x: "0", y: "{TOP + orangui::heat_span(row) + HEAT_CELL - 2.0}", "{label}" }
-                            }
-                        }
+                        HeatWeekdays { labels: weekdays.clone(), top: TOP }
                     }
                 }
                 svg {
@@ -168,11 +157,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
                     for m in grid.months.iter() {
                         text { class: "heat-label heat-month", x: "{LEFT + orangui::heat_span(m.column)}", y: "{TOP - 4.0}", "{m.name}" }
                     }
-                    for (row, label) in labels.iter().enumerate() {
-                        if row % 2 == 1 {
-                            text { class: "heat-label", x: "0", y: "{TOP + orangui::heat_span(row) + HEAT_CELL - 2.0}", "{label}" }
-                        }
-                    }
+                    HeatWeekdays { labels: weekdays, top: TOP }
                     HeatGrid {
                         cells,
                         left: LEFT,
@@ -229,11 +214,12 @@ mod tests {
 
     #[test]
     fn it_opens_on_the_newest_weeks_with_no_month_cut_by_the_weekdays() {
-        assert!(SCROLL_TO_LATEST_JS.contains("box.scrollLeft = box.scrollWidth;"));
-        assert!(SCROLL_TO_LATEST_JS.contains("querySelectorAll('.heat-month')"));
+        let js = orangui::open_on_newest_js(SCROLL_PARTS);
+        assert!(js.contains("box.scrollLeft = box.scrollWidth;"));
+        assert!(js.contains("querySelectorAll('.heat-month')"));
         assert!(
-            SCROLL_TO_LATEST_JS.contains("row.style.paddingRight"),
-            "a month the strip cuts moves on under it: {SCROLL_TO_LATEST_JS}"
+            js.contains("row.style.paddingRight"),
+            "a month the strip cuts moves on under it: {js}"
         );
     }
 
