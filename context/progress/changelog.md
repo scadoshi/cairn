@@ -13,8 +13,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - Stacked toasts line up behind the newest.
 - Toasts stamp down as they land, coming in big and settling with a small bounce.
 - Tags that only show something, such as a goal, have a smaller corner than buttons.
-- Theme search, which finds a theme by name or color.
-- On a keyboard, t opens Themes ready to search.
+- On a keyboard, t opens Themes.
 - Jump keys, g g for the top of a screen or Shift+G for the bottom.
 - The open menu has a rule under its header.
 - The open menu's bottom row no longer sits on its edge.
