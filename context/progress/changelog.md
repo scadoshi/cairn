@@ -11,7 +11,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - Toasts sit in the bottom-left corner the same distance from the left and bottom edges, over the dock when there is one.
 - Toasts rise from the bottom edge and drift up as they fade out.
 - Stacked toasts line up behind the newest.
-- Toasts come in large and land at their size, with no pop after they land.
+- Toasts stamp down as they land, coming in big and settling with a small bounce.
 - Tags that only show something, such as a goal, have a smaller corner than buttons.
 - Theme search, which finds a theme by name or color.
 - On a keyboard, t opens Themes ready to search.
