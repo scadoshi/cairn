@@ -7,17 +7,6 @@
         base
  ==================== */
 
-/* A card's corner (the kit's .settings-list and the hero, 1rem) and the inset
-   of the boxes that sit near its edges (the tiles' grid, the odometer). A box
-   inside a card takes the card's radius less its 1px border and the inset, so
-   the gap between the two curves stays even around the corner; the floor
-   keeps it from going square. */
-:root {
-    --card-radius: 1rem;
-    --card-inset: 0.5rem;
-    --nested-radius: max(0.15rem, calc(var(--card-radius) - 1px - var(--card-inset)));
-}
-
 /* In a layer, so it sits under every unlayered rule: the kit's :where()
    defaults (dialog padding, chip padding, pref-note margin) have zero
    specificity like this reset, and this sheet loads after the kit's. */
@@ -154,7 +143,7 @@ input {
     margin: 0;
     background: var(--bg-primary);
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     color: var(--text-primary);
     cursor: pointer;
     opacity: var(--fade-corner);
@@ -332,7 +321,7 @@ input {
     flex-direction: column;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
-    border-radius: var(--card-radius);
+    border-radius: var(--panel-radius);
     box-shadow: var(--shadow-sm);
 }
 
@@ -623,7 +612,7 @@ input {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
-    padding: var(--card-inset);
+    padding: var(--panel-pad);
 }
 
 .tile-grid-2 {
@@ -642,7 +631,7 @@ input {
     min-width: 0;
     padding: 0.7rem 0.3rem 0.6rem;
     border: 1px solid var(--border-secondary);
-    border-radius: var(--nested-radius);
+    border-radius: var(--chip-radius);
     background-color: var(--bg-sink);
     box-shadow: var(--shadow-sm);
 }
@@ -688,10 +677,10 @@ input {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: var(--card-inset) var(--card-inset) 0;
+    margin: var(--panel-pad) var(--panel-pad) 0;
     padding: 1.25rem 1rem 1rem;
     border: 1px solid var(--border-secondary);
-    border-radius: var(--nested-radius);
+    border-radius: var(--chip-radius);
     background-color: var(--bg-sink);
     box-shadow: var(--shadow-sm);
 }
