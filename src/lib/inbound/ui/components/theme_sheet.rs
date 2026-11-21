@@ -77,10 +77,12 @@ pub fn AppThemeSheet(
     let prefs = use_prefs();
     let toast = use_toast();
     rsx! {
+        // The phone's sheet is the rows alone, with no search over them.
         ThemeSheet {
             open,
             theme,
             hint,
+            search: false,
             on_save: move |kept: ThemeConfig| {
                 match follow_icon(&prefs.peek(), &kept) {
                     Ok(Some(icon)) => {
@@ -131,6 +133,27 @@ mod tests {
         let from_context = use_context::<ThemeSheetOpen>().0;
         SEEN.with(|seen| seen.borrow_mut().push((open, from_context)));
         rsx! {}
+    }
+
+    /// The app's theme sheet, open, inside what it reads: the theme, the preferences and the toast
+    /// stack.
+    #[component]
+    fn OpenSheet() -> Element {
+        use_context_provider(|| Signal::new(ThemeConfig::default()));
+        use_context_provider(|| Signal::new(Preferences::default()));
+        let open = use_signal(|| true);
+        rsx! {
+            AppThemeSheet { open }
+        }
+    }
+
+    #[test]
+    fn the_app_s_theme_sheet_has_no_search() {
+        let mut dom = VirtualDom::new(|| rsx! { orangui::ToastStack { OpenSheet {} } });
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(html.contains("pref-row"), "the rows: {html}");
+        assert!(!html.contains("theme-search"), "no search field: {html}");
     }
 
     #[test]
