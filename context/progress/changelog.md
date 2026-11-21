@@ -13,6 +13,7 @@ Every entry added here also goes into portfolio's `src/changelog.rs` in the same
 - Stacked toasts line up behind the newest.
 - Toasts stamp down as they land, coming in big and settling with a small bounce.
 - Tags that only show something, such as a goal, have a smaller corner than buttons.
+- On a computer, hovering a day in the Every day grid names it.
 - On a keyboard, t opens Themes.
 - Jump keys, g g for the top of a screen or Shift+G for the bottom.
 - The open menu has a rule under its header.

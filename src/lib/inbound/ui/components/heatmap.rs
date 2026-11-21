@@ -1,53 +1,21 @@
 //! The last year of one counter as a grid of days, a column per week, each
 //! cell shaded by how the day ranks against the counter's other logged days.
-//! Tapping a cell names the day and its count: in a floating chip where the
-//! screen has room and a pointer, in the readout under the grid otherwise.
-
-use std::rc::Rc;
+//! Hovering or tapping a cell names the day and its count: in a floating chip
+//! where the screen has room and a pointer, in the readout under the grid
+//! otherwise. The grid itself is orangui's.
 
 use dioxus::prelude::*;
-use orangui::{
-    ChartTip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatReadout, HeatScrollParts,
-    HeatWeekdays, use_heat_pick, use_open_on_newest,
-};
+use orangui::{HeatCell, Heatmap as YearHeat};
 
 use crate::domain::counter::{DayCount, format, heat};
 use crate::inbound::ui::{self, use_date_format, use_prefs};
 
-/// Room on the left for the weekday labels and on top for the months.
-const LEFT: f64 = 24.0;
-const TOP: f64 = 14.0;
 /// How many weeks the grid shows.
 const WEEKS: usize = 52;
 /// A day at or past this many times the median logged day is a peak, and at
 /// most this many of them, the biggest.
 const PEAK_RATIO: u32 = 4;
 const MAX_PEAKS: usize = 12;
-
-/// The heatmap's parts the open-on-newest script reads: it opens the heatmap on its newest
-/// weeks when it is wider than its box, with a month name the pinned weekdays cut moved on
-/// under them.
-const SCROLL_PARTS: HeatScrollParts = HeatScrollParts {
-    scroll: ".heat-scroll",
-    row: ".heat-plot",
-    axis: ".heat-axis",
-    month: ".heat-month",
-};
-
-/// The tap chip's left edge for a cell at `x` in a grid `width` wide, as a percentage of the
-/// plot, which holds the whole grid, the weekday strip's margin included.
-fn chip_left(x: f64, width: f64) -> f64 {
-    (x + HEAT_CELL / 2.0) / width * 100.0
-}
-
-/// What the tapped cell says and where the chip sits, as percentages of the
-/// grid so it follows the grid at any width.
-#[derive(Clone, PartialEq)]
-struct Tip {
-    text: String,
-    left: f64,
-    top: f64,
-}
 
 /// Which cells are the year's outlier days, in cell order: at or past
 /// `PEAK_RATIO` times the median logged day, among the `MAX_PEAKS` biggest.
@@ -62,32 +30,32 @@ fn peaks(cells: &[heat::HeatCell]) -> Vec<bool> {
     peak
 }
 
-/// The grid, its readout, and the tap chip.
-#[component]
-pub fn Heatmap(entries: Vec<DayCount>) -> Element {
-    let prefs = use_prefs()();
-    let df = use_date_format()();
-    let mut tip: Signal<Option<Tip>> = use_signal(|| None);
-    let pick = use_heat_pick();
-    let grid = heat::heat_grid(&entries, ui::shown_day(), prefs.week_start, WEEKS);
-    // The odd rows' names: every other weekday, starting from the second.
-    let weekdays: Vec<(usize, String)> = prefs
-        .weekday_labels()
+/// The odd rows' weekday names, every other weekday from the second, for a
+/// week that starts on `labels`' first day.
+fn odd_weekdays(labels: &[&str]) -> Vec<(usize, String)> {
+    labels
         .iter()
         .enumerate()
         .filter(|(row, _)| row % 2 == 1)
         .map(|(row, label)| (row, (*label).to_owned()))
-        .collect();
-    let width = LEFT + orangui::heat_span(grid.columns);
-    let height = TOP + orangui::heat_span(HEAT_ROWS);
+        .collect()
+}
+
+/// The counter's last year in orangui's heatmap, in Cairn's words: a day's
+/// chip says its count and date, its readout tags the same, and the resting
+/// tags the year's total and how many days were logged.
+#[component]
+pub fn Heatmap(entries: Vec<DayCount>) -> Element {
+    let prefs = use_prefs()();
+    let df = use_date_format()();
+    let grid = heat::heat_grid(&entries, ui::shown_day(), prefs.week_start, WEEKS);
     let days = grid.cells.len();
-    // What each cell's chip and readout say, by the cell's index.
-    let texts: Rc<[String]> = grid
+    let chips: Vec<String> = grid
         .cells
         .iter()
         .map(|cell| format!("{} on {}", format::thousands(cell.count), df.date(cell.day)))
         .collect();
-    let tags: Rc<[Vec<String>]> = grid
+    let tags: Vec<Vec<String>> = grid
         .cells
         .iter()
         .map(|cell| {
@@ -101,6 +69,7 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
         format!("{} logged", format::thousands(grid.total)),
         format!("{} of {days} days", grid.active_days),
     ];
+    let label = format!("The last year by day: {}", rest.join(", "));
     let cells: Vec<HeatCell> = grid
         .cells
         .iter()
@@ -113,78 +82,23 @@ pub fn Heatmap(entries: Vec<DayCount>) -> Element {
             key: cell.day.to_string(),
         })
         .collect();
-
-    // Opens on the newest weeks: the grid is wider than a phone, and the
-    // interesting end is the right one. A beat after mount, once the box is laid out.
-    use_open_on_newest(SCROLL_PARTS);
-
+    let months: Vec<(usize, String)> = grid
+        .months
+        .iter()
+        .map(|m| (m.column, m.name.to_owned()))
+        .collect();
     rsx! {
-        // The grid at its own size, scrolling sideways under the weekday
-        // names, which a sticky strip draws again over the grid's own so
-        // they stay in view.
-        div { class: "chart-scroll scroll-fade-x heat-scroll",
-            // Holds the grid and its chip, so the chip's percentages measure
-            // the grid.
-            div { class: "heat-plot", style: "width:{width}px;",
-                div {
-                    class: "heat-axis",
-                    style: "width:{LEFT}px;height:{height}px;margin-bottom:-{height}px;",
-                    "aria-hidden": "true",
-                    svg {
-                        width: "{LEFT}",
-                        height: "{height}",
-                        view_box: "0 0 {LEFT} {height}",
-                        HeatWeekdays { labels: weekdays.clone(), top: TOP }
-                    }
-                }
-                svg {
-                    class: "heat-grid",
-                    style: "width:{width}px;",
-                    view_box: "0 0 {width} {height}",
-                    role: "img",
-                    // Clears the chip when the tap lands on nothing.
-                    rect {
-                        class: "heat-backdrop",
-                        x: "{LEFT}",
-                        y: "0",
-                        width: "{width - LEFT}",
-                        height: "{height}",
-                        onclick: move |_| {
-                            tip.set(None);
-                            pick.clear();
-                        },
-                    }
-                    for m in grid.months.iter() {
-                        text { class: "heat-label heat-month", x: "{LEFT + orangui::heat_span(m.column)}", y: "{TOP - 4.0}", "{m.name}" }
-                    }
-                    HeatWeekdays { labels: weekdays, top: TOP }
-                    HeatGrid {
-                        cells,
-                        left: LEFT,
-                        top: TOP,
-                        on_tap: move |hit: HeatHit| {
-                            if let Some(text) = texts.get(hit.index) {
-                                let left = chip_left(hit.x, width);
-                                let top = hit.y / height * 100.0;
-                                tip.set(Some(Tip { text: text.clone(), left, top }));
-                            }
-                            if let Some(tags) = tags.get(hit.index) {
-                                pick.show(tags.clone());
-                            }
-                        },
-                    }
-                }
-                if let Some(t) = tip() {
-                    ChartTip {
-                        text: t.text,
-                        left: t.left,
-                        top: t.top,
-                        class: "stat-chip heat-float",
-                    }
-                }
-            }
+        YearHeat {
+            cells,
+            columns: grid.columns,
+            months,
+            weekdays: odd_weekdays(&prefs.weekday_labels()),
+            chips,
+            tags,
+            rest,
+            label,
+            chip_class: "stat-chip",
         }
-        HeatReadout { rest, pick }
     }
 }
 
@@ -199,27 +113,15 @@ mod tests {
     }
 
     #[test]
-    fn the_chip_is_centered_over_its_cell_in_the_plot() {
-        let width = LEFT + orangui::heat_span(WEEKS);
-        for week in [0, WEEKS - 1] {
-            let x = LEFT + orangui::heat_span(week);
-            let at = chip_left(x, width) / 100.0 * width;
-            assert!(
-                (at - (x + HEAT_CELL / 2.0)).abs() < 1e-9,
-                "week {week}'s chip sits at {at}, its cell's middle is {}",
-                x + HEAT_CELL / 2.0
-            );
-        }
-    }
-
-    #[test]
-    fn it_opens_on_the_newest_weeks_with_no_month_cut_by_the_weekdays() {
-        let js = orangui::open_on_newest_js(SCROLL_PARTS);
-        assert!(js.contains("box.scrollLeft = box.scrollWidth;"));
-        assert!(js.contains("querySelectorAll('.heat-month')"));
-        assert!(
-            js.contains("row.style.paddingRight"),
-            "a month the strip cuts moves on under it: {js}"
+    fn the_odd_rows_are_named() {
+        let names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        assert_eq!(
+            odd_weekdays(&names),
+            [
+                (1, "Tue".to_owned()),
+                (3, "Thu".to_owned()),
+                (5, "Sat".to_owned())
+            ]
         );
     }
 
