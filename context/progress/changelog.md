@@ -4,18 +4,21 @@ Unreleased entries collect at the top. At cut time they move under a version hea
 
 Every entry added here also goes into portfolio's `src/changelog.rs` in the same sitting, in `UPCOMING` under the next version, reworded to zwipe's rules (one phrase, no period). At cut time the version moves there from `UPCOMING` to the top of `RELEASES`, with the date of its heading here written as `Some(Date::new(year, month, day))`. That file is what scottyfermo.com/projects/cairn/changelog shows, and the app has no other public changelog.
 
-## Unreleased, 1.5.0
+## 1.5.0, 2026-11-21
 
 - Stat tiles and the lifetime box have bigger numbers.
-- A tap on a counter's step buttons shows its name and change in one toast that counts up as you keep tapping.
-- Toasts sit in the bottom-left corner the same distance from the left and bottom edges, over the dock when there is one.
 - Toasts rise from the bottom edge and drift up as they fade out.
 - Stacked toasts line up behind the newest.
 - Toasts stamp down as they land, coming in big and settling with a small bounce.
+- A single toast no longer blocks taps on what sits under it.
+- Closing one stacked toast with its × leaves the others where they were.
 - Cards have squarer corners, and every tag and button shares one smaller corner that sits inside a card's.
 - On a computer, hovering a day in the Every day grid names it.
+- A tap on a counter's step buttons shows its name and change in one toast that counts up as you keep tapping.
+- Toasts sit in the bottom-left corner the same distance from the left and bottom edges, over the dock when there is one.
 - On a keyboard, t opens Themes.
 - Jump keys, g g for the top of a screen or Shift+G for the bottom.
+- On a phone, Themes opened from the menu fills the window instead of the menu's box.
 - The open menu has a rule under its header.
 - The open menu's bottom row no longer sits on its edge.
 
