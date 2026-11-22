@@ -19,6 +19,7 @@ Then paste the text into App Store Connect at the submit step of [`../ios/app-st
 
 | Version | Characters |
 |---------|-----------|
+| [1.5.0](1.5.0/whats_new.md) | 458 |
 | [1.4.3](1.4.3/whats_new.md) | 495 |
 | [1.4.2](1.4.2/whats_new.md) | 140 |
 | [1.4.1](1.4.1/whats_new.md) | 422 |
